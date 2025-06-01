@@ -1776,8 +1776,34 @@
             });
         });
         <script>
-             const API_URL = "https://script.google.com/macros/s/AKfycbzTFw3WPYcJtphEXh1yGk3hRMWQcapd2rkA2BNlBRrCCRfZA2B87uBdxaWTaWOpnpHuRA/exec"; // החלף לכתובת שלך
+             const API_URL = "https://script.google.com/macros/library/d/1Nzfym6wZWW19jlaUC2eBJ7SvmyuhSkj_LzCq0lyr2IsjmenxDiCvXkRu/15";
 
+async function loadOrders() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+
+    const tbody = document.querySelector("#orders-table-body");
+    tbody.innerHTML = ""; // נקה טבלה
+
+    data.forEach(order => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${order["מספר הזמנה"] || "-"}</td>
+        <td>${order["לקוח"] || "-"}</td>
+        <td>${order["כתובת"] || "-"}</td>
+        <td>${order["סטטוס"] || "-"}</td>
+        <td>${order["נהג"] || "-"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+  } catch (err) {
+    console.error("שגיאה בשליפה מהגיליון:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadOrders);
 // פונקציית עיבוד תאריך
 function formatDate(isoString) {
   if (!isoString) return "";
