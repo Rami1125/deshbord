@@ -1777,7 +1777,7 @@
         });
         <script>
              const API_URL = "https://script.google.com/macros/s/AKfycbzTFw3WPYcJtphEXh1yGk3hRMWQcapd2rkA2BNlBRrCCRfZA2B87uBdxaWTaWOpnpHuRA/exec"; // החלף לכתובת שלך
-
+ 
 // פונקציית עיבוד תאריך
 function formatDate(isoString) {
   if (!isoString) return "";
@@ -1786,7 +1786,36 @@ function formatDate(isoString) {
 }
 
 // פונקציית עיבוד שעה
-function formatTime(excelDateString) {
+  function createCell(content) {
+      return `<td class="px-4 py-2 text-gray-800">${content || '-'}</td>`;
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const tbody = document.getElementById("orders-table-body");
+        tbody.innerHTML = "";
+
+        data.forEach(order => {
+          const row = document.createElement("tr");
+          row.className = "bg-white hover:bg-gray-50";
+          row.innerHTML = `
+            ${createCell(order["מספר הזמנה"])}
+            ${createCell(order["לקוח"])}
+            ${createCell(order["כתובת"])}
+            ${createCell(order["סטטוס"])}
+            ${createCell(order["נהג"])}
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("שגיאה בטעינת הזמנות:", err);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadOrders);
+ function formatTime(excelDateString) {
   if (!excelDateString) return "";
   const d = new Date(excelDateString);
   return d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
@@ -1821,20 +1850,38 @@ function renderOrders(data) {
   });
 }
 
-// שליפת ההזמנות מה-API
-async function loadOrders() {
-  try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    console.log("נתונים שהתקבלו מהגיליון:", data);
-    renderOrders(data);
-  } catch (error) {
-    console.error("שגיאה בשליפת ההזמנות:", error);
-  }
-}
+  <script>
+    const API_URL = "https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbwZtbioWwbGcywOsB-AvzfdVtCYh0dEQbvbUMOW9LTCbIK9CyfH9iqMPea4Pe98QrLidw/exec/exec"; // החלף בקישור שלך
 
-// טען כשהדף מוכן
-document.addEventListener("DOMContentLoaded", loadOrders);
-</script>
+    function createCell(content) {
+      return `<td class="px-4 py-2 text-gray-800">${content || '-'}</td>`;
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const tbody = document.getElementById("orders-table-body");
+        tbody.innerHTML = "";
+
+        data.forEach(order => {
+          const row = document.createElement("tr");
+          row.className = "bg-white hover:bg-gray-50";
+          row.innerHTML = `
+            ${createCell(order["מספר הזמנה"])}
+            ${createCell(order["לקוח"])}
+            ${createCell(order["כתובת"])}
+            ${createCell(order["סטטוס"])}
+            ${createCell(order["נהג"])}
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("שגיאה בטעינת הזמנות:", err);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadOrders);
+  </script>
 </body>
 </html>
