@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול הזמנות</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#4f46e5',secondary:'#10b981'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Heebo', sans-serif;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.2);
+        }
+        .digital-clock {
+            font-family: 'Digital-7', monospace;
+            text-shadow: 0 0 10px rgba(79, 70, 229, 0.7);
+            animation: neon 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes neon {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #4f46e5, 0 0 20px #4f46e5;
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #4f46e5, 0 0 40px #4f46e5;
+            }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .blink {
+            animation: blink 1.5s linear infinite;
+        }
+        .timeline-container {
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+        .timeline-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .timeline-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .timeline-container::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 10px;
+        }
+        .timeline-hour {
+            min-width: 100px;
+            position: relative;
+        }
+        .timeline-hour::after {
+            content: "";
+            position: absolute;
+            height: 10px;
+            width: 1px;
+            background-color: #d1d5db;
+            bottom: -10px;
+            left: 50%;
+        }
+        .timeline-pin {
+            position: absolute;
+            top: -60px;
+            transform: translateX(-50%);
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .timeline-pin:hover {
+            transform: translateX(-50%) translateY(-5px);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .tab-active {
+            color: #4f46e5;
+            border-bottom: 2px solid #4f46e5;
+        }
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .table-row-striped:nth-child(even) {
+            background-color: rgba(243, 244, 246, 0.7);
+        }
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        .led-display {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            background: #000;
+            color: #0f0;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation Bar -->
+    <nav class="glass-effect fixed top-0 w-full z-50 px-4 py-3 flex items-center justify-between shadow-md">
+        <div class="flex items-center">
+            <span class="text-2xl font-['Pacifico'] text-primary">logo</span>
+        </div>
+        <div class="digital-clock text-xl font-bold text-primary">
+            <span id="current-date"></span> | <span id="current-time"></span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="user-menu-button" class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                <i class="ri-user-line ri-lg"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Tab Navigation -->
+    <div class="fixed top-16 w-full bg-white shadow-sm z-40 flex overflow-x-auto">
+        <button class="tab-button tab-active px-6 py-3 font-medium text-sm whitespace-nowrap" data-tab="main">
+            ראשי
+        </button>
+        <button class="tab-button px-6 py-3 font-medium text-sm text-gray-500 whitespace-nowrap" data-tab="driver-ali">
+            נהג עלי
+        </button>
+        <button class="tab-button px-6 py-3 font-medium text-sm text-gray-500 whitespace-nowrap" data-tab="driver-chachmat">
+            נהג חכמת
+        </button>
+        <button class="tab-button px-6 py-3 font-medium text-sm text-gray-500 whitespace-nowrap" data-tab="reports">
+            דוחות
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="pt-32 pb-20 px-4">
+        <!-- Main Tab -->
+        <div id="main-tab" class="tab-content">
+            <!-- KPI Dashboard -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="glass-card p-4 rounded-lg">
+                    <h3 class="text-xs font-medium text-gray-500 mb-1">סה״כ הזמנות</h3>
+                    <p class="text-2xl font-bold text-gray-800">42</p>
+                </div>
+                <div class="glass-card p-4 rounded-lg">
+                    <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות היום</h3>
+                    <p class="text-2xl font-bold text-gray-800">12</p>
+                </div>
+            </div>
+
+            <!-- Status Filters -->
+            <div class="mb-6 overflow-x-auto">
+                <div class="flex space-x-2 space-x-reverse">
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="all">
+                        <span class="text-gray-800">הכל</span>
+                        <span class="text-primary font-bold mt-1">42</span>
+                    </button>
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="pending">
+                        <span class="text-yellow-500">ממתין</span>
+                        <span class="text-primary font-bold mt-1">8</span>
+                    </button>
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="processing">
+                        <span class="text-blue-500">בטיפול</span>
+                        <span class="text-primary font-bold mt-1">15</span>
+                    </button>
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="preparing">
+                        <span class="text-purple-500">בהכנה</span>
+                        <span class="text-primary font-bold mt-1">10</span>
+                    </button>
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="completed">
+                        <span class="text-green-500">הושלם</span>
+                        <span class="text-primary font-bold mt-1">7</span>
+                    </button>
+                    <button class="status-filter glass-card px-3 py-2 rounded-lg text-xs font-medium flex flex-col items-center min-w-[70px]" data-status="canceled">
+                        <span class="text-red-500">בוטל</span>
+                        <span class="text-primary font-bold mt-1">2</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Warehouse Buttons -->
+            <div class="flex space-x-3 space-x-reverse mb-6">
+                <button class="warehouse-btn glass-card px-4 py-3 rounded-lg flex items-center space-x-2 space-x-reverse flex-1 !rounded-button cursor-pointer">
+                    <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <i class="ri-store-2-line ri-lg text-primary"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-sm font-medium text-gray-800">מחסן החרש</h3>
+                        <p class="text-xs text-gray-500">18 הזמנות פעילות</p>
+                    </div>
+                </button>
+                <button class="warehouse-btn glass-card px-4 py-3 rounded-lg flex items-center space-x-2 space-x-reverse flex-1 !rounded-button cursor-pointer">
+                    <div class="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-full">
+                        <i class="ri-store-line ri-lg text-secondary"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-sm font-medium text-gray-800">מחסן התלמיד</h3>
+                        <p class="text-xs text-gray-500">24 הזמנות פעילות</p>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative mb-6">
+                <div class="glass-card flex items-center px-4 py-2 rounded-lg">
+                    <i class="ri-search-line ri-lg text-gray-400"></i>
+                    <input type="text" id="search-input" placeholder="חיפוש לפי שם לקוח, כתובת או טלפון..." class="w-full px-3 py-2 border-none focus:outline-none bg-transparent text-sm">
+                </div>
+            </div>
+
+            <!-- New Order Button -->
+            <div class="mb-6">
+                <button id="new-order-btn" class="w-full bg-primary text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse blink !rounded-button cursor-pointer">
+                    <i class="ri-add-line ri-lg"></i>
+                    <span class="font-medium">הזמנה חדשה</span>
+                </button>
+            </div>
+
+            <!-- Timeline -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-3">לוח זמנים - היום</h2>
+                <div class="timeline-container relative glass-card p-4 rounded-lg">
+                    <div class="flex h-20 border-b border-gray-200 relative">
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">06:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">06:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">07:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">07:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">08:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">08:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">09:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">09:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">10:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">10:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">11:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">11:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">12:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">12:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">13:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">13:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">14:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">14:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">15:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">15:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">16:00</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">16:30</span>
+                        </div>
+                        <div class="timeline-hour text-center">
+                            <span class="text-xs text-gray-500">17:00</span>
+                        </div>
+                        
+                        <!-- Timeline Pins -->
+                        <div class="timeline-pin" style="left: 150px;">
+                            <div class="glass-card px-2 py-1 rounded-lg shadow-lg">
+                                <div class="flex items-center space-x-1 space-x-reverse">
+                                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <span class="text-xs font-medium">אבי כהן</span>
+                                </div>
+                                <div class="text-xs text-gray-500">נהג: עלי</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-pin" style="left: 350px;">
+                            <div class="glass-card px-2 py-1 rounded-lg shadow-lg">
+                                <div class="flex items-center space-x-1 space-x-reverse">
+                                    <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                                    <span class="text-xs font-medium">יוסי לוי</span>
+                                </div>
+                                <div class="text-xs text-gray-500">נהג: חכמת</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-pin" style="left: 550px;">
+                            <div class="glass-card px-2 py-1 rounded-lg shadow-lg">
+                                <div class="flex items-center space-x-1 space-x-reverse">
+                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span class="text-xs font-medium">רונית שמעון</span>
+                                </div>
+                                <div class="text-xs text-gray-500">נהג: עלי</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div>
+                <h2 class="text-lg font-bold text-gray-800 mb-3">הזמנות אחרונות</h2>
+                <div class="glass-card rounded-lg overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">מס׳</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">לקוח</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">כתובת</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סטטוס</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">נהג</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="table-row-striped order-row cursor-pointer" data-order-id="1">
+                                    <td class="px-4 py-3 text-sm text-gray-800">#1234</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">אבי כהן</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רחוב הרצל 15, תל אביב</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="status-badge bg-yellow-100 text-yellow-800">ממתין</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">עלי</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 share-order-btn cursor-pointer">
+                                            <i class="ri-share-line ri-lg"></i>
+                                        </button>
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                            <i class="ri-edit-line ri-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-striped order-row cursor-pointer" data-order-id="2">
+                                    <td class="px-4 py-3 text-sm text-gray-800">#1235</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">יוסי לוי</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רחוב אלנבי 78, תל אביב</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="status-badge bg-blue-100 text-blue-800">בטיפול</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">חכמת</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 share-order-btn cursor-pointer">
+                                            <i class="ri-share-line ri-lg"></i>
+                                        </button>
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                            <i class="ri-edit-line ri-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-striped order-row cursor-pointer" data-order-id="3">
+                                    <td class="px-4 py-3 text-sm text-gray-800">#1236</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רונית שמעון</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רחוב בן גוריון 45, רמת גן</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="status-badge bg-purple-100 text-purple-800">בהכנה</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">עלי</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 share-order-btn cursor-pointer">
+                                            <i class="ri-share-line ri-lg"></i>
+                                        </button>
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                            <i class="ri-edit-line ri-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-striped order-row cursor-pointer" data-order-id="4">
+                                    <td class="px-4 py-3 text-sm text-gray-800">#1237</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">דוד ישראלי</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רחוב ויצמן 32, הרצליה</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="status-badge bg-green-100 text-green-800">הושלם</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">חכמת</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 share-order-btn cursor-pointer">
+                                            <i class="ri-share-line ri-lg"></i>
+                                        </button>
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                            <i class="ri-edit-line ri-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-striped order-row cursor-pointer" data-order-id="5">
+                                    <td class="px-4 py-3 text-sm text-gray-800">#1238</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">מיכל אברהם</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">רחוב סוקולוב 12, רמת השרון</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="status-badge bg-red-100 text-red-800">בוטל</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">-</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 share-order-btn cursor-pointer">
+                                            <i class="ri-share-line ri-lg"></i>
+                                        </button>
+                                        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                            <i class="ri-edit-line ri-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Ali Tab -->
+        <div id="driver-ali-tab" class="tab-content hidden">
+            <div class="glass-card p-4 rounded-lg mb-6">
+                <div class="flex items-center space-x-3 space-x-reverse mb-4">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <i class="ri-user-line ri-xl text-primary"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">נהג: עלי</h2>
+                        <p class="text-sm text-gray-500">טלפון: 050-547-5188</p>
+                    </div>
+                    <div class="mr-auto">
+                        <button class="bg-green-500 text-white p-2 rounded-full flex items-center justify-center cursor-pointer">
+                            <i class="ri-whatsapp-line ri-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-primary/10 p-3 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות היום</h3>
+                        <p class="text-xl font-bold text-primary">5</p>
+                    </div>
+                    <div class="bg-primary/10 p-3 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות השבוע</h3>
+                        <p class="text-xl font-bold text-primary">23</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-medium text-gray-800">התקדמות היום</h3>
+                        <span class="text-xs text-primary font-medium">60%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="bg-primary h-full rounded-full progress-bar" style="width: 60%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ali's Orders -->
+            <div class="glass-card rounded-lg overflow-hidden mb-6">
+                <div class="bg-primary/10 px-4 py-3">
+                    <h3 class="font-medium text-primary">הזמנות פעילות - עלי</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">מס׳</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">לקוח</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">כתובת</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סטטוס</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">שעה</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1234</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">אבי כהן</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב הרצל 15, תל אביב</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-yellow-100 text-yellow-800">ממתין</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">08:30</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1236</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רונית שמעון</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב בן גוריון 45, רמת גן</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-purple-100 text-purple-800">בהכנה</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">10:15</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1240</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">נועם גבאי</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב ירושלים 8, בני ברק</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-blue-100 text-blue-800">בטיפול</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">12:45</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ali's Delivery Types -->
+            <div class="glass-card p-4 rounded-lg mb-6">
+                <h3 class="font-medium text-gray-800 mb-3">סוגי הובלות - עלי</h3>
+                <div id="ali-delivery-chart" class="w-full h-64"></div>
+            </div>
+        </div>
+
+        <!-- Driver Chachmat Tab -->
+        <div id="driver-chachmat-tab" class="tab-content hidden">
+            <div class="glass-card p-4 rounded-lg mb-6">
+                <div class="flex items-center space-x-3 space-x-reverse mb-4">
+                    <div class="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center">
+                        <i class="ri-user-line ri-xl text-secondary"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">נהג: חכמת</h2>
+                        <p class="text-sm text-gray-500">טלפון: 053-231-6985</p>
+                    </div>
+                    <div class="mr-auto">
+                        <button class="bg-green-500 text-white p-2 rounded-full flex items-center justify-center cursor-pointer">
+                            <i class="ri-whatsapp-line ri-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-secondary/10 p-3 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות היום</h3>
+                        <p class="text-xl font-bold text-secondary">7</p>
+                    </div>
+                    <div class="bg-secondary/10 p-3 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות השבוע</h3>
+                        <p class="text-xl font-bold text-secondary">31</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-medium text-gray-800">התקדמות היום</h3>
+                        <span class="text-xs text-secondary font-medium">45%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="bg-secondary h-full rounded-full progress-bar" style="width: 45%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chachmat's Orders -->
+            <div class="glass-card rounded-lg overflow-hidden mb-6">
+                <div class="bg-secondary/10 px-4 py-3">
+                    <h3 class="font-medium text-secondary">הזמנות פעילות - חכמת</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">מס׳</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">לקוח</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">כתובת</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סטטוס</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">שעה</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1235</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">יוסי לוי</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב אלנבי 78, תל אביב</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-blue-100 text-blue-800">בטיפול</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">09:15</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1237</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">דוד ישראלי</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב ויצמן 32, הרצליה</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-green-100 text-green-800">הושלם</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">11:30</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1241</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">שרה גולדשטיין</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב הנביאים 22, ירושלים</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-yellow-100 text-yellow-800">ממתין</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">13:45</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-row-striped order-row cursor-pointer">
+                                <td class="px-4 py-3 text-sm text-gray-800">#1242</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">אלון מזרחי</td>
+                                <td class="px-4 py-3 text-sm text-gray-800">רחוב הרצוג 5, רעננה</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="status-badge bg-purple-100 text-purple-800">בהכנה</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-800">15:00</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-whatsapp-line ri-lg text-green-500"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                                        <i class="ri-phone-line ri-lg text-blue-500"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chachmat's Delivery Types -->
+            <div class="glass-card p-4 rounded-lg mb-6">
+                <h3 class="font-medium text-gray-800 mb-3">סוגי הובלות - חכמת</h3>
+                <div id="chachmat-delivery-chart" class="w-full h-64"></div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports-tab" class="tab-content hidden">
+            <div class="glass-card p-4 rounded-lg mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">דוחות וסטטיסטיקות</h2>
+                
+                <!-- Date Picker -->
+                <div class="flex items-center space-x-2 space-x-reverse mb-6">
+                    <div class="relative flex-1">
+                        <div class="glass-card flex items-center px-4 py-2 rounded-lg">
+                            <i class="ri-calendar-line ri-lg text-gray-400"></i>
+                            <input type="date" class="w-full px-3 py-2 border-none focus:outline-none bg-transparent text-sm">
+                        </div>
+                    </div>
+                    <span class="text-gray-500">עד</span>
+                    <div class="relative flex-1">
+                        <div class="glass-card flex items-center px-4 py-2 rounded-lg">
+                            <i class="ri-calendar-line ri-lg text-gray-400"></i>
+                            <input type="date" class="w-full px-3 py-2 border-none focus:outline-none bg-transparent text-sm">
+                        </div>
+                    </div>
+                    <button class="bg-primary text-white py-2 px-4 rounded-lg text-sm !rounded-button cursor-pointer">
+                        הפק דוח
+                    </button>
+                </div>
+                
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">סה״כ הזמנות</h3>
+                        <p class="text-2xl font-bold text-gray-800">156</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות שהושלמו</h3>
+                        <p class="text-2xl font-bold text-green-600">132</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות שבוטלו</h3>
+                        <p class="text-2xl font-bold text-red-600">8</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות בתהליך</h3>
+                        <p class="text-2xl font-bold text-blue-600">16</p>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="mb-6">
+                    <h3 class="font-medium text-gray-800 mb-3">התפלגות לפי סוג הובלה</h3>
+                    <div id="delivery-type-chart" class="w-full h-64"></div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="font-medium text-gray-800 mb-3">התפלגות לפי נהג</h3>
+                    <div id="driver-chart" class="w-full h-64"></div>
+                </div>
+                
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-3">הזמנות לפי יום</h3>
+                    <div id="orders-by-day-chart" class="w-full h-64"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tab Bar -->
+    <div class="fixed bottom-0 w-full bg-white shadow-lg z-50">
+        <div class="grid grid-cols-4 h-16">
+            <button class="flex flex-col items-center justify-center space-y-1 cursor-pointer">
+                <i class="ri-home-line ri-lg text-primary"></i>
+                <span class="text-xs text-primary font-medium">ראשי</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 cursor-pointer">
+                <i class="ri-truck-line ri-lg text-gray-500"></i>
+                <span class="text-xs text-gray-500">הזמנות</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 cursor-pointer">
+                <i class="ri-user-line ri-lg text-gray-500"></i>
+                <span class="text-xs text-gray-500">נהגים</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 cursor-pointer">
+                <i class="ri-settings-line ri-lg text-gray-500"></i>
+                <span class="text-xs text-gray-500">הגדרות</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="fab-button" class="fixed bottom-20 left-4 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center z-50 cursor-pointer">
+        <i class="ri-whatsapp-fill ri-2x"></i>
+    </button>
+
+    <!-- New Order Modal -->
+    <div id="new-order-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 top-20 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800">הזמנה חדשה</h2>
+                <button id="close-new-order-modal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 max-h-[500px] overflow-y-auto">
+                <form id="new-order-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">שם לקוח</label>
+                        <input type="text" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס שם לקוח">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
+                        <input type="tel" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס מספר טלפון">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">כתובת</label>
+                        <input type="text" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס כתובת מלאה">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">מחסן</label>
+                        <div class="relative">
+                            <select class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none">
+                                <option value="">בחר מחסן</option>
+                                <option value="harash">מחסן החרש</option>
+                                <option value="talmid">מחסן התלמיד</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
+                                <i class="ri-arrow-down-s-line ri-lg text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">נהג</label>
+                        <div class="relative">
+                            <select class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none">
+                                <option value="">בחר נהג</option>
+                                <option value="ali">עלי</option>
+                                <option value="chachmat">חכמת</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
+                                <i class="ri-arrow-down-s-line ri-lg text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">סוג הובלה</label>
+                        <div class="relative">
+                            <select class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none">
+                                <option value="">בחר סוג הובלה</option>
+                                <option value="truck">הובלת משאית</option>
+                                <option value="crane10">הובלת מנוף 10</option>
+                                <option value="crane15">הובלת מנוף 15</option>
+                                <option value="crane30">הובלת מנוף 30</option>
+                                <option value="craneWork">עבודת מנוף</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
+                                <i class="ri-arrow-down-s-line ri-lg text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">תאריך</label>
+                        <input type="date" class="glass-card w-full px-4 py-2 rounded-lg text-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">שעה</label>
+                        <input type="time" class="glass-card w-full px-4 py-2 rounded-lg text-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">הערות</label>
+                        <textarea class="glass-card w-full px-4 py-2 rounded-lg text-sm" rows="3" placeholder="הוסף הערות להזמנה..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 border-t border-gray-200 flex justify-end">
+                <button class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg text-sm ml-2 !rounded-button cursor-pointer">
+                    בטל
+                </button>
+                <button class="bg-primary text-white py-2 px-4 rounded-lg text-sm !rounded-button cursor-pointer">
+                    שמור הזמנה
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="order-details-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 top-20 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800">פרטי הזמנה #1234</h2>
+                <button id="close-order-details-modal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 max-h-[500px] overflow-y-auto">
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="status-badge bg-yellow-100 text-yellow-800">ממתין</span>
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            01/06/2025 | 08:30
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-4 rounded-lg mb-4">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">פרטי לקוח</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-xs text-gray-500">שם</p>
+                                <p class="text-sm font-medium">אבי כהן</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">טלפון</p>
+                                <p class="text-sm font-medium">050-123-4567</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500">כתובת</p>
+                                <p class="text-sm font-medium">רחוב הרצל 15, תל אביב</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-4 rounded-lg mb-4">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">פרטי הזמנה</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-xs text-gray-500">מחסן</p>
+                                <p class="text-sm font-medium">מחסן החרש</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">נהג</p>
+                                <p class="text-sm font-medium">עלי</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">סוג הובלה</p>
+                                <p class="text-sm font-medium">הובלת משאית</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">תאריך ושעה</p>
+                                <p class="text-sm font-medium">01/06/2025 | 08:30</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">הערות</h3>
+                        <p class="text-sm text-gray-600">יש להתקשר לפני ההגעה. הלקוח ביקש לרדת עם המוצרים לקומה 3.</p>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2 space-x-reverse">
+                    <button class="flex-1 bg-gray-100 text-gray-800 py-2 px-4 rounded-lg text-sm flex items-center justify-center space-x-1 space-x-reverse !rounded-button cursor-pointer">
+                        <i class="ri-printer-line"></i>
+                        <span>הדפס</span>
+                    </button>
+                    <button id="share-order-details-btn" class="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center space-x-1 space-x-reverse !rounded-button cursor-pointer">
+                        <i class="ri-whatsapp-line"></i>
+                        <span>שתף</span>
+                    </button>
+                    <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center space-x-1 space-x-reverse !rounded-button cursor-pointer">
+                        <i class="ri-edit-line"></i>
+                        <span>ערוך</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Order Modal -->
+    <div id="share-order-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 bottom-4 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800">שתף הזמנה לנהג</h2>
+            </div>
+            <div class="p-4">
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <button class="glass-card p-3 rounded-lg flex flex-col items-center space-y-2 !rounded-button cursor-pointer">
+                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                            <i class="ri-whatsapp-line ri-xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-800">נהג עלי</span>
+                        <span class="text-xs text-gray-500 text-center">050-547-5188</span>
+                    </button>
+                    <button class="glass-card p-3 rounded-lg flex flex-col items-center space-y-2 !rounded-button cursor-pointer">
+                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                            <i class="ri-whatsapp-line ri-xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-800">נהג חכמת</span>
+                        <span class="text-xs text-gray-500 text-center">053-231-6985</span>
+                    </button>
+                    <button id="other-driver-btn" class="glass-card p-3 rounded-lg flex flex-col items-center space-y-2 !rounded-button cursor-pointer">
+                        <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                            <i class="ri-user-add-line ri-xl text-gray-500"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-800">אחר</span>
+                        <span class="text-xs text-gray-500 text-center">הזן מספר</span>
+                    </button>
+                </div>
+                <button id="close-share-modal" class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg text-sm font-medium !rounded-button cursor-pointer">
+                    סגור
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Dialer Modal -->
+    <div id="phone-dialer-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 bottom-4 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800">הזן מספר טלפון</h2>
+            </div>
+            <div class="p-4">
+                <div class="led-display mb-4 text-center text-xl">
+                    <span id="phone-display">050-886-0896</span>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">1</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">2</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">3</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">4</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">5</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">6</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">7</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">8</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">9</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">*</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">0</button>
+                    <button class="dialer-btn bg-gray-100 h-14 rounded-full text-xl font-medium !rounded-button cursor-pointer">#</button>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse">
+                    <button id="cancel-dialer" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg text-sm font-medium !rounded-button cursor-pointer">
+                        בטל
+                    </button>
+                    <button id="confirm-dialer" class="flex-1 bg-green-500 text-white py-3 rounded-lg text-sm font-medium !rounded-button cursor-pointer">
+                        שתף הזמנה
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warehouse Modal -->
+    <div id="warehouse-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 top-20 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800" id="warehouse-modal-title">מחסן החרש</h2>
+                <button id="close-warehouse-modal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 max-h-[500px] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות פעילות</h3>
+                        <p class="text-2xl font-bold text-primary" id="warehouse-active-orders">18</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="text-xs font-medium text-gray-500 mb-1">הזמנות היום</h3>
+                        <p class="text-2xl font-bold text-primary" id="warehouse-today-orders">7</p>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-lg overflow-hidden mb-6">
+                    <div class="bg-primary/10 px-4 py-3">
+                        <h3 class="font-medium text-primary" id="warehouse-orders-title">הזמנות מחסן החרש</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">מס׳</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">לקוח</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">נהג</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סטטוס</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">שעה</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200" id="warehouse-orders-table">
+                                <!-- Will be filled dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Message Modal -->
+    <div id="whatsapp-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-x-4 bottom-4 bg-white rounded-xl shadow-2xl modal modal-enter">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800">שלח הודעת WhatsApp</h2>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">בחר הודעה מוכנה</label>
+                    <div class="relative">
+                        <select id="template-message" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none">
+                            <option value="">בחר הודעה...</option>
+                            <option value="loading">(הודעה ממחלקת הזמנות ח.סבן) הנהג ברגע זה מעמיס ויוצא אליך נא להתארגן.</option>
+                            <option value="delay">(הודעה ממחלקת הזמנות ח.סבן) ההזמנה מתעכבת במחסן אעדכן אותך במידה ויהיה עיכוב.</option>
+                            <option value="morning">דוח בוקר - סיכום הזמנות ליום 01/06/2025</option>
+                            <option value="custom">הודעה מותאמת אישית...</option>
+                        </select>
+                        <div class="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
+                            <i class="ri-arrow-down-s-line ri-lg text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">תוכן ההודעה</label>
+                    <textarea id="whatsapp-message" class="glass-card w-full px-4 py-2 rounded-lg text-sm" rows="4" placeholder="הקלד את ההודעה שברצונך לשלוח..."></textarea>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse">
+                    <button id="cancel-whatsapp" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg text-sm font-medium !rounded-button cursor-pointer">
+                        בטל
+                    </button>
+                    <button id="send-whatsapp" class="flex-1 bg-green-500 text-white py-3 rounded-lg text-sm font-medium !rounded-button cursor-pointer">
+                        שלח
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script id="date-time-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            function updateDateTime() {
+                const now = new Date();
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit' };
+                
+                document.getElementById('current-date').textContent = now.toLocaleDateString('he-IL', dateOptions);
+                document.getElementById('current-time').textContent = now.toLocaleTimeString('he-IL', timeOptions);
+            }
+            
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        });
+    </script>
+            
+    <script id="tab-navigation-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    // Remove active class from all buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('tab-active');
+                        btn.classList.add('text-gray-500');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('tab-active');
+                    this.classList.remove('text-gray-500');
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Show selected tab content
+                    document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+                });
+            });
+        });
+    </script>
+
+    <script id="modal-handlers-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // New Order Modal
+            const newOrderBtn = document.getElementById('new-order-btn');
+            const newOrderModal = document.getElementById('new-order-modal');
+            const closeNewOrderModal = document.getElementById('close-new-order-modal');
+            
+            newOrderBtn.addEventListener('click', function() {
+                newOrderModal.classList.remove('hidden');
+                newOrderModal.querySelector('.modal').classList.remove('modal-enter');
+                newOrderModal.querySelector('.modal').classList.add('modal-enter-active');
+            });
+            
+            closeNewOrderModal.addEventListener('click', function() {
+                newOrderModal.querySelector('.modal').classList.remove('modal-enter-active');
+                newOrderModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    newOrderModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Order Details Modal
+            const orderRows = document.querySelectorAll('.order-row');
+            const orderDetailsModal = document.getElementById('order-details-modal');
+            const closeOrderDetailsModal = document.getElementById('close-order-details-modal');
+            
+            orderRows.forEach(row => {
+                row.addEventListener('click', function() {
+                    orderDetailsModal.classList.remove('hidden');
+                    orderDetailsModal.querySelector('.modal').classList.remove('modal-enter');
+                    orderDetailsModal.querySelector('.modal').classList.add('modal-enter-active');
+                });
+            });
+            
+            closeOrderDetailsModal.addEventListener('click', function() {
+                orderDetailsModal.querySelector('.modal').classList.remove('modal-enter-active');
+                orderDetailsModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    orderDetailsModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Share Order Modal
+            const shareOrderBtns = document.querySelectorAll('.share-order-btn');
+            const shareOrderDetailsBtn = document.getElementById('share-order-details-btn');
+            const shareOrderModal = document.getElementById('share-order-modal');
+            const closeShareModal = document.getElementById('close-share-modal');
+            
+            shareOrderBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    shareOrderModal.classList.remove('hidden');
+                    shareOrderModal.querySelector('.modal').classList.remove('modal-enter');
+                    shareOrderModal.querySelector('.modal').classList.add('modal-enter-active');
+                });
+            });
+            
+            if (shareOrderDetailsBtn) {
+                shareOrderDetailsBtn.addEventListener('click', function() {
+                    shareOrderModal.classList.remove('hidden');
+                    shareOrderModal.querySelector('.modal').classList.remove('modal-enter');
+                    shareOrderModal.querySelector('.modal').classList.add('modal-enter-active');
+                });
+            }
+            
+            closeShareModal.addEventListener('click', function() {
+                shareOrderModal.querySelector('.modal').classList.remove('modal-enter-active');
+                shareOrderModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    shareOrderModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Phone Dialer Modal
+            const otherDriverBtn = document.getElementById('other-driver-btn');
+            const phoneDialerModal = document.getElementById('phone-dialer-modal');
+            const cancelDialer = document.getElementById('cancel-dialer');
+            const confirmDialer = document.getElementById('confirm-dialer');
+            
+            otherDriverBtn.addEventListener('click', function() {
+                shareOrderModal.classList.add('hidden');
+                phoneDialerModal.classList.remove('hidden');
+                phoneDialerModal.querySelector('.modal').classList.remove('modal-enter');
+                phoneDialerModal.querySelector('.modal').classList.add('modal-enter-active');
+            });
+            
+            cancelDialer.addEventListener('click', function() {
+                phoneDialerModal.querySelector('.modal').classList.remove('modal-enter-active');
+                phoneDialerModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    phoneDialerModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            confirmDialer.addEventListener('click', function() {
+                phoneDialerModal.querySelector('.modal').classList.remove('modal-enter-active');
+                phoneDialerModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    phoneDialerModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Warehouse Modal
+            const warehouseBtns = document.querySelectorAll('.warehouse-btn');
+            const warehouseModal = document.getElementById('warehouse-modal');
+            const closeWarehouseModal = document.getElementById('close-warehouse-modal');
+            
+            warehouseBtns.forEach((btn, index) => {
+                btn.addEventListener('click', function() {
+                    const warehouseName = index === 0 ? 'מחסן החרש' : 'מחסן התלמיד';
+                    const ordersCount = index === 0 ? '18' : '24';
+                    const todayCount = index === 0 ? '7' : '5';
+                    
+                    document.getElementById('warehouse-modal-title').textContent = warehouseName;
+                    document.getElementById('warehouse-orders-title').textContent = `הזמנות ${warehouseName}`;
+                    document.getElementById('warehouse-active-orders').textContent = ordersCount;
+                    document.getElementById('warehouse-today-orders').textContent = todayCount;
+                    
+                    // Fill table with dummy data
+                    const tableBody = document.getElementById('warehouse-orders-table');
+                    tableBody.innerHTML = '';
+                    
+                    const dummyData = [
+                        { id: '#1234', customer: 'אבי כהן', driver: 'עלי', status: 'ממתין', time: '08:30' },
+                        { id: '#1235', customer: 'יוסי לוי', driver: 'חכמת', status: 'בטיפול', time: '09:15' },
+                        { id: '#1236', customer: 'רונית שמעון', driver: 'עלי', status: 'בהכנה', time: '10:15' },
+                        { id: '#1237', customer: 'דוד ישראלי', driver: 'חכמת', status: 'הושלם', time: '11:30' }
+                    ];
+                    
+                    dummyData.forEach(order => {
+                        let statusClass = '';
+                        switch(order.status) {
+                            case 'ממתין': statusClass = 'bg-yellow-100 text-yellow-800'; break;
+                            case 'בטיפול': statusClass = 'bg-blue-100 text-blue-800'; break;
+                            case 'בהכנה': statusClass = 'bg-purple-100 text-purple-800'; break;
+                            case 'הושלם': statusClass = 'bg-green-100 text-green-800'; break;
+                        }
+                        
+                        const row = document.createElement('tr');
+                        row.className = 'table-row-striped';
+                        row.innerHTML = `
+                            <td class="px-4 py-3 text-sm text-gray-800">${order.id}</td>
+                            <td class="px-4 py-3 text-sm text-gray-800">${order.customer}</td>
+                            <td class="px-4 py-3 text-sm text-gray-800">${order.driver}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="status-badge ${statusClass}">${order.status}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-800">${order.time}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    warehouseModal.classList.remove('hidden');
+                    warehouseModal.querySelector('.modal').classList.remove('modal-enter');
+                    warehouseModal.querySelector('.modal').classList.add('modal-enter-active');
+                });
+            });
+            
+            closeWarehouseModal.addEventListener('click', function() {
+                warehouseModal.querySelector('.modal').classList.remove('modal-enter-active');
+                warehouseModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    warehouseModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            // WhatsApp Modal
+            const fabButton = document.getElementById('fab-button');
+            const whatsappModal = document.getElementById('whatsapp-modal');
+            const cancelWhatsapp = document.getElementById('cancel-whatsapp');
+            const sendWhatsapp = document.getElementById('send-whatsapp');
+            const templateMessage = document.getElementById('template-message');
+            const whatsappMessage = document.getElementById('whatsapp-message');
+            
+            fabButton.addEventListener('click', function() {
+                whatsappModal.classList.remove('hidden');
+                whatsappModal.querySelector('.modal').classList.remove('modal-enter');
+                whatsappModal.querySelector('.modal').classList.add('modal-enter-active');
+            });
+            
+            templateMessage.addEventListener('change', function() {
+                if (this.value) {
+                    whatsappMessage.value = this.options[this.selectedIndex].text;
+                } else {
+                    whatsappMessage.value = '';
+                }
+            });
+            
+            cancelWhatsapp.addEventListener('click', function() {
+                whatsappModal.querySelector('.modal').classList.remove('modal-enter-active');
+                whatsappModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    whatsappModal.classList.add('hidden');
+                }, 300);
+            });
+            
+            sendWhatsapp.addEventListener('click', function() {
+                whatsappModal.querySelector('.modal').classList.remove('modal-enter-active');
+                whatsappModal.querySelector('.modal').classList.add('modal-exit-active');
+                setTimeout(() => {
+                    whatsappModal.classList.add('hidden');
+                }, 300);
+            });
+        });
+    </script>
+
+    <script id="charts-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ali's Delivery Chart
+            if (document.getElementById('ali-delivery-chart')) {
+                const aliDeliveryChart = echarts.init(document.getElementById('ali-delivery-chart'));
+                
+                const aliOption = {
+                    tooltip: {
+                        trigger: 'item'
+                    },
+                    legend: {
+                        top: '5%',
+                        left: 'center',
+                        textStyle: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'סוגי הובלות',
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: 16,
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                { value: 12, name: 'הובלת משאית' },
+                                { value: 8, name: 'הובלת מנוף 10' },
+                                { value: 3, name: 'הובלת מנוף 15' },
+                                { value: 0, name: 'הובלת מנוף 30' },
+                                { value: 0, name: 'עבודת מנוף' }
+                            ]
+                        }
+                    ]
+                };
+                
+                aliDeliveryChart.setOption(aliOption);
+                window.addEventListener('resize', function() {
+                    aliDeliveryChart.resize();
+                });
+            }
+            
+            // Chachmat's Delivery Chart
+            if (document.getElementById('chachmat-delivery-chart')) {
+                const chachmatDeliveryChart = echarts.init(document.getElementById('chachmat-delivery-chart'));
+                
+                const chachmatOption = {
+                    tooltip: {
+                        trigger: 'item'
+                    },
+                    legend: {
+                        top: '5%',
+                        left: 'center',
+                        textStyle: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'סוגי הובלות',
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: 16,
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                { value: 5, name: 'הובלת משאית' },
+                                { value: 10, name: 'הובלת מנוף 10' },
+                                { value: 7, name: 'הובלת מנוף 15' },
+                                { value: 5, name: 'הובלת מנוף 30' },
+                                { value: 4, name: 'עבודת מנוף' }
+                            ]
+                        }
+                    ]
+                };
+                
+                chachmatDeliveryChart.setOption(chachmatOption);
+                window.addEventListener('resize', function() {
+                    chachmatDeliveryChart.resize();
+                });
+            }
+            
+            // Reports Tab Charts
+            if (document.getElementById('delivery-type-chart')) {
+                const deliveryTypeChart = echarts.init(document.getElementById('delivery-type-chart'));
+                
+                const deliveryTypeOption = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        }
+                    },
+                    legend: {
+                        data: ['כמות הזמנות'],
+                        textStyle: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: ['הובלת משאית', 'הובלת מנוף 10', 'הובלת מנוף 15', 'הובלת מנוף 30', 'עבודת מנוף'],
+                            axisTick: {
+                                alignWithLabel: true
+                            },
+                            axisLabel: {
+                                fontFamily: 'Heebo'
+                            }
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value'
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'כמות הזמנות',
+                            type: 'bar',
+                            barWidth: '60%',
+                            data: [45, 32, 18, 10, 15],
+                            itemStyle: {
+                                color: '#4f46e5'
+                            }
+                        }
+                    ]
+                };
+                
+                deliveryTypeChart.setOption(deliveryTypeOption);
+                window.addEventListener('resize', function() {
+                    deliveryTypeChart.resize();
+                });
+            }
+            
+            if (document.getElementById('driver-chart')) {
+                const driverChart = echarts.init(document.getElementById('driver-chart'));
+                
+                const driverOption = {
+                    tooltip: {
+                        trigger: 'item'
+                    },
+                    legend: {
+                        top: '5%',
+                        left: 'center',
+                        textStyle: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'הזמנות לפי נהג',
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: 16,
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                { value: 65, name: 'עלי' },
+                                { value: 91, name: 'חכמת' }
+                            ]
+                        }
+                    ]
+                };
+                
+                driverChart.setOption(driverOption);
+                window.addEventListener('resize', function() {
+                    driverChart.resize();
+                });
+            }
+            
+            if (document.getElementById('orders-by-day-chart')) {
+                const ordersByDayChart = echarts.init(document.getElementById('orders-by-day-chart'));
+                
+                const ordersByDayOption = {
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['סה״כ הזמנות', 'הזמנות שהושלמו'],
+                        textStyle: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
+                        axisLabel: {
+                            fontFamily: 'Heebo'
+                        }
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [
+                        {
+                            name: 'סה״כ הזמנות',
+                            type: 'line',
+                            data: [25, 20, 30, 22, 28, 18, 13],
+                            itemStyle: {
+                                color: '#4f46e5'
+                            }
+                        },
+                        {
+                            name: 'הזמנות שהושלמו',
+                            type: 'line',
+                            data: [20, 18, 25, 20, 25, 15, 10],
+                            itemStyle: {
+                                color: '#10b981'
+                            }
+                        }
+                    ]
+                };
+                
+                ordersByDayChart.setOption(ordersByDayOption);
+                window.addEventListener('resize', function() {
+                    ordersByDayChart.resize();
+                });
+            }
+        });
+    </script>
+
+    <script id="timeline-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelinePins = document.querySelectorAll('.timeline-pin');
+            
+            timelinePins.forEach(pin => {
+                let isDragging = false;
+                let startX, startLeft;
+                
+                pin.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startLeft = parseInt(pin.style.left);
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    
+                    const container = document.querySelector('.timeline-container');
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    let newLeft = startLeft + (e.clientX - startX);
+                    
+                    // Constrain within container
+                    if (newLeft < 0) newLeft = 0;
+                    if (newLeft > containerRect.width - 50) newLeft = containerRect.width - 50;
+                    
+                    // Snap to nearest half hour
+                    const hourWidth = 100; // Width of each hour block
+                    const halfHourWidth = hourWidth / 2;
+                    const snapPoint = Math.round(newLeft / halfHourWidth) * halfHourWidth;
+                    
+                    pin.style.left = snapPoint + 'px';
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    isDragging = false;
+                });
+            });
+        });
+    </script>
+            
+    <script id="dialer-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            const dialerBtns = document.querySelectorAll('.dialer-btn');
+            const phoneDisplay = document.getElementById('phone-display');
+            
+            let phoneNumber = '050-886-0896';
+            phoneDisplay.textContent = phoneNumber;
+            
+            dialerBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const digit = this.textContent;
+                    
+                    // Remove formatting for manipulation
+                    let rawNumber = phoneNumber.replace(/-/g, '');
+                    
+                    if (rawNumber.length < 10) {
+                        rawNumber += digit;
+                        
+                        // Format the number as XXX-XXX-XXXX
+                        if (rawNumber.length <= 3) {
+                            phoneNumber = rawNumber;
+                        } else if (rawNumber.length <= 6) {
+                            phoneNumber = rawNumber.substring(0, 3) + '-' + rawNumber.substring(3);
+                        } else {
+                            phoneNumber = rawNumber.substring(0, 3) + '-' + rawNumber.substring(3, 6) + '-' + rawNumber.substring(6);
+                        }
+                        
+                        phoneDisplay.textContent = phoneNumber;
+                    }
+                });
+            });
+        });
+        <script>
+             const API_URL = "https://script.google.com/macros/s/AKfycbzTFw3WPYcJtphEXh1yGk3hRMWQcapd2rkA2BNlBRrCCRfZA2B87uBdxaWTaWOpnpHuRA/exec"; // החלף לכתובת שלך
+
+// פונקציית עיבוד תאריך
+function formatDate(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  return d.toLocaleDateString("he-IL");
+}
+
+// פונקציית עיבוד שעה
+function formatTime(excelDateString) {
+  if (!excelDateString) return "";
+  const d = new Date(excelDateString);
+  return d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+}
+
+// הצגת הנתונים בטבלה
+function renderOrders(data) {
+  const tbody = document.querySelector(".tab-content #main-tab tbody");
+  tbody.innerHTML = ""; // נקה טבלה קיימת
+
+  data.forEach(order => {
+    const row = document.createElement("tr");
+    row.className = "table-row-striped order-row cursor-pointer";
+    row.innerHTML = `
+      <td class="px-4 py-3 text-sm text-gray-800">${order["מספר הזמנה"] || "-"}</td>
+      <td class="px-4 py-3 text-sm text-gray-800">${order["לקוח"] || "-"}</td>
+      <td class="px-4 py-3 text-sm text-gray-800">${order["כתובת"] || "-"}</td>
+      <td class="px-4 py-3 text-sm">
+        <span class="status-badge bg-gray-100 text-gray-800">${order["סטטוס"] || "-"}</span>
+      </td>
+      <td class="px-4 py-3 text-sm text-gray-800">${order["נהג"] || "-"}</td>
+      <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
+        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+          <i class="ri-edit-line ri-lg"></i>
+        </button>
+        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
+          <i class="ri-delete-bin-line ri-lg"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// שליפת ההזמנות מה-API
+async function loadOrders() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    console.log("נתונים שהתקבלו מהגיליון:", data);
+    renderOrders(data);
+  } catch (error) {
+    console.error("שגיאה בשליפת ההזמנות:", error);
+  }
+}
+
+// טען כשהדף מוכן
+document.addEventListener("DOMContentLoaded", loadOrders);
+</script>
+</body>
+</html>
