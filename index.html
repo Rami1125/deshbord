@@ -1849,7 +1849,13 @@ function renderOrders(data) {
   });
 }
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz1mPUuLhUKCX5s6lhnUJ6EsVQHAb04wtEMuSTbTduUc-7sBISFhR-pavf8_6fyPILHQA/exec"; // החלף בקישור שלך
+fetch('https://script.google.com/macros/s/AKfycbyqhJ8bK0z_AY-JBA3N7cMVVOa2gH-Q-1sKo4vcGh6fedaYpe_Slytd9MmLBhGejCncJg/exec')
+  .then(res => res.json())
+  .then(data => {
+    console.log("הנתונים שהתקבלו:", data);
+    // כאן אתה תעדכן את הטבלה שלך עם המידע
+  })
+  .catch(error => console.error("שגיאה ב-fetch:", error));
 
     function createCell(content) {
       return `<td class="px-4 py-2 text-gray-800">${content || '-'}</td>`;
