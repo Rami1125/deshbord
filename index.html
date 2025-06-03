@@ -6,116 +6,313 @@
     <title>📋 דוח בוקר - הזמנות</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
         /* עיצוב כללי */
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Rubik', Arial, sans-serif;
             text-align: center;
             direction: rtl;
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-position: center;
-            color: black;
+            background-color: rgba(255, 255, 255, 0.8);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9));
+            color: var(--text-color);
             margin: 0;
-            padding: 10px;
+            padding: 0;
+            min-height: 100vh;
         }
-
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* כותרת עליונה עם שעון */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 0;
+            border-radius: 0 0 15px 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://i.postimg.cc/yxf5PVyb/54bb1742895ea91d015d6948df25c56c.jpg') center/cover;
+            opacity: 0.2;
+            z-index: 0;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .datetime {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .time {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .date {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
         /* עיצוב הכפתור לווצאפ */
         .share-button {
             background-color: #25D366;
             color: white;
-            padding: 12px 20px;
+            padding: 15px 25px;
             font-size: 18px;
             font-weight: bold;
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             cursor: pointer;
-            margin-top: 20px;
-            display: block;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             width: 90%;
             max-width: 300px;
-            margin-left: auto;
-            margin-right: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
         }
-
+        
+        .share-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            background-color: #128C7E;
+        }
+        
         /* טבלאות */
-        table {
-            width: 90%;
-            max-width: 650px;
-            border-collapse: collapse;
-            margin: 20px auto;
+        .table-container {
             background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+            margin: 30px auto;
+            width: 95%;
+            max-width: 1000px;
+            overflow: hidden;
         }
-
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
             text-align: right;
+            transition: all 0.2s ease;
         }
-
+        
         th {
-            background-color: #2c3e50;
+            background-color: var(--dark-color);
             color: white;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
         }
-
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        td:hover {
+            background-color: #e9e9e9;
+        }
+        
         /* כותרות */
         .column-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 20px;
-            color: #ff5722;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 30px 0 15px;
+            color: var(--primary-color);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 50px;
+            background-color: rgba(52, 152, 219, 0.1);
+            position: relative;
+        }
+        
+        .column-title::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px;
+        }
+        
+        /* אנימציות */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .table-container {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        /* עיצוב רספונסיבי */
+        @media (max-width: 768px) {
+            .datetime {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .time {
+                font-size: 2rem;
+            }
+            
+            .date {
+                font-size: 1.2rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .column-title {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <div class="header-content">
+            <div class="datetime">
+                <div class="time" id="currentTime"></div>
+                <div class="date" id="currentDate"></div>
+            </div>
+            <h1>🚛 דוח בוקר של מחר</h1>
+        </div>
+    </div>
 
-    <h2>🚛 דוח בוקר של מחר</h2>
+    <div class="container">
+        <!-- טבלת הזמנות של עלי -->
+        <div class="column-title">נהג: עלי</div>
+        <div class="table-container">
+            <table id="aliTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th><i class="far fa-calendar-alt"></i> תאריך</th>
+                        <th><i class="far fa-clock"></i> שעה</th>
+                        <th><i class="fas fa-warehouse"></i> מחסן</th>
+                        <th><i class="fas fa-file-invoice"></i> סטטוס</th>
+                        <th><i class="fas fa-user"></i> לקוח</th>
+                        <th><i class="fas fa-map-marker-alt"></i> כתובת אספקה</th>
+                    </tr>
+                </thead>
+                <tbody id="aliTableBody"></tbody>
+            </table>
+        </div>
 
-    <!-- טבלת הזמנות של עלי -->
-    <div class="column-title">נהג: עלי</div>
-    <table id="aliTable">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>📅 תאריך</th>
-                <th>⏰ שעה</th>
-                <th>📦 מחסן</th>
-                <th>🧾 סטטוס</th>
-                <th>🙋‍♂️ לקוח</th>
-                <th>🎯 כתובת אספקה</th>
-            </tr>
-        </thead>
-        <tbody id="aliTableBody"></tbody>
-    </table>
+        <div class="column-title">נהג: חכמת</div>
+        <div class="table-container">
+            <table id="hakmatTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th><i class="far fa-calendar-alt"></i> תאריך</th>
+                        <th><i class="far fa-clock"></i> שעה</th>
+                        <th><i class="fas fa-warehouse"></i> מחסן</th>
+                        <th><i class="fas fa-file-invoice"></i> סטטוס</th>
+                        <th><i class="fas fa-user"></i> לקוח</th>
+                        <th><i class="fas fa-map-marker-alt"></i> כתובת אספקה</th>
+                    </tr>
+                </thead>
+                <tbody id="hakmatTableBody"></tbody>
+            </table>
+        </div>
 
-    <div class="column-title">נהג: חכמת</div>
-    <table id="hakmatTable">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>📅 תאריך</th>
-                <th>⏰ שעה</th>
-                <th>📦 מחסן</th>
-                <th>🧾 סטטוס</th>
-                <th>🙋‍♂️ לקוח</th>
-                <th>🎯 כתובת אספקה</th>
-            </tr>
-        </thead>
-        <tbody id="hakmatTableBody"></tbody>
-    </table>
-
-    <!-- כפתור שיתוף לווצאפ -->
-    <button class="share-button" onclick="shareToWhatsApp()">📤 שתף לווצאפ</button>
+        <!-- כפתור שיתוף לווצאפ -->
+        <button class="share-button" onclick="shareToWhatsApp()">
+            <i class="fab fa-whatsapp"></i> שתף לווצאפ
+        </button>
+    </div>
 
     <script>
-        const sheetId = '1kaCQr_vonMweBQ_ISWp7XsiyfQiL3XCvd6yruaQ5o-Y';
+        // עדכון שעון ותאריך
+        function updateDateTime() {
+            const now = new Date();
+            
+            // פורמט זמן
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const formattedTime = now.toLocaleTimeString('he-IL', timeOptions);
+            
+            // פורמט תאריך בעברית
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let formattedDate = now.toLocaleDateString('he-IL', dateOptions);
+            
+            // החלפת שמות ימים לחוויה יותר עברית
+            formattedDate = formattedDate.replace('יום ', '');
+            
+            document.getElementById('currentTime').textContent = formattedTime;
+            document.getElementById('currentDate').textContent = formattedDate;
+        }
+        
+        // עדכן כל שנייה
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // הפעל מיידית
+        
+        const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU';
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI';
-        const Orders  = 'Orders !A2:E100';
-        const hakmatRange = 'Sheet1!A2:f100';
+        const aliRange = 'Sheet2!B2:G10';
+        const hakmatRange = 'Sheet1!B2:G10';
 
         async function fetchData(range, tableId) {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
@@ -142,42 +339,39 @@
                 console.error("שגיאה בשליפת הנתונים:", error);
             }
         }
-function formatTableData(tableId, driverName) {
-    let message = `\n*${driverName} - דוח בוקר*\n━━━━━━━━━━━━━━━\n`;
-    const table = document.getElementById(tableId);
-    const rows = table.getElementsByTagName("tr");
+        
+        function formatTableData(tableId, driverName) {
+            let message = `📝 *${driverName} - דוח בוקר*\n`;
+            const table = document.getElementById(tableId);
+            const rows = table.getElementsByTagName("tr");
 
-    for (let i = 1; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName("td");
-        if (cells.length > 0) {
-            message += `📅 *תאריך:* ${cells[1].textContent} | ⏰ *שעה:* ${cells[2].textContent}\n`;
-            message += `🏬 *מחסן:* ${cells[3].textContent} | 📄 *סטטוס:* ${cells[4].textContent}\n`;
-            message += `🧑 *לקוח:* ${cells[5].textContent} | 📍 *כתובת:* ${cells[6].textContent}\n`;
-            message += `━━━━━━━━━━━━━━━\n`;
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName("td");
+                if (cells.length > 0) {
+                    message += `📅 ${cells[1].textContent} ⏰ ${cells[2].textContent}\n`;
+                    message += `🏠 ${cells[3].textContent} 📄 ${cells[4].textContent}\n`;
+                    message += `👤 ${cells[5].textContent} 📍 ${cells[6].textContent}\n`;
+                    message += `➖➖➖\n`;
+                }
+            }
+
+            return message.trim();
         }
-    }
 
-    return message.trim();
-}
+        function shareToWhatsApp() {
+            const aliData = formatTableData("aliTable", "עלי");
+            const hakmatData = formatTableData("hakmatTable", "חכמת");
+            const link = "🔗 https://sites.google.com/view/hsaban/home_1";
 
-function shareToWhatsApp() {
-    const aliData = formatTableData("aliTable", "🚚 *עלי*");
-    const hakmatData = formatTableData("hakmatTable", "🚛 *חכמת*");
-    const link = "🌐 *למערכת הסידור:* https://rami1125.github.io/deshbord/";
+            const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n${hakmatData}\n${link}`;
+            const phoneNumber = "972508860896";
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
 
-    const fullMessage = `📢 *סידור בוקר - הזמנות ליום זה*\n${aliData}\n${hakmatData}\n${link}`;
-    const phoneNumber = "972508860896";
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
-
-    window.open(url, "_blank");
-}
-
-
-
+            window.open(url, "_blank");
+        }
 
         fetchData(aliRange, "aliTableBody");
         fetchData(hakmatRange, "hakmatTableBody");
     </script>
-
 </body>
 </html>
