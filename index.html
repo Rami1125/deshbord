@@ -1,823 +1,181 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול הזמנות</title>
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <title>📋 דוח בוקר - הזמנות</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4f46e5',
-                        secondary: '#10b981',
-                        chart1: '#4f46e5',
-                        chart2: '#10b981',
-                        chart3: '#f59e0b'
-                    },
-                    borderRadius: {
-                        'none': '0px',
-                        'sm': '4px',
-                        'DEFAULT': '8px',
-                        'md': '12px',
-                        'lg': '16px',
-                        'xl': '20px',
-                        '2xl': '24px',
-                        '3xl': '32px',
-                        'full': '9999px',
-                        'button': '8px'
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
     <style>
+        /* עיצוב כללי */
         body {
-            font-family: 'Heebo', sans-serif;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            direction: rtl;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            color: black;
+            margin: 0;
+            padding: 10px;
         }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+        /* עיצוב הכפתור לווצאפ */
+        .share-button {
+            background-color: #25D366;
+            color: white;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: block;
+            width: 90%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.2);
+
+        /* טבלאות */
+        table {
+            width: 90%;
+            max-width: 650px;
+            border-collapse: collapse;
+            margin: 20px auto;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
-        .digital-clock {
-            font-family: 'Digital-7', monospace;
-            text-shadow: 0 0 10px rgba(79, 70, 229, 0.7);
-            animation: neon 1.5s ease-in-out infinite alternate;
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
         }
-        @keyframes neon {
-            from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #4f46e5, 0 0 20px #4f46e5; }
-            to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #4f46e5, 0 0 40px #4f46e5; }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
         }
-        .glow-button {
-            position: relative;
-            overflow: hidden;
-        }
-        .glow-button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-            animation: glow 4s infinite;
-        }
-        @keyframes glow {
-            0% { left: -100%; }
-            20% { left: 100%; }
-            100% { left: 100%; }
-        }
-        .glow-button:nth-child(n)::after {
-            animation-delay: calc(0.2s * var(--index));
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        .table-row-striped:nth-child(even) {
-            background-color: rgba(243, 244, 246, 0.7);
-        }
-        .modal {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); }
-        .modal-exit { opacity: 1; transform: scale(1); }
-        .modal-exit-active { opacity: 0; transform: scale(0.95); }
-        .chart-container {
-            position: relative;
-            height: 250px;
-            width: 100%;
+
+        /* כותרות */
+        .column-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #ff5722;
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation Bar -->
-    <nav class="glass-effect fixed top-0 w-full z-50 px-4 py-3 flex items-center justify-between shadow-md">
-        <div class="flex items-center">
-            <span class="text-2xl font-['Pacifico'] text-primary">לוגו</span>
-        </div>
-        <div class="digital-clock text-xl font-bold text-primary">
-            <span id="current-date"></span> | <span id="current-time"></span>
-        </div>
-        <div class="flex items-center space-x-2">
-            <button id="user-menu-button" class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
-                <i class="ri-user-line ri-lg"></i>
-            </button>
-        </div>
-    </nav>
+<body>
 
-    <!-- Main Content -->
-    <main class="pt-20 pb-20 px-4">
-        <!-- Dynamic Filter Buttons -->
-        <div class="mb-6 overflow-x-auto">
-            <div id="filter-buttons" class="flex space-x-2 space-x-reverse"></div>
-        </div>
+    <h2>🚛 דוח בוקר של מחר</h2>
 
-        <!-- Driver Stats Section -->
-        <div class="mb-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-3">סטטוס נהגים</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- חכמת Driver Card -->
-                <div class="glass-card p-4 rounded-lg">
-                    <div class="flex items-center space-x-3 space-x-reverse mb-4">
-                        <div class="w-12 h-12 bg-chart1/10 rounded-full flex items-center justify-center">
-                            <i class="ri-user-line ri-xl text-chart1"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">חכמת</h3>
-                            <p class="text-sm text-gray-500">סטטוס הזמנות</p>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="hakmatChart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- עלי Driver Card -->
-                <div class="glass-card p-4 rounded-lg">
-                    <div class="flex items-center space-x-3 space-x-reverse mb-4">
-                        <div class="w-12 h-12 bg-chart2/10 rounded-full flex items-center justify-center">
-                            <i class="ri-user-line ri-xl text-chart2"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">עלי</h3>
-                            <p class="text-sm text-gray-500">סטטוס הזמנות</p>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="aliChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- טבלת הזמנות של עלי -->
+    <div class="column-title">נהג: עלי</div>
+    <table id="aliTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>📅 תאריך</th>
+                <th>⏰ שעה</th>
+                <th>📦 מחסן</th>
+                <th>🧾 סטטוס</th>
+                <th>🙋‍♂️ לקוח</th>
+                <th>🎯 כתובת אספקה</th>
+            </tr>
+        </thead>
+        <tbody id="aliTableBody"></tbody>
+    </table>
 
-        <!-- Orders Comparison Chart -->
-        <div class="mb-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-3">השוואת כמות הזמנות</h2>
-            <div class="glass-card p-4 rounded-lg">
-                <div class="chart-container">
-                    <canvas id="ordersComparisonChart"></canvas>
-                </div>
-            </div>
-        </div>
+    <div class="column-title">נהג: חכמת</div>
+    <table id="hakmatTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>📅 תאריך</th>
+                <th>⏰ שעה</th>
+                <th>📦 מחסן</th>
+                <th>🧾 סטטוס</th>
+                <th>🙋‍♂️ לקוח</th>
+                <th>🎯 כתובת אספקה</th>
+            </tr>
+        </thead>
+        <tbody id="hakmatTableBody"></tbody>
+    </table>
 
-        <!-- New Order Button -->
-        <div class="mb-6">
-            <button id="new-order-btn" class="w-full bg-primary text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse !rounded-button">
-                <i class="ri-add-line ri-lg"></i>
-                <span class="font-medium">הזמנה חדשה</span>
-            </button>
-        </div>
+    <!-- כפתור שיתוף לווצאפ -->
+    <button class="share-button" onclick="shareToWhatsApp()">📤 שתף לווצאפ</button>
 
-        <!-- Orders Table -->
-        <div>
-            <h2 class="text-lg font-bold text-gray-800 mb-3">הזמנות</h2>
-            <div class="glass-card rounded-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">מס׳</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">לקוח</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">כתובת</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סטטוס</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">נהג</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-table-body" class="divide-y divide-gray-200"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Bottom Tab Bar -->
-    <div class="fixed bottom-0 w-full bg-white shadow-lg z-50">
-        <div class="grid grid-cols-4 h-16">
-            <button class="flex flex-col items-center justify-center space-y-1">
-                <i class="ri-home-line ri-lg text-primary"></i>
-                <span class="text-xs text-primary font-medium">ראשי</span>
-            </button>
-            <button class="flex flex-col items-center justify-center space-y-1">
-                <i class="ri-truck-line ri-lg text-gray-500"></i>
-                <span class="text-xs text-gray-500">הזמנות</span>
-            </button>
-            <button class="flex flex-col items-center justify-center space-y-1">
-                <i class="ri-user-line ri-lg text-gray-500"></i>
-                <span class="text-xs text-gray-500">נהגים</span>
-            </button>
-            <button class="flex flex-col items-center justify-center space-y-1">
-                <i class="ri-settings-line ri-lg text-gray-500"></i>
-                <span class="text-xs text-gray-500">הגדרות</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- New Order Modal -->
-    <div id="new-order-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-        <div class="absolute inset-x-4 top-20 bg-white rounded-xl shadow-2xl modal modal-enter">
-            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-gray-800">הזמנה חדשה</h2>
-                <button id="close-new-order-modal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-                    <i class="ri-close-line ri-lg"></i>
-                </button>
-            </div>
-            <div class="p-4 max-h-[500px] overflow-y-auto">
-                <form id="new-order-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">מספר הזמנה</label>
-                        <input type="text" name="מספר הזמנה" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס מספר הזמנה" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">תאריך</label>
-                        <input type="date" name="תאריך" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">שעה</label>
-                        <input type="time" name="שעה" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">שם לקוח</label>
-                        <input type="text" name="לקוח" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס שם לקוח" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">כתובת</label>
-                        <input type="text" name="כתובת" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הכנס כתובת מלאה" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">מחסן</label>
-                        <select name="מחסן" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר מחסן</option>
-                            <option value="מחסן החרש">מחסן החרש</option>
-                            <option value="מחסן התלמיד">מחסן התלמיד</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">סטטוס</label>
-                        <select name="סטטוס" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר סטטוס</option>
-                            <option value="ממתין">ממתין</option>
-                            <option value="בטיפול">בטיפול</option>
-                            <option value="הושלם">הושלם</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">נהג</label>
-                        <select name="נהג" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר נהג</option>
-                            <option value="חכמת">חכמת</option>
-                            <option value="עלי">עלי</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">סוג הובלה</label>
-                        <select name="סוג הובלה" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר סוג הובלה</option>
-                            <option value="רגילה">רגילה</option>
-                            <option value="דחופה">דחופה</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">הערות</label>
-                        <textarea name="הערות" class="glass-card w-full px-4 py-2 rounded-lg text-sm" placeholder="הוסף הערות"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end">
-                <button id="cancel-new-order" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg text-sm ml-2 !rounded-button">בטל</button>
-                <button id="save-new-order" class="bg-primary text-white py-2 px-4 rounded-lg text-sm !rounded-button">שמור הזמנה</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Order Modal -->
-    <div id="edit-order-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-        <div class="absolute inset-x-4 top-20 bg-white rounded-xl shadow-2xl modal modal-enter">
-            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-gray-800">עריכת הזמנה</h2>
-                <button id="close-edit-order-modal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-                    <i class="ri-close-line ri-lg"></i>
-                </button>
-            </div>
-            <div class="p-4 max-h-[500px] overflow-y-auto">
-                <form id="edit-order-form">
-                    <input type="hidden" name="מספר הזמנה">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">תאריך</label>
-                        <input type="date" name="תאריך" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">שעה</label>
-                        <input type="time" name="שעה" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">שם לקוח</label>
-                        <input type="text" name="לקוח" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">כתובת</label>
-                        <input type="text" name="כתובת" class="glass-card w-full px-4 py-2 rounded-lg text-sm" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">מחסן</label>
-                        <select name="מחסן" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר מחסן</option>
-                            <option value="מחסן החרש">מחסן החרש</option>
-                            <option value="מחסן התלמיד">מחסן התלמיד</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">סטטוס</label>
-                        <select name="סטטוס" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר סטטוס</option>
-                            <option value="ממתין">ממתין</option>
-                            <option value="בטיפול">בטיפול</option>
-                            <option value="הושלם">הושלם</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">נהג</label>
-                        <select name="נהג" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר נהג</option>
-                            <option value="חכמת">חכמת</option>
-                            <option value="עלי">עלי</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">סוג הובלה</label>
-                        <select name="סוג הובלה" class="glass-card w-full px-4 py-2 rounded-lg text-sm appearance-none" required>
-                            <option value="">בחר סוג הובלה</option>
-                            <option value="רגילה">רגילה</option>
-                            <option value="דחופה">דחופה</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">הערות</label>
-                        <textarea name="הערות" class="glass-card w-full px-4 py-2 rounded-lg text-sm"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end">
-                <button id="cancel-edit-order" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg text-sm ml-2 !rounded-button">בטל</button>
-                <button id="save-edit-order" class="bg-primary text-white py-2 px-4 rounded-lg text-sm !rounded-button">עדכן הזמנה</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript -->
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzs6fCnDpcEY5uK1AlfiJRlFFWymqMPpgifUHD601kA4kpHGIaY66oFREEOSi-ChRt_zg/exec'; // Replace with actual Google Apps Script URL
-        
-        // Charts instances
-        let hakmatChart, aliChart, ordersComparisonChart;
+        const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU';
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI';
+        const aliRange = 'Sheet2!B2:G10';
+        const hakmatRange = 'Sheet1!B2:G10';
 
-        // Date and Time Update
-        document.addEventListener('DOMContentLoaded', function() {
-            function updateDateTime() {
-                const now = new Date();
-                const dateOptions = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
-                const timeOptions = { hour: '2-digit', minute: '2-digit' };
-                document.getElementById('current-date').textContent = now.toLocaleDateString('he-IL', dateOptions);
-                document.getElementById('current-time').textContent = now.toLocaleTimeString('he-IL', timeOptions);
-            }
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-        });
-
-        // Initialize Charts
-        function initCharts(orders) {
-            // Filter orders by driver
-            const hakmatOrders = orders.filter(order => order['נהג'] === 'חכמת');
-            const aliOrders = orders.filter(order => order['נהג'] === 'עלי');
-            
-            // Status counts
-            const hakmatStatusCounts = countStatuses(hakmatOrders);
-            const aliStatusCounts = countStatuses(aliOrders);
-            
-            // Create charts
-            createPieChart('hakmatChart', hakmatStatusCounts, 'חכמת - סטטוס הזמנות');
-            createPieChart('aliChart', aliStatusCounts, 'עלי - סטטוס הזמנות');
-            createComparisonChart(orders);
-        }
-        
-        function countStatuses(orders) {
-            return {
-                'ממתין': orders.filter(o => o['סטטוס'] === 'ממתין').length,
-                'בטיפול': orders.filter(o => o['סטטוס'] === 'בטיפול').length,
-                'הושלם': orders.filter(o => o['סטטוס'] === 'הושלם').length
-            };
-        }
-        
-        function createPieChart(canvasId, statusCounts, title) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            if (window[canvasId + 'Chart']) {
-                window[canvasId + 'Chart'].destroy();
-            }
-            
-            window[canvasId + 'Chart'] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['ממתין', 'בטיפול', 'הושלם'],
-                    datasets: [{
-                        data: [statusCounts['ממתין'], statusCounts['בטיפול'], statusCounts['הושלם']],
-                        backgroundColor: [
-                            'rgba(245, 158, 11, 0.7)',
-                            'rgba(59, 130, 246, 0.7)',
-                            'rgba(16, 185, 129, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(245, 158, 11, 1)',
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(16, 185, 129, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: title,
-                            font: {
-                                family: 'Heebo',
-                                size: 14,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            rtl: true,
-                            labels: {
-                                font: {
-                                    family: 'Heebo'
-                                },
-                                usePointStyle: true
-                            }
-                        }
-                    },
-                    cutout: '70%'
-                }
-            });
-        }
-        
-        function createComparisonChart(orders) {
-            const ctx = document.getElementById('ordersComparisonChart').getContext('2d');
-            
-            if (ordersComparisonChart) {
-                ordersComparisonChart.destroy();
-            }
-            
-            // Group orders by driver and status
-            const hakmatOrders = orders.filter(o => o['נהג'] === 'חכמת');
-            const aliOrders = orders.filter(o => o['נהג'] === 'עלי');
-            
-            ordersComparisonChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['חכמת', 'עלי'],
-                    datasets: [
-                        {
-                            label: 'ממתין',
-                            data: [
-                                hakmatOrders.filter(o => o['סטטוס'] === 'ממתין').length,
-                                aliOrders.filter(o => o['סטטוס'] === 'ממתין').length
-                            ],
-                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
-                            borderColor: 'rgba(245, 158, 11, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'בטיפול',
-                            data: [
-                                hakmatOrders.filter(o => o['סטטוס'] === 'בטיפול').length,
-                                aliOrders.filter(o => o['סטטוס'] === 'בטיפול').length
-                            ],
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'הושלם',
-                            data: [
-                                hakmatOrders.filter(o => o['סטטוס'] === 'הושלם').length,
-                                aliOrders.filter(o => o['סטטוס'] === 'הושלם').length
-                            ],
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: 'rgba(16, 185, 129, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'השוואת כמות הזמנות לפי נהג וסטטוס',
-                            font: {
-                                family: 'Heebo',
-                                size: 14,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            rtl: true,
-                            labels: {
-                                font: {
-                                    family: 'Heebo'
-                                },
-                                usePointStyle: true
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: true,
-                            grid: {
-                                display: false
-                            }
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Fetch and Render Data
-        async function fetchOrders() {
+        async function fetchData(range, tableId) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
             try {
-                const response = await fetch(API_URL);
-                const orders = await response.json();
-                return orders;
-            } catch (error) {
-                console.error('Error fetching orders:', error);
-                alert('שגיאה בטעינת ההזמנות');
-                return [];
-            }
-        }
+                const response = await fetch(url);
+                const data = await response.json();
+                const tableBody = document.getElementById(tableId);
+                tableBody.innerHTML = "";
 
-        function renderFilterButtons(orders) {
-            const filterButtonsContainer = document.getElementById('filter-buttons');
-            const drivers = [...new Set(orders.map(order => order['נהג']))];
-            const statuses = [...new Set(orders.map(order => order['סטטוס']))];
-            const statusColors = {
-                'ממתין': 'text-yellow-800',
-                'בטיפול': 'text-blue-800',
-                'הושלם': 'text-green-800'
-            };
-
-            let buttonsHTML = `
-                <button class="filter-btn glow-button glass-card px-3 py-2 rounded-lg text-sm font-medium text-gray-800" data-filter="all" style="--index: 0;">הכל</button>
-            `;
-            drivers.forEach((driver, index) => {
-                buttonsHTML += `
-                    <button class="filter-btn glow-button glass-card px-3 py-2 rounded-lg text-sm font-medium text-gray-800" data-filter="driver-${driver}" style="--index: ${index + 1};">${driver}</button>
-                `;
-            });
-            statuses.forEach((status, index) => {
-                buttonsHTML += `
-                    <button class="filter-btn glow-button glass-card px-3 py-2 rounded-lg text-sm font-medium ${statusColors[status] || 'text-gray-800'}" data-filter="status-${status}" style="--index: ${drivers.length + index + 1};">${status}</button>
-                `;
-            });
-
-            filterButtonsContainer.innerHTML = buttonsHTML;
-        }
-
-        function renderOrders(orders, filterType, filterValue) {
-            const tbody = document.getElementById('orders-table-body');
-            tbody.innerHTML = '';
-            const filteredOrders = filterType === 'all' ? orders : orders.filter(order => 
-                filterType === 'driver' ? order['נהג'] === filterValue : order['סטטוס'] === filterValue
-            );
-
-            const statusClass = {
-                'ממתין': 'bg-yellow-100 text-yellow-800',
-                'בטיפול': 'bg-blue-100 text-blue-800',
-                'הושלם': 'bg-green-100 text-green-800'
-            };
-
-            filteredOrders.forEach(order => {
-                const row = document.createElement('tr');
-                row.className = 'table-row-striped';
-                row.innerHTML = `
-                    <td class="px-4 py-3 text-sm text-gray-800">${order['מספר הזמנה']}</td>
-                    <td class="px-4 py-3 text-sm text-gray-800">${order['לקוח']}</td>
-                    <td class="px-4 py-3 text-sm text-gray-800">${order['כתובת']}</td>
-                    <td class="px-4 py-3 text-sm">
-                        <span class="status-badge ${statusClass[order['סטטוס']] || 'bg-gray-100 text-gray-800'}">${order['סטטוס']}</span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-800">${order['נהג']}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500 flex space-x-1 space-x-reverse">
-                        <button class="edit-btn w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100" data-id="${order['מספר הזמנה']}">
-                            <i class="ri-edit-line ri-lg"></i>
-                        </button>
-                        <button class="delete-btn w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100" data-id="${order['מספר הזמנה']}">
-                            <i class="ri-delete-bin-line ri-lg"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Initialize Data
-        document.addEventListener('DOMContentLoaded', async function() {
-            const orders = await fetchOrders();
-            renderFilterButtons(orders);
-            initCharts(orders);
-            renderOrders(orders, 'all', null);
-
-            // Filter Button Handling
-            document.getElementById('filter-buttons').addEventListener('click', function(e) {
-                if (e.target.classList.contains('filter-btn')) {
-                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('bg-primary', 'text-white'));
-                    e.target.classList.add('bg-primary', 'text-white');
-                    const filter = e.target.dataset.filter;
-                    const [filterType, filterValue] = filter.split('-');
-                    renderOrders(orders, filterType || 'all', filterValue);
-                }
-            });
-        });
-
-        // New Order Modal
-        document.addEventListener('DOMContentLoaded', function() {
-            const newOrderBtn = document.getElementById('new-order-btn');
-            const newOrderModal = document.getElementById('new-order-modal');
-            const closeNewOrderModal = document.getElementById('close-new-order-modal');
-            const cancelNewOrder = document.getElementById('cancel-new-order');
-            const saveNewOrder = document.getElementById('save-new-order');
-            const newOrderForm = document.getElementById('new-order-form');
-
-            function openModal() {
-                newOrderModal.classList.remove('hidden');
-                newOrderModal.querySelector('.modal').classList.remove('modal-enter');
-                newOrderModal.querySelector('.modal').classList.add('modal-enter-active');
-            }
-
-            function closeModal() {
-                newOrderModal.querySelector('.modal').classList.remove('modal-enter-active');
-                newOrderModal.querySelector('.modal').classList.add('modal-exit-active');
-                setTimeout(() => {
-                    newOrderModal.classList.add('hidden');
-                    newOrderForm.reset();
-                }, 300);
-            }
-
-            newOrderBtn.addEventListener('click', openModal);
-            closeNewOrderModal.addEventListener('click', closeModal);
-            cancelNewOrder.addEventListener('click', closeModal);
-
-            saveNewOrder.addEventListener('click', async function() {
-                const formData = new FormData(newOrderForm);
-                const data = Object.fromEntries(formData);
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.text();
-                    if (result === 'Success') {
-                        closeModal();
-                        const orders = await fetchOrders();
-                        renderFilterButtons(orders);
-                        initCharts(orders);
-                        renderOrders(orders, 'all', null);
-                        alert('ההזמנה נוספה בהצלחה');
-                    } else {
-                        alert('שגיאה בהוספת ההזמנה');
-                    }
-                } catch (error) {
-                    console.error('Error creating order:', error);
-                    alert('שגיאה בהוספת ההזמנה');
-                }
-            });
-        });
-
-        // Edit Order Modal
-        document.addEventListener('DOMContentLoaded', function() {
-            const editOrderModal = document.getElementById('edit-order-modal');
-            const closeEditOrderModal = document.getElementById('close-edit-order-modal');
-            const cancelEditOrder = document.getElementById('cancel-edit-order');
-            const saveEditOrder = document.getElementById('save-edit-order');
-            const editOrderForm = document.getElementById('edit-order-form');
-
-            function openEditModal(orderId) {
-                fetchOrders().then(orders => {
-                    const order = orders.find(o => o['מספר הזמנה'] === orderId);
-                    if (order) {
-                        for (const [key, value] of Object.entries(order)) {
-                            const input = editOrderForm.querySelector(`[name="${key}"]`);
-                            if (input) input.value = value;
-                        }
-                        editOrderModal.classList.remove('hidden');
-                        editOrderModal.querySelector('.modal').classList.remove('modal-enter');
-                        editOrderModal.querySelector('.modal').classList.add('modal-enter-active');
-                    }
+                (data.values || []).forEach((row, index) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${row[0] || ""}</td>
+                        <td>${row[1] || ""}</td>
+                        <td>${row[2] || ""}</td>
+                        <td>${row[3] || ""}</td>
+                        <td>${row[4] || ""}</td>
+                        <td>${row[5] || ""}</td>
+                    `;
+                    tableBody.appendChild(tr);
                 });
+            } catch (error) {
+                console.error("שגיאה בשליפת הנתונים:", error);
             }
+        }
+        function formatTableData(tableId, driverName) {
+    let message = `📝 *${driverName} - דוח בוקר*\n`;
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName("tr");
 
-            function closeEditModal() {
-                editOrderModal.querySelector('.modal').classList.remove('modal-enter-active');
-                editOrderModal.querySelector('.modal').classList.add('modal-exit-active');
-                setTimeout(() => {
-                    editOrderModal.classList.add('hidden');
-                    editOrderForm.reset();
-                }, 300);
-            }
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+        if (cells.length > 0) {
+            message += `📅 ${cells[1].textContent} ⏰ ${cells[2].textContent}\n`;
+            message += `🏠 ${cells[3].textContent} 📄 ${cells[4].textContent}\n`;
+            message += `👤 ${cells[5].textContent} 📍 ${cells[6].textContent}\n`;
+            message += `➖➖➖\n`;
+        }
+    }
 
-            document.getElementById('orders-table-body').addEventListener('click', function(e) {
-                if (e.target.closest('.edit-btn')) {
-                    const orderId = e.target.closest('.edit-btn').dataset.id;
-                    openEditModal(orderId);
-                }
-                if (e.target.closest('.delete-btn')) {
-                    const orderId = e.target.closest('.delete-btn').dataset.id;
-                    if (confirm('האם למחוק את ההזמנה?')) {
-                        fetch(`${API_URL}?id=${orderId}`, { method: 'DELETE' })
-                            .then(response => response.text())
-                            .then(result => {
-                                if (result === 'Deleted') {
-                                    fetchOrders().then(orders => {
-                                        renderFilterButtons(orders);
-                                        initCharts(orders);
-                                        renderOrders(orders, 'all', null);
-                                        alert('ההזמנה נמחקה בהצלחה');
-                                    });
-                                } else {
-                                    alert('שגיאה במחיקת ההזמנה');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error deleting order:', error);
-                                alert('שגיאה במחיקת ההזמנה');
-                            });
-                    }
-                }
-            });
+    return message.trim();
+}
 
-            closeEditOrderModal.addEventListener('click', closeEditModal);
-            cancelEditOrder.addEventListener('click', closeEditModal);
+function shareToWhatsApp() {
+    const aliData = formatTableData("aliTable", "עלי");
+    const hakmatData = formatTableData("hakmatTable", "חכמת");
+    const link = "🔗 https://sites.google.com/view/hsaban/home_1";
 
-            saveEditOrder.addEventListener('click', async function() {
-                const formData = new FormData(editOrderForm);
-                const data = Object.fromEntries(formData);
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.text();
-                    if (result === 'Updated') {
-                        closeEditModal();
-                        const orders = await fetchOrders();
-                        renderFilterButtons(orders);
-                        initCharts(orders);
-                        renderOrders(orders, 'all', null);
-                        alert('ההזמנה עודכנה בהצלחה');
-                    } else {
-                        alert('שגיאה בעדכון ההזמנה');
-                    }
-                } catch (error) {
-                    console.error('Error updating order:', error);
-                    alert('שגיאה בעדכון ההזמנה');
-                }
-            });
-        });
+    const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n${hakmatData}\n${link}`;
+    const phoneNumber = "972508860896";
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
+
+    window.open(url, "_blank");
+}
+
+
+        fetchData(aliRange, "aliTableBody");
+        fetchData(hakmatRange, "hakmatTableBody");
     </script>
+
 </body>
 </html>
