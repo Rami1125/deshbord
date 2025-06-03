@@ -112,10 +112,10 @@
     <button class="share-button" onclick="shareToWhatsApp()">📤 שתף לווצאפ</button>
 
     <script>
-        const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU';
+        const sheetId = '1kaCQr_vonMweBQ_ISWp7XsiyfQiL3XCvd6yruaQ5o-Y';
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI';
-        const aliRange = 'Sheet2!B2:G10';
-        const hakmatRange = 'Sheet1!B2:G10';
+        const Orders  = 'Orders !A2:E100';
+        const hakmatRange = 'Sheet1!A2:f100';
 
         async function fetchData(range, tableId) {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
