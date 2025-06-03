@@ -142,18 +142,18 @@
                 console.error("שגיאה בשליפת הנתונים:", error);
             }
         }
-        function formatTableData(tableId, driverName) {
-    let message = `📝 *${driverName} - דוח בוקר*\n`;
+function formatTableData(tableId, driverName) {
+    let message = `\n🌄 *${driverName} - דוח בוקר*\n━━━━━━━━━━━━━━━\n`;
     const table = document.getElementById(tableId);
     const rows = table.getElementsByTagName("tr");
 
     for (let i = 1; i < rows.length; i++) {
         const cells = rows[i].getElementsByTagName("td");
         if (cells.length > 0) {
-            message += `📅 ${cells[1].textContent} ⏰ ${cells[2].textContent}\n`;
-            message += `🏠 ${cells[3].textContent} 📄 ${cells[4].textContent}\n`;
+            message += `📆 ${cells[1].textContent} ⏱️ ${cells[2].textContent}\n`;
+            message += `🏢 ${cells[3].textContent} 📋 ${cells[4].textContent}\n`;
             message += `👤 ${cells[5].textContent} 📍 ${cells[6].textContent}\n`;
-            message += `➖➖➖\n`;
+            message += `━━━━━━━━━━━━━━━\n`;
         }
     }
 
@@ -161,16 +161,17 @@
 }
 
 function shareToWhatsApp() {
-    const aliData = formatTableData("aliTable", "עלי");
-    const hakmatData = formatTableData("hakmatTable", "חכמת");
-    const link = "🔗 https://sites.google.com/view/hsaban/home_1";
+    const aliData = formatTableData("aliTable", "🚚 עלי");
+    const hakmatData = formatTableData("hakmatTable", "🚛 חכמת");
+    const link = "🌐 *מערכת סידור:* https://rami1125.github.io/deshbord/";
 
-    const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n${hakmatData}\n${link}`;
+    const fullMessage = `🔔 *הזמנות בוקר - סידור יומי*\n${aliData}\n${hakmatData}\n${link}`;
     const phoneNumber = "972508860896";
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
 
     window.open(url, "_blank");
 }
+
 
 
         fetchData(aliRange, "aliTableBody");
