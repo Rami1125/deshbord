@@ -102,7 +102,7 @@
         .header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 30px 0; /* More padding for a bolder header */
+            padding: 20px 0; /* Reduced padding for smaller height */
             border-radius: 0 0 40px 40px; /* More pronounced border-radius */
             box-shadow: var(--shadow);
             margin-bottom: 40px; /* More margin */
@@ -112,7 +112,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 140px; /* Ensure a minimum height for the header */
+            min-height: 100px; /* Ensure a minimum height for the header */
+            background-size: 200% 200%; /* Make background larger for animation */
+            animation: gradientShift 10s ease infinite alternate; /* New animation */
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
         }
         
         .header-content {
@@ -126,26 +133,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 30px; /* Increased gap */
-            margin-bottom: 20px; /* More margin */
+            gap: 20px; /* Reduced gap */
+            margin-bottom: 15px; /* More margin */
             flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
         
         .time {
-            font-size: 3.5rem; /* Even larger time font */
+            font-size: 3rem; /* Reduced time font */
             font-weight: 700;
             text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3); /* Stronger text shadow */
         }
         
         .date {
-            font-size: 2rem; /* Even larger date font */
+            font-size: 1.8rem; /* Reduced date font */
             font-weight: 500;
             text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
         }
         
         h1 {
             margin: 0;
-            font-size: 3rem; /* Larger main title */
+            font-size: 2.5rem; /* Reduced main title */
             font-weight: 700;
             text-shadow: 0 4px 7px rgba(0, 0, 0, 0.4); /* Stronger shadow */
         }
@@ -260,8 +267,7 @@
         /* Styling for the timeline effect - now a grid container for two columns */
         .timeline-grid {
             display: grid;
-            /* Aim for 2 columns when space allows, or 1 column on smaller screens */
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+            grid-template-columns: 1fr; /* Default: single column on small screens */
             gap: 20px; /* Reduced gap for compactness */
             padding: 20px 0;
             margin: 0 auto;
@@ -269,6 +275,12 @@
             max-width: 100%; /* Ensure it takes full width */
             justify-content: center; /* Center items in the grid */
             align-items: start; /* Align items to the start of their grid area */
+        }
+
+        @media (min-width: 768px) { /* On tablets and up, ensure two columns */
+            .timeline-grid {
+                grid-template-columns: repeat(2, 1fr); /* Exactly two equal columns */
+            }
         }
 
         /* Individual order "cube" styling - Glassmorphism */
@@ -290,6 +302,7 @@
             animation: fadeIn 0.8s ease-out forwards; /* Fade in animation */
             cursor: pointer; /* Indicate clickable */
             z-index: 1; /* Ensure cards are above timeline effects */
+            min-width: 300px; /* Ensure content fits within a column */
         }
 
         .order-card:hover {
@@ -854,12 +867,13 @@
             background: linear-gradient(
                 to right,
                 rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.5) 50%,
+                rgba(255, 255, 255, 0.7) 50%, /* Stronger shine */
                 rgba(255, 255, 255, 0) 100%
             );
             transform: skewX(-20deg);
-            transition: left 0.7s ease-in-out;
+            transition: left 0.7s ease-in-out, opacity 0.3s ease; /* Added opacity transition */
             opacity: 0; /* Hidden by default */
+            z-index: 0; /* Ensure it's behind text but above button background */
         }
 
         .nav-button:hover::before {
@@ -904,8 +918,8 @@
             z-index: 1001; /* Above nav bar */
         }
 
-        .nav-button.warehouse-button:hover .dropdown-menu, /* Use new class here */
-        .nav-button.warehouse-button.active .dropdown-menu { /* Use new class here */
+        /* Change: Dropdown only visible when button is 'active', not on hover */
+        .nav-button.warehouse-button.active .dropdown-menu { 
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) translateY(-5px); /* Slight lift */
@@ -1019,16 +1033,13 @@
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
-            .timeline-grid {
-                /* Target 2 columns when width is between ~800px and 1200px */
-                grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            }
+            /* .timeline-grid will be handled by specific media query below */
         }
 
         @media (max-width: 992px) {
             .timeline-grid {
                 /* On smaller tablets, if two columns are too cramped, allow for single column more easily */
-                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+                grid-template-columns: 1fr; /* Force single column to avoid squishing if needed */
                 gap: 20px;
             }
             .container {
@@ -1436,7 +1447,7 @@
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyBV_2JwCLtow5F6C7463NmfP2py5W-fj5I'; // Changed to explicit placeholder for user to replace
+        const GOOGLE_MAPS_STATIC_API_KEY = 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE'; // Changed to explicit placeholder for user to replace
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1446,8 +1457,8 @@
         const WHATSAPP_PASSWORD = "1125";
 
         // Avatar image URLs for drivers (replace with actual image links)
-        const ALI_AVATAR_URL = "https://placehold.co/60x60/87CEEB/FFFFFF?text=עלי"; // Replace with Ali's actual avatar URL
-        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; // Replace with Hakmat's actual avatar URL
+        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; // Updated Ali's avatar URL
+        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; // Updated Hakmat's avatar URL
 
         let allAliOrders = []; // Stores all fetched Ali orders
         let allHakmatOrders = []; // Stores all fetched Hakmat orders
@@ -1953,13 +1964,15 @@
             document.getElementById(pageId).classList.add('active');
             
             // Set the clicked button as active, and find its counterpart in the other nav bar
-            const clickedButtonText = clickedButton.textContent.trim();
-            document.querySelectorAll('.nav-button').forEach(button => {
-                // Check if the button's inner HTML (text + potential icon) matches
-                if (button.textContent.trim() === clickedButtonText) {
-                    button.classList.add('active');
-                }
-            });
+            // Ensure we handle cases where the clickedButton might be null if called from inside a dropdown item directly
+            if (clickedButton) {
+                const clickedButtonText = clickedButton.textContent.trim();
+                document.querySelectorAll('.nav-button').forEach(button => {
+                    if (button.textContent.trim() === clickedButtonText) {
+                        button.classList.add('active');
+                    }
+                });
+            }
 
             // Specific rendering based on page
             if (pageId === 'hakmatPage') {
@@ -1973,18 +1986,24 @@
 
         /**
          * Toggles the dropdown menu for the warehouse button.
+         * This function is now responsible for showing/hiding the dropdown.
          * @param {HTMLElement} button The warehouse navigation button.
          */
         function toggleDropdown(button) {
-            // Toggle active class on the button to handle hover and click
+            // Toggle active class on the button. This class controls dropdown visibility via CSS.
             button.classList.toggle('active');
 
-            // Close other dropdowns if any
+            // Close other dropdowns if any (though only one warehouse button exists per nav bar)
             document.querySelectorAll('.nav-button.warehouse-button').forEach(otherButton => {
-                if (otherButton !== button) {
+                if (otherButton !== button && otherButton.classList.contains('active')) {
                     otherButton.classList.remove('active');
                 }
             });
+
+            // Ensure main content page is hidden when dropdown is active, to give focus
+            // Or ensure the main page is shown and the dropdown is on top.
+            // For now, it will just manage the dropdown visibility.
+            // The showPage function called by dropdown items will handle page display.
         }
 
         /**
@@ -1992,17 +2011,16 @@
          * @param {string} warehouseType The type of warehouse to filter by (e.g., 'התלמיד', 'החרש').
          */
         function showWarehouseOrders(warehouseType) {
-            // Close the dropdown after selection
-            // Find the warehouse button by its class and ensure its dropdown is closed
+            // Find the warehouse button and explicitly remove its 'active' class to close the dropdown.
+            // This is crucial: ensures the dropdown closes after an item is selected.
             document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => {
                 btn.classList.remove('active');
             });
 
-
-            // Switch to the warehouse page and activate the warehouse button
-            // Find *any* warehouse button to activate it, assuming they are linked visually
-            const warehouseButton = document.querySelector('.nav-button.warehouse-button');
-            showPage('warehousePage', warehouseButton);
+            // Switch to the warehouse page and activate the main warehouse button
+            // We pass null for clickedButton since the click originated from a dropdown item, not the main nav button directly.
+            // showPage will still activate the correct page and highlight the warehouse button.
+            showPage('warehousePage', document.querySelector('.nav-button.warehouse-button'));
             
             const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
             warehouseDisplayContainer.innerHTML = `
