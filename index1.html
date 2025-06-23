@@ -1948,16 +1948,20 @@
         setInterval(updateDateTime, 1000);
         updateDateTime(); // Call immediately to display on load
         
+        // Update date and time every second
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // Call immediately to display on load
+        
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key for Sheets (ensure it has access to Google Sheets API)
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
         
-        // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        // Google Maps Static API Key - REPLACE WITH YOUR ACTUAL KEY
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
-        // Updated ranges to include column H (if needed for custom city names)
+        // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
-        const hakmatRange = 'Sheet1!B2:G10'; // Assuming Hakmat sheet uses G, adjust if also H
+        const hakmatRange = 'Sheet1!B2:H10'; 
 
         // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
