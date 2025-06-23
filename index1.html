@@ -679,13 +679,20 @@
         .summary-count {
             font-size: 3.5rem;
             font-weight: 700;
-            color: var(--accent-color);
+            color: white; /* Changed to white for better contrast on colored background */
             position: relative;
             overflow: hidden;
-            display: inline-block;
+            display: inline-block; /* Allows padding and background */
+            padding: 10px 20px; /* Add padding */
+            border-radius: 15px; /* Rounded corners */
+            background: linear-gradient(45deg, #4CAF50, #8BC34A); /* Green gradient background */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+            margin-top: 10px; /* Space from heading */
+            min-width: 120px; /* Ensure a minimum width for the background */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Add text shadow for prominence */
         }
 
-        /* Spiral shimmer effect for counts */
+        /* Spiral shimmer effect for counts - adjust for new background */
         .summary-count::after {
             content: '';
             position: absolute;
@@ -696,7 +703,7 @@
             background: conic-gradient(
                 from 0deg at 50% 50%,
                 rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.5) 20%,
+                rgba(255, 255, 255, 0.7) 20%, /* More visible shimmer */
                 rgba(255, 255, 255, 0) 40%
             );
             transform: rotate(0deg);
@@ -894,6 +901,8 @@
         .nav-button.warehouse-button { /* Changed class to avoid conflict with dropdown menu logic */
             background: linear-gradient(45deg, #9370DB, #8A2BE2); /* Medium Purple to Blue Violet */
             color: white;
+            z-index: 1000; /* Ensure this button and its dropdown are above other nav buttons */
+            overflow: visible; /* Allow dropdown to escape button boundaries */
         }
         .nav-button.warehouse-button:hover, .nav-button.warehouse-button.active {
             background-color: #6A5ACD; /* Slate Blue */
