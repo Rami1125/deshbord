@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>� דוח בוקר - סידור עבודה</title>
+    <title>📋 דוח בוקר - סידור עבודה</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -18,10 +18,10 @@
             --light-color: #ecf0f1; /* Light gray */
             --accent-color: #e74c3c; /* Red */
             --text-color: #333; /* Dark text */
-            --shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Soft shadow */
-            --card-bg: rgba(255, 255, 255, 0.95); /* Slightly transparent white for cards */
+            --shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
+            --card-bg: rgba(255, 255, 255, 0.98); /* Less transparent white for cards */
             --modal-bg: rgba(255, 255, 255, 0.98); /* Near opaque white for modals */
-            --overlay-bg: rgba(0, 0, 0, 0.6); /* Darker overlay for modals */
+            --overlay-bg: rgba(0, 0, 0, 0.7); /* Darker overlay for modals */
         }
         
         body {
@@ -41,11 +41,11 @@
             flex-direction: column; /* For sticky footer/bottom content */
         }
 
-        /* Main container for app content */
+        /* Main container for app content - wider for grid layout */
         .container {
-            max-width: 960px; /* Adjusted for a more app-like width */
+            max-width: 1100px; /* Wider to accommodate two columns */
             margin: 20px auto;
-            padding: 0 15px; /* Smaller horizontal padding for mobile */
+            padding: 0 20px; /* Increased padding */
             flex-grow: 1; /* Allows container to grow and push footer/bottom elements down */
         }
         
@@ -53,17 +53,17 @@
         .header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 25px 0; /* More padding for a bolder header */
-            border-radius: 0 0 30px 30px; /* More pronounced border-radius */
+            padding: 30px 0; /* More padding for a bolder header */
+            border-radius: 0 0 40px 40px; /* More pronounced border-radius */
             box-shadow: var(--shadow);
-            margin-bottom: 30px;
+            margin-bottom: 40px; /* More margin */
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 120px; /* Ensure a minimum height for the header */
+            min-height: 140px; /* Ensure a minimum height for the header */
         }
         
         .header-content {
@@ -77,154 +77,232 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 25px;
-            margin-bottom: 15px;
+            gap: 30px; /* Increased gap */
+            margin-bottom: 20px; /* More margin */
             flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
         
         .time {
-            font-size: 3rem; /* Slightly larger time font */
+            font-size: 3.5rem; /* Even larger time font */
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3); /* Stronger text shadow */
         }
         
         .date {
-            font-size: 1.8rem; /* Slightly larger date font */
+            font-size: 2rem; /* Even larger date font */
             font-weight: 500;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
         }
         
         h1 {
             margin: 0;
-            font-size: 2.5rem; /* Larger main title */
+            font-size: 3rem; /* Larger main title */
             font-weight: 700;
-            text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+            text-shadow: 0 4px 7px rgba(0, 0, 0, 0.4); /* Stronger shadow */
         }
         
         /* WhatsApp Share Button styling */
         .share-button {
             background-color: #25D366; /* WhatsApp green */
             color: white;
-            padding: 18px 30px; /* More padding for a bigger button */
-            font-size: 20px;
+            padding: 20px 35px; /* More padding for a bigger button */
+            font-size: 22px; /* Larger font */
             font-weight: bold;
             border: none;
-            border-radius: 50px; /* Pill-shaped button */
+            border-radius: 60px; /* More pill-shaped */
             cursor: pointer;
-            margin: 40px auto 30px auto; /* More margin */
+            margin: 50px auto 40px auto; /* More margin */
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 15px; /* Increased gap */
             width: 90%;
-            max-width: 320px; /* Max width for button */
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25); /* Deeper shadow */
+            max-width: 350px; /* Max width for button */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); /* Deeper shadow */
             transition: all 0.3s ease;
             text-decoration: none; /* Remove underline from link if used */
+            position: relative; /* For shine effect */
+            overflow: hidden; /* For shine effect */
         }
         
         .share-button:hover {
-            transform: translateY(-3px); /* Lift effect on hover */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Even deeper shadow */
+            transform: translateY(-5px); /* More pronounced lift effect on hover */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); /* Even deeper shadow */
             background-color: #128C7E; /* Darker green on hover */
         }
 
+        /* Shine effect for button */
+        .share-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.4); /* White shimmer */
+            transform: skewX(-20deg);
+            transition: left 0.5s ease-in-out;
+        }
+
+        .share-button:hover::before {
+            left: 125%;
+        }
+
+
         /* Section title for each driver */
         .driver-section-title {
-            font-size: 28px; /* Larger title for driver sections */
+            font-size: 32px; /* Larger title for driver sections */
             font-weight: 700;
-            margin: 40px 0 25px; /* More spacing */
+            margin: 50px 0 35px; /* More spacing */
             color: var(--dark-color);
             display: inline-block;
-            padding: 8px 25px;
-            border-radius: 50px;
+            padding: 10px 30px;
+            border-radius: 60px;
             background-color: var(--light-color); /* Light background for the title */
             box-shadow: var(--shadow);
             position: relative;
             z-index: 2; /* Ensure title is above timeline elements */
-            border: 2px solid var(--primary-color); /* Border to highlight */
+            border: 3px solid var(--primary-color); /* Thicker border to highlight */
+            overflow: hidden; /* For shine effect */
         }
         
-        /* Styling for the timeline effect */
-        .timeline-container {
-            position: relative;
-            padding-bottom: 20px;
-            border-right: 3px solid rgba(0, 0, 0, 0.1); /* Subtle timeline line */
-            margin-right: 20px; /* Space for the line and arrows */
+        .driver-section-title::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-20deg);
+            transition: left 0.7s ease;
+        }
+
+        .driver-section-title:hover::before {
+            left: 100%;
+        }
+
+        /* Styling for the timeline effect - now a grid container for two columns */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Two columns on larger screens, single on smaller */
+            gap: 40px; /* Increased space between cards */
+            padding: 20px 0;
+            margin: 0 auto;
+            width: 100%; /* Expand to full width of container */
+            max-width: 100%; /* Ensure it takes full width */
+            justify-content: center; /* Center items in the grid */
+            align-items: start; /* Align items to the start of their grid area */
         }
 
         /* Individual order "cube" styling */
         .order-card {
             background: var(--card-bg);
-            border-radius: 20px; /* Larger rounded corners */
+            border-radius: 25px; /* Even larger rounded corners */
             box-shadow: var(--shadow);
-            padding: 25px; /* Increased padding for larger box */
-            margin-bottom: 35px; /* More space between cards */
+            padding: 30px; /* Increased padding for larger box */
+            margin-bottom: 0; /* No bottom margin, gap handles spacing */
             text-align: right;
             position: relative;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            border-left: 6px solid var(--primary-color); /* Thicker accent border for orders */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border-color 0.3s ease;
+            border-left: 8px solid var(--primary-color); /* Thicker accent border for orders */
             display: flex;
             flex-direction: column;
-            gap: 12px; /* Increased gap between elements */
-            margin-right: -15px; /* Overlap with timeline line */
+            gap: 15px; /* Increased gap between elements */
+            overflow: hidden; /* For shine effect */
             animation: fadeIn 0.8s ease-out forwards; /* Fade in animation */
             cursor: pointer; /* Indicate clickable */
+            z-index: 1; /* Ensure cards are above timeline effects */
         }
 
         .order-card:hover {
-            transform: translateY(-7px); /* More pronounced lift effect on hover */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); /* Deeper shadow on hover */
+            transform: translateY(-10px); /* More pronounced lift effect on hover */
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35); /* Deeper shadow on hover */
+            border-color: var(--accent-color); /* Change border color on hover */
         }
 
-        /* Timeline arrow styling */
+        /* Shine effect for order cards */
+        .order-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 0%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(45deg);
+            transition: all 0.7s ease;
+            opacity: 0;
+            z-index: 0; /* Ensure it's behind content */
+        }
+
+        .order-card:hover::before {
+            left: 100%;
+            opacity: 1;
+        }
+
+        /* Timeline arrow styling - adjusted for grid layout, now a more decorative element */
         .order-arrow {
             position: absolute;
-            right: -30px; /* Position next to the timeline line, slightly adjusted */
-            top: 30px; /* Adjusted vertical position */
+            right: -20px; /* Position to the right of the card */
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg); /* No rotation, just pointing right */
             width: 0;
             height: 0;
-            border-top: 18px solid transparent; /* Larger arrow */
-            border-bottom: 18px solid transparent;
-            border-right: 18px solid var(--accent-color); /* Red arrow pointing left */
-            z-index: 3; /* Ensure arrow is on top */
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 15px solid var(--secondary-color); /* Green arrow */
+            z-index: 2; /* Ensure arrow is on top of card but behind shine */
         }
 
         /* Specific styling for the content within the order card */
         .order-time {
-            font-size: 1.8rem; /* Larger time font */
+            font-size: 2rem; /* Larger time font */
             font-weight: 700;
             color: var(--primary-color);
             display: flex;
             align-items: center;
-            gap: 10px; /* Increased gap */
-            margin-bottom: 15px; /* More space below time */
-            border-bottom: 1px dashed rgba(0, 0, 0, 0.1); /* Separator line */
-            padding-bottom: 10px;
+            gap: 12px; /* Increased gap */
+            margin-bottom: 20px; /* More space below time */
+            border-bottom: 2px dashed rgba(0, 0, 0, 0.1); /* Thicker separator line */
+            padding-bottom: 15px;
         }
 
         .order-time i {
             color: var(--accent-color); /* Clock icon color */
-            font-size: 1.6rem; /* Make icon slightly smaller than text */
+            font-size: 1.8rem; /* Make icon slightly smaller than text */
         }
 
         .order-details p {
-            margin: 6px 0; /* More spacing */
-            font-size: 1.2rem; /* Larger detail font */
+            margin: 8px 0; /* More spacing */
+            font-size: 1.3rem; /* Larger detail font */
             color: var(--text-color);
             display: flex;
-            align-items: center;
-            gap: 10px; /* Increased gap */
+            align-items: flex-start; /* Align text to top */
+            gap: 12px; /* Increased gap */
         }
 
         .order-details p strong {
             color: var(--dark-color);
             font-weight: 600; /* Slightly bolder */
+            min-width: 90px; /* Align content */
+            text-align: left;
         }
 
         .order-details i {
             color: var(--secondary-color); /* Icon color for details */
-            font-size: 1.1rem; /* Make icon slightly smaller than text */
+            font-size: 1.2rem; /* Make icon slightly smaller than text */
+            margin-top: 4px; /* Adjust icon vertical alignment */
         }
 
         .order-details p .city-link {
@@ -232,6 +310,7 @@
             color: var(--primary-color);
             cursor: pointer;
             font-weight: 600;
+            transition: color 0.2s ease;
         }
 
         .order-details p .city-link:hover {
@@ -240,7 +319,7 @@
 
         /* Keyframe animation for fade in */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
@@ -268,19 +347,19 @@
 
         .modal-content {
             background-color: var(--modal-bg);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+            padding: 35px; /* More padding */
+            border-radius: 25px; /* Larger radius */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4); /* Deeper shadow */
+            max-width: 550px; /* Slightly wider */
             width: 90%;
             position: relative;
-            transform: translateY(20px);
+            transform: translateY(30px); /* More pronounced slide-in */
             transition: transform 0.3s ease;
             text-align: right;
-            border: 2px solid var(--primary-color);
+            border: 3px solid var(--primary-color); /* Thicker border */
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px; /* More gap */
         }
 
         .modal-overlay.visible .modal-content {
@@ -290,55 +369,55 @@
         .modal-content h2 {
             margin-top: 0;
             color: var(--dark-color);
-            font-size: 2.2rem;
+            font-size: 2.5rem; /* Larger title */
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
         }
 
         .modal-content p {
-            margin: 8px 0;
-            font-size: 1.2rem;
+            margin: 10px 0;
+            font-size: 1.4rem; /* Larger text */
             color: var(--text-color);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         .modal-content p strong {
             color: var(--dark-color);
             font-weight: 600;
-            min-width: 80px; /* Align content */
+            min-width: 90px; /* Align content */
         }
 
         .modal-close-button {
             position: absolute;
-            top: 15px;
-            left: 15px;
+            top: 20px;
+            left: 20px;
             background: var(--accent-color);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            font-size: 1.5rem;
+            width: 40px; /* Larger close button */
+            height: 40px;
+            font-size: 1.8rem; /* Larger font */
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
 
         .modal-close-button:hover {
             background-color: #c0392b;
-            transform: rotate(90deg);
+            transform: rotate(90deg) scale(1.1); /* Rotate and scale on hover */
         }
 
         /* City Map Modal specific styling */
         #cityMapModal .modal-content {
-            max-width: 600px;
-            height: 400px; /* Fixed height for the map view */
+            max-width: 700px; /* Even wider for map */
+            height: 500px; /* Larger fixed height for the map view */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -347,96 +426,178 @@
         }
 
         #cityMapModal .modal-content h2 {
-            font-size: 2rem;
+            font-size: 2.5rem;
             border-bottom: none;
         }
 
         #cityMapDisplay {
-            width: 90%;
-            height: 250px;
+            width: 95%; /* Take more width */
+            height: 350px; /* Larger map area */
             background-color: #e0e0e0;
-            border-radius: 10px;
+            border-radius: 15px; /* Larger radius */
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
+            font-size: 1.8rem; /* Larger text */
             color: #666;
-            margin-top: 20px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
-            background-image: url('https://placehold.co/400x250/cccccc/333333?text=Map+Placeholder'); /* Placeholder map image */
+            margin-top: 25px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.15); /* Deeper inset shadow */
+            background-image: url('https://placehold.co/600x350/cccccc/333333?text=Map+Loading...'); /* Placeholder for loading state */
             background-size: cover;
             background-position: center;
-            border: 1px solid rgba(0,0,0,0.1);
+            border: 2px solid rgba(0,0,0,0.1);
+            overflow: hidden; /* Ensure map image fits */
+        }
+
+        #cityMapDisplay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
         }
 
         #cityMapDisplay p {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background-color: rgba(255, 255, 255, 0.9); /* More opaque background for text */
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+            font-size: 1.3rem; /* Adjusted font size */
+        }
+
+        /* Password Modal Styling */
+        #passwordModal .modal-content {
+            max-width: 400px;
+            gap: 15px;
+            text-align: center;
+        }
+
+        #passwordModal .modal-content h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+        }
+
+        #passwordModal input[type="password"] {
+            width: calc(100% - 20px); /* Adjust width for padding */
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            font-size: 1.3rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        #passwordModal input[type="password"]:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+        }
+
+        #passwordModal button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            width: 100%; /* Full width button */
+            max-width: 250px; /* Limit max width */
+            margin: 0 auto;
+        }
+
+        #passwordModal button:hover {
+            background-color: var(--dark-color);
+            transform: translateY(-2px);
+        }
+
+        #passwordError {
+            font-size: 1.1rem;
+            margin-top: 10px;
+            padding: 5px;
+            background-color: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
         }
         
         /* Responsive design adjustments */
+        @media (max-width: 992px) {
+            .timeline-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjust for smaller screens */
+                gap: 30px;
+            }
+            .container {
+                max-width: 900px;
+            }
+            .order-card {
+                padding: 25px;
+            }
+            .order-time {
+                font-size: 1.8rem;
+            }
+            .order-details p {
+                font-size: 1.2rem;
+            }
+        }
+
         @media (max-width: 768px) {
+            .header {
+                padding: 20px 0;
+                min-height: 100px;
+            }
             .datetime {
                 flex-direction: column;
                 gap: 10px;
             }
-            
             .time {
-                font-size: 2.5rem;
+                font-size: 2.8rem;
             }
-            
             .date {
-                font-size: 1.5rem;
+                font-size: 1.6rem;
             }
-            
             h1 {
+                font-size: 2.2rem;
+            }
+            .driver-section-title {
+                font-size: 26px;
+                padding: 8px 25px;
+            }
+            .timeline-grid {
+                grid-template-columns: 1fr; /* Single column on mobile */
+                gap: 25px;
+            }
+            .order-card {
+                padding: 20px;
+                border-radius: 20px;
+                border-left: 6px solid var(--primary-color);
+            }
+            .order-time {
+                font-size: 1.6rem;
+            }
+            .order-details p {
+                font-size: 1.1rem;
+            }
+            .share-button {
+                font-size: 20px;
+                padding: 16px 30px;
+            }
+            .modal-content {
+                padding: 25px;
+            }
+            .modal-content h2 {
                 font-size: 2rem;
             }
-
-            .driver-section-title {
-                font-size: 24px;
-                padding: 6px 20px;
-            }
-
-            .order-card {
-                padding: 15px;
-                margin-bottom: 25px;
-            }
-
-            .order-time {
-                font-size: 1.4rem;
-            }
-
-            .order-details p {
-                font-size: 1rem;
-            }
-
-            .share-button {
-                font-size: 18px;
-                padding: 15px 25px;
-            }
-
-            .modal-content {
-                padding: 20px;
-                width: 95%;
-            }
-
-            .modal-content h2 {
-                font-size: 1.8rem;
-            }
-
             .modal-content p {
-                font-size: 1rem;
+                font-size: 1.1rem;
             }
-
             #cityMapModal .modal-content {
-                height: 300px;
+                height: 400px;
             }
-
             #cityMapDisplay {
-                height: 180px;
+                height: 250px;
             }
         }
 
@@ -445,42 +606,54 @@
                 margin: 10px auto;
                 padding: 0 10px;
             }
-
             .header {
-                padding: 20px 0;
+                padding: 15px 0;
             }
-
             .time {
-                font-size: 2rem;
+                font-size: 2.2rem;
             }
-            
             .date {
-                font-size: 1.2rem;
+                font-size: 1.4rem;
             }
-            
             h1 {
-                font-size: 1.6rem;
+                font-size: 1.8rem;
             }
-
             .driver-section-title {
-                font-size: 20px;
+                font-size: 22px;
+                padding: 6px 20px;
                 margin: 30px 0 20px;
             }
-
             .order-card {
-                margin-bottom: 20px;
+                padding: 15px;
             }
-
             .order-time {
-                font-size: 1.2rem;
+                font-size: 1.4rem;
             }
-
             .order-details p {
-                font-size: 0.9rem;
+                font-size: 1rem;
             }
-
             .share-button {
-                font-size: 16px;
+                font-size: 18px;
+                padding: 14px 25px;
+                margin: 30px auto;
+            }
+            .modal-close-button {
+                width: 30px;
+                height: 30px;
+                font-size: 1.3rem;
+            }
+            #cityMapModal .modal-content {
+                height: 350px;
+            }
+            #cityMapDisplay {
+                height: 200px;
+            }
+            #passwordModal input[type="password"] {
+                font-size: 1.1rem;
+                padding: 12px;
+            }
+            #passwordModal button {
+                font-size: 1.2rem;
                 padding: 12px 20px;
             }
         }
@@ -500,18 +673,18 @@
     <div class="container">
         <!-- Driver Ali's section -->
         <div class="driver-section-title">נהג: עלי</div>
-        <div id="aliTimeline" class="timeline-container">
+        <div id="aliTimeline" class="timeline-grid">
             <!-- Orders for Ali will be dynamically inserted here -->
         </div>
 
         <!-- Driver Hakmat's section -->
         <div class="driver-section-title">נהג: חכמת</div>
-        <div id="hakmatTimeline" class="timeline-container">
+        <div id="hakmatTimeline" class="timeline-grid">
             <!-- Orders for Hakmat will be dynamically inserted here -->
         </div>
 
         <!-- WhatsApp share button -->
-        <button class="share-button" onclick="shareToWhatsApp()">
+        <button class="share-button" onclick="showPasswordModal()">
             <i class="fab fa-whatsapp"></i> שתף לווצאפ
         </button>
     </div>
@@ -536,8 +709,19 @@
             <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
             <h2 id="cityModalTitle">מפה של העיר</h2>
             <div id="cityMapDisplay">
-                <p id="cityMapName"></p>
+                <!-- Map image or message will be inserted here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
+            <h2>הכנס סיסמה</h2>
+            <input type="password" id="passwordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkPassword()">
+            <button onclick="checkPassword()">אשר</button>
+            <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
         </div>
     </div>
 
@@ -567,9 +751,17 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
-        const aliRange = 'Sheet2!B2:h10'; // Range for Ali's data
-        const hakmatRange = 'Sheet1!B2:h10'; // Range for Hakmat's data
+        const apiKey = ''; // Your Google API Key (ensure it has access to Google Sheets API)
+        
+        // Google Maps Static API Key - REPLACE WITH YOUR ACTUAL KEY
+        const GOOGLE_MAPS_STATIC_API_KEY = 'YOUR_GOOGLE_MAPS_STATIC_API_KEY'; 
+
+        // Updated ranges to include column H
+        const aliRange = 'Sheet2!B2:H10'; 
+        const hakmatRange = 'Sheet1!B2:H10'; 
+
+        // Password for WhatsApp share button
+        const WHATSAPP_PASSWORD = "1125";
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -599,28 +791,29 @@
                 timelineContainer.innerHTML = ""; // Clear existing content
 
                 if (data.values && data.values.length > 0) {
-                    // Filter out empty rows and sort by time
+                    // Filter out empty rows and sort by time.
+                    // Assumes row[1] is time, row[5] is address, row[6] is potential city from column H.
                     const filteredAndSortedData = data.values
-                        .filter(row => row.length >= 6 && row[1]) // Ensure row has enough data and a time value
+                        .filter(row => row.length >= 6 && row[1]) 
                         .sort((a, b) => {
                             const timeA = parseTimeForSorting(a[1]);
                             const timeB = parseTimeForSorting(b[1]);
                             return timeA - timeB;
                         });
 
-                    filteredAndSortedData.forEach((row, index) => {
-                        const [date, time, warehouse, status, customer, address] = row;
+                    filteredAndSortedData.forEach((row) => {
+                        const [date, time, warehouse, status, customer, address, cityFromColumnH] = row;
+                        
+                        // Use city from column H if available, otherwise try to parse from address
+                        const city = cityFromColumnH ? cityFromColumnH.trim() : (address ? address.split(',').pop().trim() : 'לא ידוע');
 
                         const orderCard = document.createElement("div");
                         orderCard.classList.add("order-card");
                         // Store full order data as a JSON string for easy retrieval in modal
-                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address });
+                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address, city });
                         
                         // Add click listener to open full details modal
                         orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
-
-                        // Extract city from address if possible (simple split by comma for example)
-                        const city = address ? address.split(',').pop().trim() : 'לא ידוע';
 
                         orderCard.innerHTML = `
                             <div class="order-time">
@@ -684,16 +877,29 @@
         }
 
         /**
-         * Displays a mock map view for a given city in a modal.
+         * Displays a map view for a given city in a modal, using Google Static Maps API.
          * @param {string} city The city name to display on the map.
          */
         function showCityMap(city) {
             document.getElementById('cityModalTitle').textContent = `מפה של ${city || 'העיר לא ידועה'}`;
-            document.getElementById('cityMapName').textContent = `זו תהיה מפה אינטראקטיבית של ${city || 'העיר לא ידועה'}`;
-            // You can replace the background-image of #cityMapDisplay with a static map image API if available and within constraints.
-            // For example: `url('https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=400x250&key=YOUR_API_KEY')`
-            // But this would require a Google Maps Static API key and enabling it.
-            // For now, we use a generic placeholder image and update the text.
+            const mapDisplay = document.getElementById('cityMapDisplay');
+            
+            // Check if Google Maps Static API Key is provided
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY') {
+                // Construct Google Static Maps API URL
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
+                
+                // Clear previous content and set image
+                mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error';" />`;
+                mapDisplay.style.backgroundImage = 'none'; // Remove placeholder background image
+                mapDisplay.style.backgroundColor = 'transparent';
+            } else {
+                // Fallback to placeholder if API key is not set or invalid
+                mapDisplay.innerHTML = `<p id="cityMapName">יש להזין מפתח Google Maps Static API כדי להציג מפה.</p>`;
+                mapDisplay.style.backgroundImage = `url('https://placehold.co/600x350/cccccc/333333?text=Map+Placeholder')`;
+                mapDisplay.style.backgroundColor = '#e0e0e0';
+            }
+            
             document.getElementById('cityMapModal').classList.add('visible');
         }
 
@@ -705,6 +911,28 @@
             document.getElementById(modalId).classList.remove('visible');
         }
         
+        /**
+         * Shows the password input modal before allowing WhatsApp share.
+         */
+        function showPasswordModal() {
+            document.getElementById('passwordInput').value = ''; // Clear previous input
+            document.getElementById('passwordError').style.display = 'none'; // Hide error message
+            document.getElementById('passwordModal').classList.add('visible');
+        }
+
+        /**
+         * Checks the entered password and proceeds to WhatsApp share if correct.
+         */
+        function checkPassword() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            if (inputPassword === WHATSAPP_PASSWORD) {
+                closeModal('passwordModal');
+                shareToWhatsAppConfirmed(); // Proceed to share if password is correct
+            } else {
+                document.getElementById('passwordError').style.display = 'block'; // Show error message
+            }
+        }
+
         /**
          * Formats the data from a virtual table (fetched from sheets) into a WhatsApp message string.
          * @param {string} range The A1 notation of the range to retrieve from the spreadsheet.
@@ -729,7 +957,7 @@
                         });
 
                     sortedData.forEach((row) => {
-                        const [date, time, warehouse, status, customer, address] = row;
+                        const [date, time, warehouse, status, customer, address] = row; // Take first 6 for message
                         message += `📅 ${date || ""} ⏰ ${time || ""}\n`;
                         message += `🏠 ${warehouse || ""} 📄 ${status || ""}\n`;
                         message += `👤 ${customer || ""} 📍 ${address || ""}\n`;
@@ -746,12 +974,12 @@
         }
 
         /**
-         * Shares the formatted driver reports to WhatsApp.
+         * Shares the formatted driver reports to WhatsApp (after password confirmation).
          */
-        async function shareToWhatsApp() {
+        async function shareToWhatsAppConfirmed() {
             const aliData = await formatWhatsAppData(aliRange, "עלי");
             const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
-            const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
+            const link = "🔗 https://did.li/berOf"; // Assuming this link is constant
 
             const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${link}`;
             const phoneNumber = "972508860896"; // Pre-set phone number
@@ -760,10 +988,9 @@
             window.open(url, "_blank"); // Open WhatsApp in a new tab
         }
 
-        // Fetch and render data for both drivers on load
+        // Initial fetch and render of data for both drivers on page load
         fetchDataAndRender(aliRange, "aliTimeline");
         fetchDataAndRender(hakmatRange, "hakmatTimeline");
     </script>
 </body>
 </html>
-�
