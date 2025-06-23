@@ -103,6 +103,7 @@
             flex-grow: 1; /* Allows container to grow and push footer/bottom elements down */
             position: relative; /* Ensure content is above the background pseudo-element */
             z-index: 1;
+            padding-bottom: 80px; /* Space for the fixed bottom navigation bar */
         }
         
         /* Header styling with gradient and clock/date */
@@ -494,6 +495,9 @@
             display: flex;
             flex-direction: column;
             gap: 20px; /* More gap */
+            box-sizing: border-box; /* Include padding and border in width */
+            max-height: 90vh; /* Limit height to viewport height */
+            overflow-y: auto; /* Enable scrolling if content overflows vertically */
         }
 
         .modal-overlay.visible .modal-content {
@@ -551,7 +555,8 @@
         /* City Map Modal specific styling */
         #cityMapModal .modal-content {
             max-width: 700px; /* Even wider for map */
-            height: 500px; /* Larger fixed height for the map view */
+            height: auto; /* Auto height to fit content */
+            max-height: 90vh; /* Still limit max height */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -582,7 +587,8 @@
             border: 2px solid rgba(0,0,0,0.1);
             overflow: hidden; /* Ensure map image fits */
         }
-
+        
+        /* Ensure map image scales responsively */
         #cityMapDisplay img {
             width: 100%;
             height: 100%;
@@ -838,20 +844,21 @@
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
             display: flex;
-            justify-content: space-around;
+            justify-content: center; /* Changed to center */
             align-items: center;
             padding: 10px 0;
             z-index: 999; /* Ensure it's above other content */
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
+            box-sizing: border-box; /* Include padding in width */
         }
 
         .nav-button {
             background-color: transparent;
             border: none;
             color: white;
-            padding: 8px 12px; /* Reduced padding for smaller height */
-            font-size: 1rem; /* Slightly reduced font size */
+            padding: 8px 12px; /* Consistent padding */
+            font-size: 1rem; /* Consistent font size */
             font-weight: 500;
             cursor: pointer;
             display: flex;
@@ -866,6 +873,7 @@
             border: 2px solid transparent; /* Default transparent border */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle initial shadow */
             overflow: hidden; /* For shine effect */
+            max-width: 180px; /* Set a max-width to control button size, especially on large screens */
         }
 
         .nav-button:hover, .nav-button.active {
@@ -897,7 +905,7 @@
 
         .nav-button:hover::before {
             left: 100%;
-            opacity: 1; /* Visible on hover */
+            opacity: 1;
         }
 
 
@@ -1018,38 +1026,42 @@
             border-color: var(--morning-orders-hover-border);
         }
 
-        /* Top Navigation Bar - Now a distinct block above the header */
+        /* Top Navigation Bar */
         .top-nav {
+            position: fixed; /* Changed to fixed for constant visibility */
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
             display: flex;
-            justify-content: space-around; /* Distribute items evenly */
+            justify-content: center; /* Center the buttons */
             align-items: center;
-            padding: 10px; /* Adjust padding */
+            padding: 10px 0;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
-            margin-bottom: 20px; /* Space below top nav */
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
-            position: sticky; /* Make it sticky at the top */
-            top: 0;
-            z-index: 990; /* Ensure it's above other content but below modals */
-            width: 100%; /* Take full width */
-            box-sizing: border-box; /* Include padding in width calculation */
+            /* margin-bottom: 20px; Removed as it's fixed */
+            flex-wrap: wrap; /* Allow wrapping */
+            box-sizing: border-box;
+            z-index: 990;
         }
 
+        /* Ensure nav buttons in top bar share same style as bottom nav buttons */
         .top-nav .nav-button {
-            padding: 8px 12px; /* Match bottom nav padding */
-            font-size: 1rem; /* Match bottom nav font size */
-            margin: 5px; /* Add margin for spacing when wrapping */
-            flex-grow: 1; /* Allow buttons to grow and fill space */
-            max-width: 200px; /* Limit max width for individual buttons */
+            flex-grow: 1; 
+            flex-shrink: 1; 
+            max-width: 180px; 
+            margin: 0 5px; 
+        }
+        
+        /* Adjust container padding-top to prevent content from being hidden behind fixed top-nav */
+        body {
+            padding-top: 70px; /* Height of top-nav + some margin */
         }
 
-        .top-nav .nav-button i {
-            font-size: 1.3rem; /* Match bottom nav icon size */
-        }
 
-        /* Responsive design adjustments */
+        /* Media queries for responsiveness */
         @media (max-width: 1200px) {
             .container {
                 max-width: 960px;
@@ -1057,13 +1069,11 @@
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
-            /* .timeline-grid will be handled by specific media query below */
         }
 
         @media (max-width: 992px) {
             .timeline-grid {
-                /* On smaller tablets, if two columns are too cramped, allow for single column more easily */
-                grid-template-columns: 1fr; /* Force single column to avoid squishing if needed */
+                grid-template-columns: 1fr;
                 gap: 20px;
             }
             .container {
@@ -1083,7 +1093,10 @@
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             }
             .chart-card {
-                grid-column: span 1; /* Charts become single column on smaller tablets */
+                grid-column: span 1;
+            }
+            .top-nav .nav-button {
+                max-width: none; 
             }
         }
 
@@ -1110,8 +1123,8 @@
                 padding: 8px 25px;
             }
             .timeline-grid {
-                grid-template-columns: 1fr; /* Single column on mobile */
-                gap: 15px; /* Even smaller gap */
+                grid-template-columns: 1fr;
+                gap: 15px;
             }
             .order-card {
                 padding: 15px;
@@ -1137,13 +1150,14 @@
                 font-size: 1.1rem;
             }
             #cityMapModal .modal-content {
-                height: 400px;
+                height: auto; 
+                max-height: 85vh; 
             }
             #cityMapDisplay {
                 height: 250px;
             }
             .summary-grid {
-                grid-template-columns: 1fr; /* Single column on mobile */
+                grid-template-columns: 1fr;
             }
             .summary-card h3 {
                 font-size: 1.6rem;
@@ -1161,12 +1175,14 @@
             .nav-button i {
                 font-size: 1.2rem;
             }
-            .top-nav {
-                padding: 8px; /* More compact on mobile */
-            }
             .top-nav .nav-button {
-                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
-                max-width: none; /* Remove max-width constraint for flexibility */
+                flex-basis: calc(50% - 10px); 
+            }
+            .share-button {
+                width: calc(100% - 40px); 
+                margin-left: 20px; 
+                margin-right: 20px;
+                box-sizing: border-box; 
             }
         }
 
@@ -1212,7 +1228,8 @@
                 font-size: 1.3rem;
             }
             #cityMapModal .modal-content {
-                height: 350px;
+                height: auto;
+                max-height: 80vh;
             }
             #cityMapDisplay {
                 height: 200px;
@@ -1239,13 +1256,16 @@
                 font-size: 1.1rem;
             }
             .top-nav .nav-button {
-                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
+                flex-basis: calc(50% - 10px);
+            }
+            .share-button {
+                width: calc(100% - 20px); 
             }
         }
     </style>
 </head>
 <body>
-    <!-- Top Navigation Bar (Now positioned as the very first element) -->
+    <!-- Top Navigation Bar -->
     <nav class="top-nav">
         <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
             <i class="fas fa-home"></i> ראשי
@@ -1268,8 +1288,8 @@
     <div class="header">
         <div class="header-content">
             <div class="datetime">
-                <div class="time" id="currentDate"></div> <!-- Swapped IDs for date and time for better semantic matching with content -->
-                <div class="date" id="currentTime"></div>
+                <div class="time" id="currentTimeDisplay"></div> 
+                <div class="date" id="currentDateDisplay"></div>
             </div>
             <h1>🚛 דוח בוקר - סידור הובלות</h1>
         </div>
@@ -1394,7 +1414,7 @@
             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
             <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
             <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
         </div>
@@ -1458,8 +1478,8 @@
             // Remove "יום " prefix for a more natural Hebrew feel
             formattedDate = formattedDate.replace('יום ', '');
             
-            document.getElementById('currentDate').textContent = formattedTime; // Corrected ID usage
-            document.getElementById('currentTime').textContent = formattedDate; // Corrected ID usage
+            document.getElementById('currentTimeDisplay').textContent = formattedTime; 
+            document.getElementById('currentDateDisplay').textContent = formattedDate;
         }
         
         // Update date and time every second
@@ -1468,10 +1488,13 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
+        // IMPORTANT: Replace 'YOUR_GOOGLE_SHEETS_API_KEY_HERE' with your actual Google Sheets API Key.
+        // You can obtain one from the Google Cloud Console (APIs & Services -> Credentials).
+        // Ensure Google Sheets API is enabled for your project in the API Library.
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; 
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE'; // Changed to explicit placeholder for user to replace
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1481,8 +1504,8 @@
         const WHATSAPP_PASSWORD = "1125";
 
         // Avatar image URLs for drivers (replace with actual image links)
-        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; // Updated Ali's avatar URL
-        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; // Updated Hakmat's avatar URL
+        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
+        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
         // New avatar URLs for warehouses
         const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
         const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
@@ -1609,6 +1632,8 @@
                 return [];
             } catch (error) {
                 console.error("שגיאה בשליפת הנתונים:", error);
+                // Display user-friendly error message
+                alert("שגיאה בטעינת הנתונים מהגיליון. אנא ודא שמפתח ה-API תקין ושיש הרשאות גישה לגיליון.");
                 return [];
             }
         }
@@ -1862,7 +1887,7 @@
             // IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE' with your actual, valid Google Maps Static API Key.
             // You can get one from the Google Cloud Console.
             // For more info: https://developers.google.com/maps/documentation/maps-static/get-api-key
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E') { 
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
                 // Construct Google Static Maps API URL
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
@@ -1982,13 +2007,26 @@
          */
         function activatePageAndNav(pageId, navButtonId) {
             // Deactivate all page contents and nav buttons first
-            document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
-            document.querySelectorAll('.nav-button').forEach(button => button.classList.remove('active'));
+            document.querySelectorAll('.page-content').forEach(page => {
+                // To animate page transition, remove 'active' first, then set 'display: none' after a delay
+                page.classList.remove('active');
+                setTimeout(() => {
+                    if (!page.classList.contains('active')) { // Ensure it's still not active before hiding
+                        page.style.display = 'none';
+                    }
+                }, 500); // Match CSS transition duration
+            });
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.classList.remove('active');
+            });
 
             // Activate the requested page
             const currentPage = document.getElementById(pageId);
             if (currentPage) {
-                currentPage.classList.add('active');
+                currentPage.style.display = 'block'; // Make it visible before adding 'active' for transition
+                setTimeout(() => { // Add 'active' after a small delay to trigger CSS transition
+                    currentPage.classList.add('active');
+                }, 10); 
             }
 
             // Activate the corresponding nav button (top and bottom)
