@@ -1202,8 +1202,7 @@
         
         // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
         // This key MUST be enabled for Maps JavaScript API, Places API, and Geocoding API
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI
-'; 
+        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
         // Gemini API Key (leave empty, Canvas will inject it)
         const GEMINI_API_KEY = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
@@ -1327,7 +1326,8 @@
                     noOrdersMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--dark-color'); 
                     timelineContainer.appendChild(noOrdersMessage);
                 }
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("שגיאה בשליפת הנתונים:", error);
                 const errorMessage = document.createElement("p");
                 errorMessage.textContent = "אירעה שגיאה בטעינת הנתונים. אנא נסה שוב מאוחר יותר.";
@@ -1815,45 +1815,6 @@
         }
 
         /**
-         * Fetches a customer message draft from the Gemini LLM.
-         * @param {Object} order The order object for the customer.
-         * @returns {Promise<string>} The generated customer message text.
-         */
-        async function getCustomerMessageFromLLM(order) {
-            const prompt = `צור טיוטת הודעה קצרה ומקצועית ללקוח "${order.customer}" בנוגע להזמנה לכתובת "${order.address}".
-            הסטטוס הנוכחי של ההזמנה הוא: "${order.status}".
-            זמן משוער: ${order.time}.
-            המחסן המטפל הוא: ${order.warehouse}.
-            
-            ההודעה צריכה להיות בעברית וקצרה. התחל עם פנייה אישית ללקוח. לדוגמה, אם הסטטוס הוא "בדרך", צור הודעה כמו "שלום [שם לקוח], אנחנו בדרך לכתובת [כתובת]. זמן הגעה משוער הוא [שעה].". אם הסטטוס הוא "בוצע", צור הודעה כמו "שלום [שם לקוח], ההזמנה לכתובת [כתובת] בוצעה בהצלחה.".`;
-
-            let chatHistory = [];
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-            const payload = { contents: chatHistory };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
-            }
-
-            const result = await response.json();
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                return result.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error("לא התקבלה תגובה תקפה מ-Gemini API.");
-            }
-        }
-
-        /**
          * Copies the generated customer message to the clipboard.
          */
         function copyCustomerMessage() {
@@ -2136,7 +2097,7 @@
                 hourMarker.style.boxShadow = 'none'; // No shadow
                 hourMarker.style.pointerEvents = 'none'; // Not interactive
                 hourMarker.style.fontSize = '0.9rem';
-                hourMarker.style.color = var('--text-color');
+                hourMarker.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
 
 
                 const totalMinutesSpan = (maxHour * 60) - (minHour * 60);
