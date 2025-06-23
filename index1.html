@@ -321,11 +321,19 @@
             display: inline-block; /* Essential for text overflow and effects */
             padding-right: 5px; /* Little space from icon */
             text-shadow: 0 0 5px rgba(52, 152, 219, 0.3); /* Subtle glow */
+            animation: sparkle 2s infinite alternate; /* Add sparkle animation */
         }
 
         .order-details p .city-link:hover {
             color: var(--accent-color);
             text-shadow: 0 0 10px rgba(231, 76, 60, 0.5); /* Stronger glow on hover */
+        }
+
+        /* Keyframe animation for sparkle effect */
+        @keyframes sparkle {
+            0% { text-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
+            50% { text-shadow: 0 0 15px rgba(52, 152, 219, 0.8), 0 0 20px rgba(52, 152, 219, 0.4); }
+            100% { text-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
         }
 
         /* Modal styling */
@@ -793,8 +801,8 @@
             // Remove "יום " prefix for a more natural Hebrew feel
             formattedDate = formattedDate.replace('יום ', '');
             
-            document.getElementById('currentTime').textContent = formattedTime;
-            document.getElementById('currentDate').textContent = formattedDate;
+            document.getElementById('currentTime').textContent = formattedDate;
+            document.getElementById('currentDate').textContent = formattedTime;
         }
         
         // Update date and time every second
@@ -803,10 +811,10 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key for Sheets (ensure it has access to Google Sheets API)
+        const apiKey = 'YOUR_GOOGLE_SHEETS_API_KEY'; // Your Google API Key for Sheets (ensure it has access to Google Sheets API)
         
         // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'YOUR_GOOGLE_MAPS_JAVASCRIPT_API_KEY'; 
 
         // Updated ranges to include column H (if needed for custom city names)
         const aliRange = 'Sheet2!B2:H10'; 
@@ -883,7 +891,7 @@
                                 <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date}</p>
                                 <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer}</p>
                                 <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <a href="#" class="city-link" data-full-address="${address}">${address}</a></p>
-                                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${warehouse}</p>
+                                <p><strong><i class="fas fa-warehouse"></i> מחסן:</b> ${warehouse}</p>
                                 <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status}</p>
                             </div>
                             <div class="order-arrow"></div>
@@ -947,8 +955,33 @@
             const streetViewPanoramaDiv = document.getElementById('streetViewPanorama');
             const toggleSvButton = document.querySelector('#mapControls button:first-child');
             
+            // --- DEBUGGING START ---
+            console.log('showCityMap called for address:', fullAddress);
+            console.log('mapContainer element:', mapContainer);
+            console.log('streetViewPanoramaDiv element:', streetViewPanoramaDiv);
+            console.log('toggleSvButton element:', toggleSvButton);
+            // --- DEBUGGING END ---
+
+            // Defensive check: Ensure elements exist before trying to manipulate them
+            if (!mapContainer) {
+                showAlertModal("שגיאה", "שגיאה פנימית: אלמנט המפה הראשי (mapContainer) לא נמצא ב-HTML.");
+                console.error("Critical: mapContainer element not found.", { mapContainer });
+                return;
+            }
+            if (!streetViewPanoramaDiv) {
+                showAlertModal("שגיאה", "שגיאה פנימית: אלמנט Street View (streetViewPanorama) לא נמצא ב-HTML. אנא וודא שכל הקוד הועתק במדויק.");
+                console.error("Critical: streetViewPanoramaDiv element not found.", { streetViewPanoramaDiv });
+                return;
+            }
+            if (!toggleSvButton) {
+                showAlertModal("שגיאה", "שגיאה פנימית: כפתור Street View (toggleSvButton) לא נמצא ב-HTML.");
+                console.error("Critical: toggleSvButton element not found.", { toggleSvButton });
+                return;
+            }
+
+
             // Reset map container if Street View was active
-            streetViewPanoramaDiv.style.display = 'none';
+            streetViewPanoramaDiv.style.display = 'none'; // LINE 951 - this is the error line
             toggleSvButton.classList.remove('active');
             mapContainer.style.display = 'block'; // Ensure map is visible
 
@@ -974,7 +1007,8 @@
                         zoom: 15,
                         fullscreenControl: true, /* Enabled fullscreen control */
                         mapTypeControl: true, /* Enabled map type control */
-                        streetViewControl: false // We will handle Street View button manually
+                        streetViewControl: false, // We will handle Street View button manually
+                        zoomControl: true /* Enabled zoom control explicitly */
                     });
 
                     // Add a marker to the map
@@ -1012,6 +1046,13 @@
             const streetViewPanoramaDiv = document.getElementById('streetViewPanorama');
             const mapContainer = document.getElementById('mapContainer');
             const toggleSvButton = document.querySelector('#mapControls button:first-child');
+
+            // Defensive checks again (though should be caught by showCityMap)
+            if (!streetViewPanoramaDiv || !mapContainer || !toggleSvButton) {
+                showAlertModal("שגיאה", "שגיאה בטעינת אלמנטים של Street View. אנא רענן את הדף.");
+                console.error("Critical: Missing elements in toggleStreetView.", { mapContainer, streetViewPanoramaDiv, toggleSvButton });
+                return;
+            }
 
             if (streetViewPanoramaDiv.style.display === 'block') {
                 streetViewPanoramaDiv.style.display = 'none';
@@ -1060,8 +1101,9 @@
             if (modalId === 'cityMapModal') {
                 const mapContainer = document.getElementById('mapContainer');
                 const streetViewPanoramaDiv = document.getElementById('streetViewPanorama');
-                mapContainer.innerHTML = ''; // Clear map div
-                streetViewPanoramaDiv.innerHTML = ''; // Clear panorama div
+                // Defensive check before clearing/dereferencing
+                if (mapContainer) mapContainer.innerHTML = ''; // Clear map div
+                if (streetViewPanoramaDiv) streetViewPanoramaDiv.innerHTML = ''; // Clear panorama div
                 map = null; // Dereference map object
                 panorama = null; // Dereference panorama object
                 currentLatLng = null; // Clear current location
