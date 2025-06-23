@@ -80,7 +80,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg');
+            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg'); /* Updated background image */
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -969,7 +969,8 @@
             color: var(--student-warehouse-text);
         }
         .summary-card.student-warehouse .summary-count {
-            color: var(--student-warehouse-count);
+            background: linear-gradient(45deg, #FF69B4, #BA55D3); /* Hot Pink to Medium Orchid */
+            color: white;
         }
         .summary-card.student-warehouse:hover {
             border-color: var(--student-warehouse-hover-border);
@@ -983,7 +984,8 @@
             color: var(--carpenter-warehouse-text);
         }
         .summary-card.carpenter-warehouse .summary-count {
-            color: var(--carpenter-warehouse-count);
+            background: linear-gradient(45deg, #00CED1, #40E0D0); /* Dark Cyan to Turquoise */
+            color: white;
         }
         .summary-card.carpenter-warehouse:hover {
             border-color: var(--carpenter-warehouse-hover-border);
@@ -997,7 +999,8 @@
             color: var(--morning-orders-text);
         }
         .summary-card.morning-orders .summary-count {
-            color: var(--morning-orders-count);
+            background: linear-gradient(45deg, #FFD700, #FFA500); /* Gold to Orange */
+            color: white;
         }
         .summary-card.morning-orders:hover {
             border-color: var(--morning-orders-hover-border);
@@ -1842,7 +1845,7 @@
             // IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE' with your actual, valid Google Maps Static API Key.
             // You can get one from the Google Cloud Console.
             // For more info: https://developers.google.com/maps/documentation/maps-static/get-api-key
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E') { 
                 // Construct Google Static Maps API URL
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
