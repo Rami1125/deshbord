@@ -1311,8 +1311,8 @@
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
         
-        // Google Maps Static API Key - REPLACE WITH YOUR ACTUAL KEY
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwzDGszaseiJXgc4eMfq-E'; 
+        // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyBV_2JwCLtow5F6C7463NmfP2py5W-fj5I'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1682,18 +1682,20 @@
             document.getElementById('cityModalTitle').textContent = `מפה של ${city || 'העיר לא ידועה'}`;
             const mapDisplay = document.getElementById('cityMapDisplay');
             
-            // Check if Google Maps Static API Key is provided
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY') {
+            // IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE' with your actual, valid Google Maps Static API Key.
+            // You can get one from the Google Cloud Console.
+            // For more info: https://developers.google.com/maps/documentation/maps-static/get-api-key
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'AIzaSyCd8lAxk7KfQvwzDGszaseiJXgc4eMfq-E') { // Check against the original placeholder value
                 // Construct Google Static Maps API URL
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
                 // Clear previous content and set image
-                mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error';" />`;
+                mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Invalid+API+Key+or+Network+Issue';" />`;
                 mapDisplay.style.backgroundImage = 'none'; // Remove placeholder background image
                 mapDisplay.style.backgroundColor = 'transparent';
             } else {
                 // Fallback to placeholder if API key is not set or invalid
-                mapDisplay.innerHTML = `<p id="cityMapName">יש להזין מפתח Google Maps Static API כדי להציג מפה.</p>`;
+                mapDisplay.innerHTML = `<p id="cityMapName">⚠ יש להזין מפתח Google Maps Static API תקף כדי להציג מפה.<br>אנא עדכן את הקוד עם המפתח שלך.</p>`;
                 mapDisplay.style.backgroundImage = `url('https://placehold.co/600x350/cccccc/333333?text=Map+Placeholder')`;
                 mapDisplay.style.backgroundColor = '#e0e0e0';
             }
