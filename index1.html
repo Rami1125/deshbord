@@ -80,12 +80,19 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg'); /* Updated background image */
+            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg'); /* Default background image */
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
             opacity: 0.7; /* Adjust background image transparency here */
             z-index: -1; /* Place behind other content */
+            transition: opacity 0.5s ease-in-out, background-image 0.5s ease-in-out; /* Smooth transition */
+        }
+
+        /* New rule to hide body background when warehousePage is active */
+        body.warehouse-page-active::before {
+            opacity: 0 !important; /* Fully hide the main background */
+            visibility: hidden;
         }
 
         /* Main container for app content - wider for grid layout */
@@ -96,6 +103,7 @@
             flex-grow: 1; /* Allows container to grow and push footer/bottom elements down */
             position: relative; /* Ensure content is above the background pseudo-element */
             z-index: 1;
+            padding-bottom: 80px; /* Space for the fixed bottom navigation bar */
         }
         
         /* Header styling with gradient and clock/date */
@@ -429,12 +437,27 @@
             color: var(--accent-color);
         }
 
-        /* Keyframe animation for fade in */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Keyframe animation for page content transition */
+        .page-content {
+            display: none;
+            opacity: 0; /* Start hidden */
+            transform: translateX(20px); /* Start slightly off-screen to the right (RTL) */
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* Smooth transition */
+            position: absolute; /* Take out of flow to allow smooth transitions */
+            width: 100%;
+            top: 0; /* Align to top of parent */
+            right: 0; /* Align to right for RTL */
+            padding-bottom: 100px; /* Space for fixed bottom nav */
+            box-sizing: border-box; /* Include padding in width/height */
         }
-        
+
+        .page-content.active {
+            display: block; /* Show the page */
+            opacity: 1; /* Fade in */
+            transform: translateX(0); /* Slide into view */
+            position: relative; /* Bring back into flow once transition complete */
+        }
+
         /* Modal styling */
         .modal-overlay {
             position: fixed;
@@ -472,6 +495,9 @@
             display: flex;
             flex-direction: column;
             gap: 20px; /* More gap */
+            box-sizing: border-box; /* Include padding and border in width */
+            max-height: 90vh; /* Limit height to viewport height */
+            overflow-y: auto; /* Enable scrolling if content overflows vertically */
         }
 
         .modal-overlay.visible .modal-content {
@@ -502,6 +528,104 @@
             min-width: 90px; /* Align content */
         }
 
+        /* New: LLM button styling */
+        .llm-button {
+            background: linear-gradient(135deg, #FF6F00, #FFD700); /* Orange to Gold gradient */
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            width: fit-content;
+            margin-left: auto; /* Align to right in RTL */
+            margin-right: 0;
+            position: relative; /* For shine effect */
+            overflow: hidden; /* For shine effect */
+        }
+
+        .llm-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #FFA000, #FFEA00); /* Slightly brighter on hover */
+        }
+        
+        .llm-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3); /* White shimmer */
+            transform: skewX(-20deg);
+            transition: left 0.5s ease-in-out;
+        }
+
+        .llm-button:hover::before {
+            left: 125%;
+        }
+
+        /* New: LLM response display area */
+        #llmResponseContainer {
+            background-color: var(--light-color); /* Light background for the response */
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 25px; /* More space from button */
+            text-align: right;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            min-height: 80px; /* Minimum height for response area */
+            display: flex; /* For loading indicator centering */
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        #llmResponseContainer.loading {
+            min-height: 100px;
+            justify-content: center;
+        }
+
+        #llmResponseMessage {
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+            direction: rtl; /* Ensure RTL for Hebrew text */
+            text-align: right;
+            width: 100%;
+        }
+
+        /* Loading spinner for LLM response */
+        .loader {
+            border: 6px solid #f3f3f3; /* Light grey */
+            border-top: 6px solid var(--primary-color); /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+            margin: 0 auto;
+        }
+
+        .loader.visible {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
         .modal-close-button {
             position: absolute;
             top: 20px;
@@ -529,7 +653,8 @@
         /* City Map Modal specific styling */
         #cityMapModal .modal-content {
             max-width: 700px; /* Even wider for map */
-            height: 500px; /* Larger fixed height for the map view */
+            height: auto; /* Auto height to fit content */
+            max-height: 90vh; /* Still limit max height */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -560,7 +685,8 @@
             border: 2px solid rgba(0,0,0,0.1);
             overflow: hidden; /* Ensure map image fits */
         }
-
+        
+        /* Ensure map image scales responsively */
         #cityMapDisplay img {
             width: 100%;
             height: 100%;
@@ -717,8 +843,8 @@
         }
 
         @keyframes spiralShine {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Customer List glass card design */
@@ -730,10 +856,13 @@
             box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.1);
             border: 1px solid var(--glass-border-20);
             padding: 15px;
-            margin-top: 20px; /* Space from chart */
+            /* Removed margin-top for horizontal layout */
             text-align: right;
-            max-height: 150px; /* Allow more height for list */
+            max-height: 250px; /* Set max height to align with chart, overflow scroll */
             overflow-y: auto;
+            flex: 1; /* Allow list to take remaining space */
+            min-width: 180px; /* Ensure a minimum width for the list */
+            box-sizing: border-box; /* Include padding in width/height */
         }
 
         .chart-card .chart-customer-list h4 {
@@ -770,6 +899,7 @@
             font-size: 0.9rem;
         }
 
+        /* CHANGED: Chart Card Layout for horizontal chart and customer list */
         .chart-card {
             grid-column: span 2; /* Chart takes full width on larger screens */
             background: var(--glass-bg); /* Glassmorphism */
@@ -780,15 +910,28 @@
             border: 1px solid var(--glass-border);
             padding: 25px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row-reverse; /* For RTL: List on the right, chart on the left */
+            align-items: center; /* Vertically center content */
+            justify-content: space-between; /* Space out the chart and the list */
+            gap: 20px; /* Space between chart and list */
+            box-sizing: border-box; /* Include padding in width/height calculation */
         }
 
         .chart-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        /* New wrapper for chart content to control its size within the flex container */
+        .chart-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 2; /* Allow chart content to take more space */
+            min-width: 250px; /* Ensure chart has enough space */
         }
 
         .chart-card h3 {
@@ -797,26 +940,62 @@
             margin-bottom: 15px;
             border-bottom: 2px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 10px;
-            width: 100%;
+            width: 100%; /* Ensure title takes full width within its wrapper */
+            text-align: center; /* Center the title */
         }
 
         .chart-container {
-            width: 95%;
-            max-width: 600px; /* Limit chart width */
-            height: 300px; /* Fixed height for chart */
-            margin: 0 auto;
+            position: relative; /* For absolute positioning of count overlay */
+            width: 100%; /* Max width within its flex item */
+            max-width: 400px; /* Limit chart width even within flex */
+            height: 250px; /* Adjusted height if needed */
+            margin: 0 auto; /* Center the canvas horizontally */
         }
 
-        /* Page containers for app-like navigation */
-        .page-content {
-            display: none; /* Hidden by default */
-            animation: fadeIn 0.5s ease-out forwards;
+        /* Styling for the in-chart count overlay */
+        .chart-count-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem; /* Large font for count */
+            font-weight: 700;
+            color: white; /* White text for contrast */
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            pointer-events: none; /* Allow clicks to pass through to the chart canvas if needed */
+            overflow: hidden; /* For shine effect */
+            z-index: 10; /* Ensure it's above the chart bars */
+            border: 2px solid rgba(255, 255, 255, 0.4); /* Subtle border for glass effect */
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.7); /* Text shadow for prominence */
         }
 
-        .page-content.active {
-            display: block; /* Shown when active */
+        /* Shine effect for the in-chart count overlay */
+        .chart-count-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.5) 50%, /* Increased visibility for shine */
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-20deg);
+            animation: shine 2s infinite linear; /* Shine animation */
         }
-        
+
+        @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: -100%; }
+        }
+
         /* Fixed bottom navigation bar */
         .bottom-nav {
             position: fixed;
@@ -826,20 +1005,21 @@
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
             display: flex;
-            justify-content: space-around;
+            justify-content: center; /* Changed to center */
             align-items: center;
             padding: 10px 0;
             z-index: 999; /* Ensure it's above other content */
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
+            box-sizing: border-box; /* Include padding in width */
         }
 
         .nav-button {
             background-color: transparent;
             border: none;
             color: white;
-            padding: 8px 12px; /* Reduced padding for smaller height */
-            font-size: 1rem; /* Slightly reduced font size */
+            padding: 8px 12px; /* Consistent padding */
+            font-size: 1rem; /* Consistent font size */
             font-weight: 500;
             cursor: pointer;
             display: flex;
@@ -854,6 +1034,7 @@
             border: 2px solid transparent; /* Default transparent border */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle initial shadow */
             overflow: hidden; /* For shine effect */
+            max-width: 180px; /* Set a max-width to control button size, especially on large screens */
         }
 
         .nav-button:hover, .nav-button.active {
@@ -885,7 +1066,7 @@
 
         .nav-button:hover::before {
             left: 100%;
-            opacity: 1; /* Visible on hover */
+            opacity: 1;
         }
 
 
@@ -927,8 +1108,8 @@
             z-index: 1001; /* Above nav bar */
         }
 
-        /* Change: Dropdown only visible when button is 'active', not on hover */
-        .nav-button.warehouse-button.active .dropdown-menu { 
+        /* CHANGED: Dropdown now visible on hover */
+        .nav-button.warehouse-button:hover .dropdown-menu { 
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) translateY(-5px); /* Slight lift */
@@ -1006,38 +1187,42 @@
             border-color: var(--morning-orders-hover-border);
         }
 
-        /* Top Navigation Bar - Now a distinct block above the header */
+        /* Top Navigation Bar */
         .top-nav {
+            position: fixed; /* Changed to fixed for constant visibility */
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
             display: flex;
-            justify-content: space-around; /* Distribute items evenly */
+            justify-content: center; /* Center the buttons */
             align-items: center;
-            padding: 10px; /* Adjust padding */
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); /* Same gradient as bottom nav */
+            padding: 10px 0;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
-            margin-bottom: 20px; /* Space below top nav */
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
-            position: sticky; /* Make it sticky at the top */
-            top: 0;
-            z-index: 990; /* Ensure it's above other content but below modals */
-            width: 100%; /* Take full width */
-            box-sizing: border-box; /* Include padding in width calculation */
+            /* margin-bottom: 20px; Removed as it's fixed */
+            flex-wrap: wrap; /* Allow wrapping */
+            box-sizing: border-box;
+            z-index: 990;
         }
 
+        /* Ensure nav buttons in top bar share same style as bottom nav buttons */
         .top-nav .nav-button {
-            padding: 8px 12px; /* Match bottom nav padding */
-            font-size: 1rem; /* Match bottom nav font size */
-            margin: 5px; /* Add margin for spacing when wrapping */
-            flex-grow: 1; /* Allow buttons to grow and fill space */
-            max-width: 200px; /* Limit max width for individual buttons */
+            flex-grow: 1; 
+            flex-shrink: 1; 
+            max-width: 180px; 
+            margin: 0 5px; 
+        }
+        
+        /* Adjust container padding-top to prevent content from being hidden behind fixed top-nav */
+        body {
+            padding-top: 70px; /* Height of top-nav + some margin */
         }
 
-        .top-nav .nav-button i {
-            font-size: 1.3rem; /* Match bottom nav icon size */
-        }
 
-        /* Responsive design adjustments */
+        /* Media queries for responsiveness */
         @media (max-width: 1200px) {
             .container {
                 max-width: 960px;
@@ -1045,13 +1230,29 @@
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
-            /* .timeline-grid will be handled by specific media query below */
         }
 
         @media (max-width: 992px) {
+            /* CHART CARD: Revert to column on smaller screens */
+            .chart-card {
+                flex-direction: column; 
+                gap: 20px;
+            }
+            .chart-content-wrapper {
+                flex: none; /* Remove flex grow */
+                width: 100%;
+                min-width: unset;
+            }
+            .chart-card .chart-customer-list {
+                margin-top: 20px; /* Re-add top margin for list when in column layout */
+                max-height: 150px; /* Restore original max-height for list on small screens */
+                flex: none; /* Remove flex grow */
+                width: 100%;
+                min-width: unset;
+            }
+
             .timeline-grid {
-                /* On smaller tablets, if two columns are too cramped, allow for single column more easily */
-                grid-template-columns: 1fr; /* Force single column to avoid squishing if needed */
+                grid-template-columns: 1fr;
                 gap: 20px;
             }
             .container {
@@ -1070,8 +1271,8 @@
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             }
-            .chart-card {
-                grid-column: span 1; /* Charts become single column on smaller tablets */
+            .top-nav .nav-button {
+                max-width: none; 
             }
         }
 
@@ -1098,8 +1299,8 @@
                 padding: 8px 25px;
             }
             .timeline-grid {
-                grid-template-columns: 1fr; /* Single column on mobile */
-                gap: 15px; /* Even smaller gap */
+                grid-template-columns: 1fr;
+                gap: 15px;
             }
             .order-card {
                 padding: 15px;
@@ -1125,13 +1326,14 @@
                 font-size: 1.1rem;
             }
             #cityMapModal .modal-content {
-                height: 400px;
+                height: auto; 
+                max-height: 85vh; 
             }
             #cityMapDisplay {
                 height: 250px;
             }
             .summary-grid {
-                grid-template-columns: 1fr; /* Single column on mobile */
+                grid-template-columns: 1fr;
             }
             .summary-card h3 {
                 font-size: 1.6rem;
@@ -1149,12 +1351,14 @@
             .nav-button i {
                 font-size: 1.2rem;
             }
-            .top-nav {
-                padding: 8px; /* More compact on mobile */
-            }
             .top-nav .nav-button {
-                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
-                max-width: none; /* Remove max-width constraint for flexibility */
+                flex-basis: calc(50% - 10px); 
+            }
+            .share-button {
+                width: calc(100% - 40px); 
+                margin-left: 20px; 
+                margin-right: 20px;
+                box-sizing: border-box; 
             }
         }
 
@@ -1200,7 +1404,8 @@
                 font-size: 1.3rem;
             }
             #cityMapModal .modal-content {
-                height: 350px;
+                height: auto;
+                max-height: 80vh;
             }
             #cityMapDisplay {
                 height: 200px;
@@ -1227,28 +1432,31 @@
                 font-size: 1.1rem;
             }
             .top-nav .nav-button {
-                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
+                flex-basis: calc(50% - 10px);
+            }
+            .share-button {
+                width: calc(100% - 20px); 
             }
         }
     </style>
 </head>
 <body>
-    <!-- Top Navigation Bar (Now positioned as the very first element) -->
+    <!-- Top Navigation Bar -->
     <nav class="top-nav">
-        <button class="nav-button active" onclick="showPage('mainPage', this)">
+        <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
             <i class="fas fa-home"></i> ראשי
         </button>
-        <button class="nav-button" onclick="showPage('hakmatPage', this)">
+        <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
             <i class="fas fa-user-tie"></i> חכמת
         </button>
-        <button class="nav-button" onclick="showPage('aliPage', this)">
+        <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
             <i class="fas fa-user-astronaut"></i> עלי
         </button>
-        <button class="nav-button warehouse-button" onclick="toggleDropdown(this)">
+        <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
             <i class="fas fa-boxes"></i> מחסן
             <div class="dropdown-menu">
-                <div class="dropdown-item" onclick="showWarehouseOrders('התלמיד')"><i class="fas fa-school"></i> מחסן התלמיד</div>
-                <div class="dropdown-item" onclick="showWarehouseOrders('החרש')"><i class="fas fa-tools"></i> מחסן החרש</div>
+                <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
+                <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
             </div>
         </button>
     </nav>
@@ -1256,8 +1464,8 @@
     <div class="header">
         <div class="header-content">
             <div class="datetime">
-                <div class="time" id="currentTime"></div>
-                <div class="date" id="currentDate"></div>
+                <div class="time" id="currentTimeDisplay"></div> 
+                <div class="date" id="currentDateDisplay"></div>
             </div>
             <h1>🚛 דוח בוקר - סידור הובלות</h1>
         </div>
@@ -1301,18 +1509,24 @@
             <!-- Charts Section -->
             <div class="summary-grid">
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - עלי</h3>
-                    <div class="chart-container">
-                        <canvas id="aliChart"></canvas>
+                    <div class="chart-content-wrapper">
+                        <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - עלי</h3>
+                        <div class="chart-container">
+                            <canvas id="aliChart"></canvas>
+                            <div class="chart-count-overlay" id="aliChartCountOverlay">0</div>
+                        </div>
                     </div>
                     <div class="chart-customer-list" id="aliMorningCustomers">
                         <!-- Customer names will be inserted here -->
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - חכמת</h3>
-                    <div class="chart-container">
-                        <canvas id="hakmatChart"></canvas>
+                    <div class="chart-content-wrapper">
+                        <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - חכמת</h3>
+                        <div class="chart-container">
+                            <canvas id="hakmatChart"></canvas>
+                            <div class="chart-count-overlay" id="hakmatChartCountOverlay">0</div>
+                        </div>
                     </div>
                     <div class="chart-customer-list" id="hakmatMorningCustomers">
                         <!-- Customer names will be inserted here -->
@@ -1382,9 +1596,18 @@
             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
             <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
             <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+            
+            <!-- New LLM button and response area -->
+            <button class="llm-button" id="generateMessageButton">
+                <i class="fas fa-magic"></i> ✨ צור הודעת לקוח
+            </button>
+            <div id="llmResponseContainer">
+                <div class="loader" id="llmLoader"></div>
+                <div id="llmResponseMessage">לחץ על הכפתור למעלה ליצירת הודעה.</div>
+            </div>
         </div>
     </div>
 
@@ -1412,20 +1635,20 @@
 
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
-        <button class="nav-button active" onclick="showPage('mainPage', this)">
+        <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
             <i class="fas fa-home"></i> ראשי
         </button>
-        <button class="nav-button" onclick="showPage('hakmatPage', this)">
+        <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
             <i class="fas fa-user-tie"></i> חכמת
         </button>
-        <button class="nav-button" onclick="showPage('aliPage', this)">
+        <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
             <i class="fas fa-user-astronaut"></i> עלי
         </button>
-        <button class="nav-button warehouse-button" onclick="toggleDropdown(this)">
+        <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
             <i class="fas fa-boxes"></i> מחסן
             <div class="dropdown-menu">
-                <div class="dropdown-item" onclick="showWarehouseOrders('התלמיד')"><i class="fas fa-school"></i> מחסן התלמיד</div>
-                <div class="dropdown-item" onclick="showWarehouseOrders('החרש')"><i class="fas fa-tools"></i> מחסן החרש</div>
+                <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
+                <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
             </div>
         </button>
     </nav>
@@ -1446,8 +1669,8 @@
             // Remove "יום " prefix for a more natural Hebrew feel
             formattedDate = formattedDate.replace('יום ', '');
             
-            document.getElementById('currentTime').textContent = formattedTime;
-            document.getElementById('currentDate').textContent = formattedDate;
+            document.getElementById('currentTimeDisplay').textContent = formattedTime; 
+            document.getElementById('currentDateDisplay').textContent = formattedDate;
         }
         
         // Update date and time every second
@@ -1456,10 +1679,14 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
+        // IMPORTANT: Replace 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urIE' with your actual Google Sheets API Key.
+        // You can obtain one from the Google Cloud Console (APIs & Services -> Credentials).
+        // Ensure Google Sheets API is enabled for your project in the API Library.
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; 
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; // Changed to explicit placeholder for user to replace
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E
+'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1469,8 +1696,12 @@
         const WHATSAPP_PASSWORD = "1125";
 
         // Avatar image URLs for drivers (replace with actual image links)
-        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; // Updated Ali's avatar URL
-        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; // Updated Hakmat's avatar URL
+        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
+        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
+        // New avatar URLs for warehouses
+        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+
 
         let allAliOrders = []; // Stores all fetched Ali orders
         let allHakmatOrders = []; // Stores all fetched Hakmat orders
@@ -1480,6 +1711,7 @@
         let carpenterWarehouseOrderCount = 0;
         let morningOrdersCount = 0;
 
+        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -1593,6 +1825,10 @@
                 return [];
             } catch (error) {
                 console.error("שגיאה בשליפת הנתונים:", error);
+                // Display user-friendly error message
+                // Using a custom message box instead of alert() for better UX
+                const errorMessage = "שגיאה בטעינת הנתונים מהגיליון. אנא ודא שמפתח ה-API תקין ושיש הרשאות גישה לגיליון.";
+                alert(errorMessage); // Temporarily using alert, replace with custom modal if desired.
                 return [];
             }
         }
@@ -1613,7 +1849,8 @@
             renderOrders(allHakmatOrders, "hakmatTimeline", "חכמת");
             updateSummaryCounts();
             renderCharts();
-            showPage('mainPage', document.querySelector('.nav-button.active')); // Ensure main page is active on load
+            // Initial call to activate main page
+            activatePageAndNav('mainPage', 'main-nav-button'); 
         }
 
         /**
@@ -1682,7 +1919,7 @@
                 return (orderTime >= sixAM && orderTime <= nineAM) || order.time.includes("ביחד");
             });
 
-            // Update customer lists below charts
+            // Update customer lists next to charts
             const aliCustomersList = document.getElementById('aliMorningCustomers');
             aliCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
             if (aliOrdersInTimeRange.length > 0) {
@@ -1706,6 +1943,10 @@
             } else {
                 hakmatCustomersList.innerHTML += '<p>אין לקוחות בטווח שעות זה.</p>';
             }
+
+            // Update the in-chart count overlays
+            document.getElementById('aliChartCountOverlay').textContent = aliOrdersInTimeRange.length;
+            document.getElementById('hakmatChartCountOverlay').textContent = hakmatOrdersInTimeRange.length;
 
 
             const aliChartData = {
@@ -1824,12 +2065,25 @@
          */
         function showOrderDetails(orderJson) {
             const order = JSON.parse(orderJson);
+            currentOrderDetails = order; // Store the current order details globally
+
             document.getElementById('modalDate').textContent = order.date || 'אין נתונים';
             document.getElementById('modalTime').textContent = order.time || 'אין נתונים';
             document.getElementById('modalCustomer').textContent = order.customer || 'אין נתונים';
             document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
             document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
+
+            // Reset LLM response area
+            document.getElementById('llmResponseMessage').textContent = 'לחץ על הכפתור למעלה ליצירת הודעה.';
+            document.getElementById('llmLoader').classList.remove('visible');
+            document.getElementById('llmResponseContainer').classList.remove('loading');
+
+            // Attach event listener to the generate message button
+            const generateButton = document.getElementById('generateMessageButton');
+            // Remove any existing listeners to prevent multiple calls
+            generateButton.onclick = null; 
+            generateButton.onclick = () => generateCustomerMessage(currentOrderDetails);
 
             document.getElementById('orderDetailsModal').classList.add('visible');
         }
@@ -1845,7 +2099,7 @@
             // IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE' with your actual, valid Google Maps Static API Key.
             // You can get one from the Google Cloud Console.
             // For more info: https://developers.google.com/maps/documentation/maps-static/get-api-key
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E') { 
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
                 // Construct Google Static Maps API URL
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
@@ -1958,32 +2212,70 @@
         }
 
         /**
-         * Shows a specific page content and updates the active navigation button.
-         * @param {string} pageId The ID of the page content div to show.
-         * @param {HTMLElement} clickedButton The navigation button that was clicked.
+         * Central function to manage active page and highlighted navigation button.
+         * Also controls the background for the warehouse page.
+         * @param {string} pageId The ID of the HTML element for the page to activate.
+         * @param {string} navButtonId The data-nav-id of the corresponding navigation button to highlight.
          */
-        function showPage(pageId, clickedButton) {
-            // Hide all page contents
+        function activatePageAndNav(pageId, navButtonId) {
+            // Deactivate all page contents and nav buttons first
             document.querySelectorAll('.page-content').forEach(page => {
+                // To animate page transition, remove 'active' first, then set 'display: none' after a delay
                 page.classList.remove('active');
+                setTimeout(() => {
+                    if (!page.classList.contains('active')) { // Ensure it's still not active before hiding
+                        page.style.display = 'none';
+                    }
+                }, 500); // Match CSS transition duration
             });
-            // Remove active state from all nav buttons (both top and bottom)
             document.querySelectorAll('.nav-button').forEach(button => {
                 button.classList.remove('active');
             });
 
-            // Show the selected page content
-            document.getElementById(pageId).classList.add('active');
-            
-            // Set the clicked button as active, and find its counterpart in the other nav bar
-            // Ensure we handle cases where the clickedButton might be null if called from inside a dropdown item directly
-            if (clickedButton) {
-                const clickedButtonText = clickedButton.textContent.trim();
-                document.querySelectorAll('.nav-button').forEach(button => {
-                    if (button.textContent.trim() === clickedButtonText) {
-                        button.classList.add('active');
-                    }
-                });
+            // Activate the requested page
+            const currentPage = document.getElementById(pageId);
+            if (currentPage) {
+                currentPage.style.display = 'block'; // Make it visible before adding 'active' for transition
+                setTimeout(() => { // Add 'active' after a small delay to trigger CSS transition
+                    currentPage.classList.add('active');
+                }, 10); 
+            }
+
+            // Activate the corresponding nav button (top and bottom)
+            document.querySelectorAll(`[data-nav-id="${navButtonId}"]`).forEach(button => {
+                button.classList.add('active');
+            });
+
+            // Handle specific warehouse page background and content reset
+            const warehousePage = document.getElementById('warehousePage');
+            if (pageId === 'warehousePage') {
+                // Initial message for warehouse page until a specific type is selected
+                document.getElementById('warehouseOrdersDisplay').innerHTML = `
+                    <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                        <i class="fas fa-hand-point-up"></i> בחר מחסן מהתפריט הנפתח
+                    </p>
+                `;
+                // Set the specific background for warehouse page
+                warehousePage.style.backgroundImage = `url(${STUDENT_WAREHOUSE_AVATAR_URL})`; // Default to student warehouse image
+                warehousePage.style.backgroundSize = 'cover';
+                warehousePage.style.backgroundPosition = 'center';
+                warehousePage.style.backgroundAttachment = 'fixed';
+                warehousePage.style.opacity = '0.5'; /* Default opacity for its background image */
+
+                // When warehouse page is active, hide body's global background via class
+                document.body.classList.add('warehouse-page-active');
+            } else {
+                // If not on a warehouse page, ensure its specific background is cleared
+                if (warehousePage) {
+                    warehousePage.style.backgroundImage = 'none';
+                    warehousePage.style.opacity = '1'; /* Reset opacity for the container */
+                }
+                // Restore body's global background visibility
+                document.body.classList.remove('warehouse-page-active');
+                // Ensure dropdowns are closed if not already (important when switching away from warehouse page)
+                // This will be implicitly handled by the CSS :hover, but if the button was visually active,
+                // this ensures it looks normal when switching pages.
+                document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
             }
 
             // Specific rendering based on page
@@ -1992,56 +2284,85 @@
             } else if (pageId === 'aliPage') {
                 renderOrders(allAliOrders, "aliOnlyTimeline", "עלי");
             }
-            // For 'mainPage', data is already rendered by initializeApp
-            // For 'warehousePage', it will be rendered by showWarehouseOrders
+            // Main page is rendered by initializeApp
         }
 
-        /**
-         * Toggles the dropdown menu for the warehouse button.
-         * This function is now responsible for showing/hiding the dropdown.
-         * @param {HTMLElement} button The warehouse navigation button.
-         */
-        function toggleDropdown(button) {
-            // Toggle active class on the button. This class controls dropdown visibility via CSS.
-            button.classList.toggle('active');
 
-            // Close other dropdowns if any (though only one warehouse button exists per nav bar)
-            document.querySelectorAll('.nav-button.warehouse-button').forEach(otherButton => {
-                if (otherButton !== button && otherButton.classList.contains('active')) {
-                    otherButton.classList.remove('active');
-                }
-            });
+        // Event listener for top/bottom nav buttons (excluding warehouse button initially)
+        document.querySelectorAll('.nav-button:not(.warehouse-button)').forEach(button => {
+            button.onclick = () => {
+                const pageId = button.dataset.pageId;
+                const navId = button.dataset.navId;
+                activatePageAndNav(pageId, navId);
+            };
+        });
 
-            // Ensure main content page is hidden when dropdown is active, to give focus
-            // Or ensure the main page is shown and the dropdown is on top.
-            // For now, it will just manage the dropdown visibility.
-            // The showPage function called by dropdown items will handle page display.
-        }
+        // Event listener for the warehouse button
+        document.querySelectorAll('.nav-button.warehouse-button').forEach(button => {
+            button.onclick = (event) => {
+                event.stopPropagation(); // Prevent immediate dropdown closure from body click
+                
+                // When clicking the warehouse button, we navigate to the warehouse page.
+                // The dropdown's visibility is now solely controlled by CSS :hover.
+                activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                
+                // No need to toggle 'active' for dropdown visibility, as CSS handles it.
+            };
+        });
+
+        // Event listener for dropdown items (Student Warehouse, Carpenter Warehouse)
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.onclick = (event) => {
+                event.stopPropagation(); // Prevent the parent button's click handler from re-toggling
+                const warehouseType = item.dataset.warehouseType;
+                showWarehouseOrders(warehouseType);
+            };
+        });
+
 
         /**
          * Displays orders filtered by warehouse type.
+         * This function is called when a specific warehouse type is selected from the dropdown.
          * @param {string} warehouseType The type of warehouse to filter by (e.g., 'התלמיד', 'החרש').
          */
         function showWarehouseOrders(warehouseType) {
-            // Find the warehouse button and explicitly remove its 'active' class to close the dropdown.
-            // This is crucial: ensures the dropdown closes after an item is selected.
-            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            // First, hide the dropdown itself by ensuring the warehouse button is not 'active'
+            // This is important because activatePageAndNav will set it active, but we want
+            // the dropdown to disappear when an item is selected from it.
+            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
 
-            // Switch to the warehouse page and activate the main warehouse button
-            // We pass null for clickedButton since the click originated from a dropdown item, not the main nav button directly.
-            // showPage will still activate the correct page and highlight the warehouse button.
-            showPage('warehousePage', document.querySelector('.nav-button.warehouse-button'));
-            
+            // Now, activate the warehouse page and highlight its button
+            activatePageAndNav('warehousePage', 'warehouse-nav-button');
+
             const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
+            let avatarUrl = '';
+            if (warehouseType === 'התלמיד') {
+                avatarUrl = STUDENT_WAREHOUSE_AVATAR_URL;
+            } else if (warehouseType === 'החרש') {
+                avatarUrl = CARPENTER_WAREHOUSE_AVATAR_URL;
+            }
+
+            // Update the content for the selected warehouse
             warehouseDisplayContainer.innerHTML = `
                 <div class="driver-section-title">
-                    <img src="${warehouseType === 'התלמיד' ? 'https://i.postimg.cc/nzMSQQHD/1-20250623-212344-0000.png' : 'https://placehold.co/60x60/3CB371/FFFFFF?text=חרש'}" alt="Avatar for ${warehouseType}" class="driver-avatar">
+                    <img src="${avatarUrl}" alt="Avatar for ${warehouseType}" class="driver-avatar">
                     מחסן: ${warehouseType}
                 </div>
                 <div id="filteredWarehouseTimeline" class="timeline-grid"></div>
             `;
+
+            // Apply specific background to warehousePage based on type
+            const warehousePage = document.getElementById('warehousePage');
+            warehousePage.style.backgroundImage = `url(${avatarUrl})`; // Set the dynamic image
+            warehousePage.style.backgroundSize = 'cover';
+            warehousePage.style.backgroundPosition = 'center';
+            warehousePage.style.backgroundAttachment = 'fixed';
+            warehousePage.style.opacity = '0.5'; // Adjustable transparency for the image behind content
+            warehousePage.style.transition = 'opacity 0.5s ease-in-out, background-image 0.5s ease-in-out'; // Smooth transition
+
+            // The body.warehouse-page-active class handles hiding the body::before
+            document.body.classList.add('warehouse-page-active');
+
 
             const filteredOrders = [...allAliOrders, ...allHakmatOrders].filter(order => 
                 order.warehouse && order.warehouse.includes(warehouseType)
@@ -2050,7 +2371,70 @@
             // Sort by time
             filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
 
-            renderOrders(filteredOrders, "filteredWarehouseTimeline", null); // No specific driver styling for warehouse page
+            renderOrders(filteredOrders, "filteredWarehouseTimeline", null);
+        }
+
+        /**
+         * Generates a customer message using Gemini API.
+         * @param {Object} order The order object for which to generate a message.
+         */
+        async function generateCustomerMessage(order) {
+            const llmLoader = document.getElementById('llmLoader');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const llmResponseContainer = document.getElementById('llmResponseContainer');
+
+            llmResponseMessage.textContent = ''; // Clear previous message
+            llmLoader.classList.add('visible'); // Show loader
+            llmResponseContainer.classList.add('loading'); // Add loading class for styling
+
+            try {
+                // Construct a detailed prompt for the LLM
+                let prompt = `Generate a concise, polite Hebrew message for a customer regarding their delivery.`;
+                prompt += `\nCustomer Name: ${order.customer || 'לא ידוע'}`;
+                prompt += `\nStatus: ${order.status || 'לא ידוע'}`;
+                prompt += `\nTime: ${order.time || 'לא ידוע'}`;
+                prompt += `\nWarehouse: ${order.warehouse || 'לא ידוע'}`;
+                prompt += `\nAddress: ${order.address || 'לא ידוע'}`;
+                prompt += `\n\nBased on the status, suggest the appropriate context.`;
+                prompt += ` If status is 'בדרך', state the driver is on the way.`;
+                prompt += ` If 'הושלם', state it's delivered.`;
+                prompt += ` If 'נדחה', explain it's delayed.`;
+                prompt += ` If 'ביחד', explain that multiple items are combined in the delivery.`;
+                prompt += ` Keep it friendly and professional.`;
+                prompt += `\n\nExample output format: שלום [שם לקוח], ההזמנה שלך [סטטוס]. נא לצפות ל[שעה]. תודה!`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                
+                // Gemini API Key is expected to be provided by the environment, leave empty string
+                const geminiApiKey = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    llmResponseMessage.textContent = text;
+                } else {
+                    llmResponseMessage.textContent = 'שגיאה: לא התקבלה תגובה מה-LLM. נסה שוב.';
+                    console.error("Unexpected LLM response structure:", result);
+                }
+            } catch (error) {
+                llmResponseMessage.textContent = 'שגיאה: אירעה תקלה ביצירת ההודעה. אנא נסה שוב מאוחר יותר.';
+                console.error("Error calling Gemini API:", error);
+            } finally {
+                llmLoader.classList.remove('visible'); // Hide loader
+                llmResponseContainer.classList.remove('loading'); // Remove loading class
+            }
         }
 
 
