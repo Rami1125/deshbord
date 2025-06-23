@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 דוח בוקר - סידור עבודה</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* General styling for the application */
+        :root {
+            --primary-color: #3498db; /* Blue */
+            --secondary-color: #2ecc71; /* Green */
+            --dark-color: #2c3e50; /* Dark blue-gray */
+            --light-color: #ecf0f1; /* Light gray */
+            --accent-color: #e74c3c; /* Red */
+            --text-color: #333; /* Dark text */
+            --shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Soft shadow */
+            --card-bg: rgba(255, 255, 255, 0.95); /* Slightly transparent white for cards */
+        }
+        
+        body {
+            font-family: 'Rubik', Arial, sans-serif;
+            text-align: center;
+            direction: rtl; /* Right-to-left for Hebrew */
+            background-color: #f0f2f5; /* Light background for app feel */
+            background-image: url('https://i.postimg.cc/mD2FXJ7B/Whats-App-Image-2025-06-23-at-8-07-26-AM.jpg'); /* User provided background image */
+            background-size: cover; /* Cover the entire background */
+            background-position: center;
+            background-attachment: fixed; /* Keep background fixed when scrolling */
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column; /* For sticky footer/bottom content */
+        }
+
+        /* Main container for app content */
+        .container {
+            max-width: 960px; /* Adjusted for a more app-like width */
+            margin: 20px auto;
+            padding: 0 15px; /* Smaller horizontal padding for mobile */
+            flex-grow: 1; /* Allows container to grow and push footer/bottom elements down */
+        }
+        
+        /* Header styling with gradient and clock/date */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px 0; /* More padding for a bolder header */
+            border-radius: 0 0 30px 30px; /* More pronounced border-radius */
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px; /* Ensure a minimum height for the header */
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1; /* Ensure content is above any background effects */
+            padding: 0 20px;
+            width: 100%;
+        }
+        
+        .datetime {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 15px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        
+        .time {
+            font-size: 3rem; /* Slightly larger time font */
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .date {
+            font-size: 1.8rem; /* Slightly larger date font */
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.5rem; /* Larger main title */
+            font-weight: 700;
+            text-shadow: 0 3px 5px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+        }
+        
+        /* WhatsApp Share Button styling */
+        .share-button {
+            background-color: #25D366; /* WhatsApp green */
+            color: white;
+            padding: 18px 30px; /* More padding for a bigger button */
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px; /* Pill-shaped button */
+            cursor: pointer;
+            margin: 40px auto 30px auto; /* More margin */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 90%;
+            max-width: 320px; /* Max width for button */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25); /* Deeper shadow */
+            transition: all 0.3s ease;
+            text-decoration: none; /* Remove underline from link if used */
+        }
+        
+        .share-button:hover {
+            transform: translateY(-3px); /* Lift effect on hover */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Even deeper shadow */
+            background-color: #128C7E; /* Darker green on hover */
+        }
+
+        /* Section title for each driver */
+        .driver-section-title {
+            font-size: 28px; /* Larger title for driver sections */
+            font-weight: 700;
+            margin: 40px 0 25px; /* More spacing */
+            color: var(--dark-color);
+            display: inline-block;
+            padding: 8px 25px;
+            border-radius: 50px;
+            background-color: var(--light-color); /* Light background for the title */
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 2; /* Ensure title is above timeline elements */
+            border: 2px solid var(--primary-color); /* Border to highlight */
+        }
+        
+        /* Styling for the timeline effect */
+        .timeline-container {
+            position: relative;
+            padding-bottom: 20px;
+            border-right: 3px solid rgba(0, 0, 0, 0.1); /* Subtle timeline line */
+            margin-right: 20px; /* Space for the line and arrows */
+        }
+
+        /* Individual order "cube" styling */
+        .order-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 30px; /* Space between cards */
+            text-align: right;
+            position: relative;
+            transition: transform 0.2s ease-in-out;
+            border-left: 5px solid var(--primary-color); /* Accent border for orders */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-right: -15px; /* Overlap with timeline line */
+            animation: fadeIn 0.8s ease-out forwards; /* Fade in animation */
+        }
+
+        .order-card:hover {
+            transform: translateY(-5px); /* Lift effect on hover */
+        }
+
+        /* Timeline arrow styling */
+        .order-arrow {
+            position: absolute;
+            right: -28px; /* Position next to the timeline line */
+            top: 25px;
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-right: 15px solid var(--accent-color); /* Red arrow pointing left */
+            z-index: 3; /* Ensure arrow is on top */
+        }
+
+        /* Specific styling for the content within the order card */
+        .order-time {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .order-time i {
+            color: var(--accent-color); /* Clock icon color */
+        }
+
+        .order-details p {
+            margin: 5px 0;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .order-details p strong {
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .order-details i {
+            color: var(--secondary-color); /* Icon color for details */
+        }
+
+        /* Keyframe animation for fade in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive design adjustments */
+        @media (max-width: 768px) {
+            .datetime {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .time {
+                font-size: 2.5rem;
+            }
+            
+            .date {
+                font-size: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+
+            .driver-section-title {
+                font-size: 24px;
+                padding: 6px 20px;
+            }
+
+            .order-card {
+                padding: 15px;
+                margin-bottom: 25px;
+            }
+
+            .order-time {
+                font-size: 1.4rem;
+            }
+
+            .order-details p {
+                font-size: 1rem;
+            }
+
+            .share-button {
+                font-size: 18px;
+                padding: 15px 25px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px auto;
+                padding: 0 10px;
+            }
+
+            .header {
+                padding: 20px 0;
+            }
+
+            .time {
+                font-size: 2rem;
+            }
+            
+            .date {
+                font-size: 1.2rem;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .driver-section-title {
+                font-size: 20px;
+                margin: 30px 0 20px;
+            }
+
+            .order-card {
+                margin-bottom: 20px;
+            }
+
+            .order-time {
+                font-size: 1.2rem;
+            }
+
+            .order-details p {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="datetime">
+                <div class="time" id="currentTime"></div>
+                <div class="date" id="currentDate"></div>
+            </div>
+            <h1>🚛 דוח בוקר - סידור הובלות</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Driver Ali's section -->
+        <div class="driver-section-title">נהג: עלי</div>
+        <div id="aliTimeline" class="timeline-container">
+            <!-- Orders for Ali will be dynamically inserted here -->
+        </div>
+
+        <!-- Driver Hakmat's section -->
+        <div class="driver-section-title">נהג: חכמת</div>
+        <div id="hakmatTimeline" class="timeline-container">
+            <!-- Orders for Hakmat will be dynamically inserted here -->
+        </div>
+
+        <!-- WhatsApp share button -->
+        <button class="share-button" onclick="shareToWhatsApp()">
+            <i class="fab fa-whatsapp"></i> שתף לווצאפ
+        </button>
+    </div>
+
+    <script>
+        // Function to update the current time and date
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Format time (HH:MM:SS)
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const formattedTime = now.toLocaleTimeString('he-IL', timeOptions);
+            
+            // Format date (Day, Month Day, Year)
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let formattedDate = now.toLocaleDateString('he-IL', dateOptions);
+            
+            // Remove "יום " prefix for a more natural Hebrew feel
+            formattedDate = formattedDate.replace('יום ', '');
+            
+            document.getElementById('currentTime').textContent = formattedTime;
+            document.getElementById('currentDate').textContent = formattedDate;
+        }
+        
+        // Update date and time every second
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // Call immediately to display on load
+        
+        // Google Sheets API configuration
+        const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
+        const apiKey = ''; // Your Google API Key (ensure it has access to Google Sheets API)
+        const aliRange = 'Sheet2!B2:G10'; // Range for Ali's data
+        const hakmatRange = 'Sheet1!B2:G10'; // Range for Hakmat's data
+
+        /**
+         * Fetches data from Google Sheets and renders it as "order cubes" in the timeline.
+         * @param {string} range The A1 notation of the range to retrieve from the spreadsheet.
+         * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
+         * @param {string} driverName The name of the driver for WhatsApp formatting.
+         */
+        async function fetchDataAndRender(range, timelineId) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const timelineContainer = document.getElementById(timelineId);
+                timelineContainer.innerHTML = ""; // Clear existing content
+
+                if (data.values && data.values.length > 0) {
+                    data.values.forEach((row) => {
+                        // Ensure row has enough data for all fields
+                        if (row.length >= 6) {
+                            const [date, time, warehouse, status, customer, address] = row;
+
+                            const orderCard = document.createElement("div");
+                            orderCard.classList.add("order-card");
+                            
+                            // Create the HTML structure for each order cube
+                            orderCard.innerHTML = `
+                                <div class="order-time">
+                                    <i class="far fa-clock"></i> ${time || "לא ידוע"}
+                                </div>
+                                <div class="order-details">
+                                    <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date || "לא ידוע"}</p>
+                                    <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer || "לא ידוע"}</p>
+                                    <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${address || "לא ידוע"}</p>
+                                    <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${warehouse || "לא ידוע"}</p>
+                                    <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status || "לא ידוע"}</p>
+                                </div>
+                                <div class="order-arrow"></div>
+                            `;
+                            timelineContainer.appendChild(orderCard);
+                        }
+                    });
+                } else {
+                    const noOrdersMessage = document.createElement("p");
+                    noOrdersMessage.textContent = "אין הזמנות זמינות עבור נהג זה.";
+                    noOrdersMessage.style.textAlign = "center";
+                    noOrdersMessage.style.marginTop = "30px";
+                    noOrdersMessage.style.fontSize = "1.2rem";
+                    // Fixed: Access CSS custom properties correctly in JS
+                    noOrdersMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--dark-color'); 
+                    timelineContainer.appendChild(noOrdersMessage);
+                }
+            } catch (error) {
+                console.error("שגיאה בשליפת הנתונים:", error);
+                const errorMessage = document.createElement("p");
+                errorMessage.textContent = "אירעה שגיאה בטעינת הנתונים. אנא נסה שוב מאוחר יותר.";
+                errorMessage.style.textAlign = "center";
+                errorMessage.style.marginTop = "30px";
+                errorMessage.style.fontSize = "1.2rem";
+                // Fixed: Access CSS custom properties correctly in JS
+                errorMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+                timelineContainer.appendChild(errorMessage);
+            }
+        }
+        
+        /**
+         * Formats the data from a table (now virtual) into a WhatsApp message string.
+         * This function will need to adapt as the data is no longer directly in HTML tables,
+         * but is instead fetched and used to build the cards.
+         * For simplicity, this will assume we can still get the data or re-fetch for the message.
+         * A more robust solution would store the fetched data in a global variable.
+         */
+        async function formatWhatsAppData(range, driverName) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                let message = `📝 *${driverName} - דוח בוקר*\n`;
+
+                if (data.values && data.values.length > 0) {
+                    data.values.forEach((row) => {
+                        if (row.length >= 6) {
+                            const [date, time, warehouse, status, customer, address] = row;
+                            message += `📅 ${date || ""} ⏰ ${time || ""}\n`;
+                            message += `🏠 ${warehouse || ""} 📄 ${status || ""}\n`;
+                            message += `👤 ${customer || ""} 📍 ${address || ""}\n`;
+                            message += `➖➖➖\n`;
+                        }
+                    });
+                } else {
+                    message += "אין הזמנות זמינות.\n";
+                }
+                return message.trim();
+            } catch (error) {
+                console.error("Error formatting data for WhatsApp:", error);
+                return `📝 *${driverName} - דוח בוקר*\nשגיאה בשליפת נתונים לשיתוף.`;
+            }
+        }
+
+        /**
+         * Shares the formatted driver reports to WhatsApp.
+         */
+        async function shareToWhatsApp() {
+            // Fetch data again specifically for WhatsApp formatting
+            const aliData = await formatWhatsAppData(aliRange, "עלי");
+            const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
+            const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
+
+            const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${link}`;
+            const phoneNumber = "972508860896"; // Pre-set phone number
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
+
+            window.open(url, "_blank"); // Open WhatsApp in a new tab
+        }
+
+        // Fetch and render data for both drivers on load
+        fetchDataAndRender(aliRange, "aliTimeline");
+        fetchDataAndRender(hakmatRange, "hakmatTimeline");
+    </script>
+</body>
+</html>
