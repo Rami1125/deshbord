@@ -731,7 +731,7 @@
             <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
             <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
-            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</b> <span id="modalCustomer"></span></p>
             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
@@ -742,8 +742,7 @@
     <div id="cityMapModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
-            <h2 id="cityModalTitle">מפה של העיר</h2>
-            <!-- This is the DIV that was likely missing or misplaced -->
+            <h2 id="cityModalTitle">מפה</h2>
             <div id="mapContainer">
                 <!-- Google Map will be rendered here -->
             </div>
@@ -815,14 +814,15 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key for Sheets (ensure it has access to Google Sheets API)
+        const apiKey = 'YOUR_GOOGLE_SHEETS_API_KEY'; // Your Google API Key (ensure it has access to Google Sheets API)
         
         // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        // This key MUST be enabled for Maps JavaScript API, Places API, and Geocoding API
+        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'YOUR_GOOGLE_MAPS_JAVASCRIPT_API_KEY'; 
 
-        // Updated ranges to include column H (if needed for custom city names)
+        // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
-        const hakmatRange = 'Sheet1!B2:H10'; // Assuming Hakmat sheet also uses H
+        const hakmatRange = 'Sheet1!B2:H10'; 
 
         // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
@@ -876,27 +876,28 @@
                         const address = row[5] || "לא ידוע";
                         const additionalData = row.length > 6 ? row[6] : "לא ידוע"; // Data from column H
 
-                        // Use column H data for city if available, otherwise parse from address
-                        const city = additionalData && additionalData !== "לא ידוע" ? additionalData.trim() : (address ? address.split(',').pop().trim() : 'לא ידוע');
+                        // Use column H data for city if available, otherwise use the full address for geocoding later
+                        // The full address from column 5 is passed to showCityMap
+                        const fullAddressForMap = address; 
 
                         const orderCard = document.createElement("div");
                         orderCard.classList.add("order-card");
                         // Store full order data as a JSON string for easy retrieval in modal
-                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address, city, additionalData });
+                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address, additionalData });
                         
                         // Add click listener to open full details modal
                         orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
 
                         orderCard.innerHTML = `
                             <div class="order-time">
-                                <i class="far fa-clock"></i> ${time}
+                                <i class="far fa-clock"></i> ${time || "לא ידוע"}
                             </div>
                             <div class="order-details">
-                                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date}</p>
-                                <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer}</p>
-                                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <a href="#" class="city-link" data-full-address="${address}">${address}</a></p>
-                                <p><strong><i class="fas fa-warehouse"></i> מחסן:</b> ${warehouse}</p>
-                                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status}</p>
+                                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <a href="#" class="city-link" data-full-address="${fullAddressForMap}">${address || "לא ידוע"}</a></p>
+                                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${warehouse || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status || "לא ידוע"}</p>
                             </div>
                             <div class="order-arrow"></div>
                         `;
@@ -959,14 +960,7 @@
             const streetViewPanoramaDiv = document.getElementById('streetViewPanorama');
             const toggleSvButton = document.querySelector('#mapControls button:first-child');
             
-            // --- DEBUGGING START ---
-            console.log('showCityMap called for address:', fullAddress);
-            console.log('mapContainer element:', mapContainer);
-            console.log('streetViewPanoramaDiv element:', streetViewPanoramaDiv);
-            console.log('toggleSvButton element:', toggleSvButton);
-            // --- DEBUGGING END ---
-
-            // Defensive check: Ensure elements exist before trying to manipulate them
+            // Debugging checks for elements
             if (!mapContainer) {
                 showAlertModal("שגיאה", "שגיאה פנימית: אלמנט המפה הראשי (mapContainer) לא נמצא ב-HTML.");
                 console.error("Critical: mapContainer element not found.", { mapContainer });
@@ -983,9 +977,8 @@
                 return;
             }
 
-
             // Reset map container if Street View was active
-            streetViewPanoramaDiv.style.display = 'none'; // LINE 951 - this is the error line
+            streetViewPanoramaDiv.style.display = 'none'; 
             toggleSvButton.classList.remove('active');
             mapContainer.style.display = 'block'; // Ensure map is visible
 
@@ -995,7 +988,7 @@
 
             // Check if Google Maps API libraries are loaded
             if (typeof google === 'undefined' || typeof google.maps === 'undefined' || typeof google.maps.Geocoder === 'undefined') {
-                showAlertModal("שגיאה", `טעינת מפות Google נכשלה. אנא וודא שמפתח ה-API תקין ב-Google Cloud Console והשירות Maps JavaScript API מופעל.`);
+                showAlertModal("שגיאה", `טעינת מפות Google נכשלה. אנא וודא שמפתח ה-API תקין ב-Google Cloud Console וששירותי Maps JavaScript API ו-Places API מופעלים.`);
                 document.getElementById('cityMapModal').classList.add('visible');
                 return;
             }
@@ -1005,21 +998,101 @@
                 if (status === 'OK' && results[0]) {
                     currentLatLng = results[0].geometry.location; // Store for Street View and external link
                     
-                    // Initialize the map
+                    // Define a custom map style for "colorful" effect
+                    const mapStyle = [
+                        { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
+                        { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+                        { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+                        { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
+                        {
+                            featureType: 'administrative.land_parcel',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#bdbdbd' }]
+                        },
+                        {
+                            featureType: 'poi',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#eeeeee' }]
+                        },
+                        {
+                            featureType: 'poi',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#757575' }]
+                        },
+                        {
+                            featureType: 'poi.park',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#e5e5e5' }]
+                        },
+                        {
+                            featureType: 'poi.park',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#9e9e9e' }]
+                        },
+                        {
+                            featureType: 'road',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#ffffff' }]
+                        },
+                        {
+                            featureType: 'road.arterial',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#757575' }]
+                        },
+                        {
+                            featureType: 'road.highway',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#dadada' }]
+                        },
+                        {
+                            featureType: 'road.highway',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#616161' }]
+                        },
+                        {
+                            featureType: 'road.local',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#9e9e9e' }]
+                        },
+                        {
+                            featureType: 'transit.line',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#e5e5e5' }]
+                        },
+                        {
+                            featureType: 'transit.station',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#eeeeee' }]
+                        },
+                        {
+                            featureType: 'water',
+                            elementType: 'geometry',
+                            stylers: [{ color: '#c9c9c9' }]
+                        },
+                        {
+                            featureType: 'water',
+                            elementType: 'labels.text.fill',
+                            stylers: [{ color: '#9e9e9e' }]
+                        }
+                    ];
+
+                    // Initialize the map with the geocoded location and custom style
                     map = new google.maps.Map(mapContainer, {
                         center: currentLatLng,
-                        zoom: 15,
+                        zoom: 17, // Increased zoom for more detail
                         fullscreenControl: true, /* Enabled fullscreen control */
                         mapTypeControl: true, /* Enabled map type control */
                         streetViewControl: false, // We will handle Street View button manually
-                        zoomControl: true /* Enabled zoom control explicitly */
+                        zoomControl: true, /* Enabled zoom control explicitly */
+                        styles: mapStyle // Apply the custom colorful style
                     });
 
-                    // Add a marker to the map
+                    // Add a marker to the map for the precise address
                     new google.maps.Marker({
                         position: currentLatLng,
                         map: map,
-                        title: fullAddress
+                        title: fullAddress, // Show full address on marker hover
+                        label: '🏠' // A house emoji as label for the address
                     });
 
                     // Initialize Street View Panorama
@@ -1036,7 +1109,7 @@
                     toggleSvButton.onclick = () => toggleStreetView();
 
                 } else {
-                    showAlertModal("שגיאה", `לא ניתן למצוא את המיקום עבור: ${fullAddress}. סיבה: ${status}`);
+                    showAlertModal("שגיאה", `לא ניתן למצוא את המיקום המדויק עבור: ${fullAddress}. ייתכן שהכתובת לא נכונה או שאין נתונים זמינים. סיבה: ${status}`);
                     console.error('Geocode was not successful for the following reason: ' + status);
                 }
             });
@@ -1088,7 +1161,7 @@
                 const lng = currentLatLng.lng();
                 // Use a general search query if full address is available for better results
                 const query = currentLatLng.address_components ? encodeURIComponent(currentLatLng.address_components.map(c => c.long_name).join(', ')) : `${lat},${lng}`;
-                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${currentLatLng.place_id || ''}`;
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(document.getElementById('cityModalTitle').textContent.replace('מפה עבור: ', ''))}&query_place_id=${currentLatLng.place_id || ''}`;
                 window.open(googleMapsUrl, '_blank');
             } else {
                 showAlertModal("שגיאה", "לא ניתן לפתוח במפות Google. מיקום לא ידוע.");
@@ -1183,7 +1256,7 @@
                 return message.trim();
             } catch (error) {
                 console.error("Error formatting data for WhatsApp:", error);
-                return `� *${driverName} - דוח בוקר*\nשגיאה בשליפת נתונים לשיתוף.`;
+                return `📝 *${driverName} - דוח בוקר*\nשגיאה בשליפת נתונים לשיתוף.`;
             }
         }
 
@@ -1193,7 +1266,7 @@
         async function shareToWhatsAppConfirmed() {
             const aliData = await formatWhatsAppData(aliRange, "עלי");
             const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
-            const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
+            const link = "🔗 https://did.li/berOf"; // Assuming this link is constant
 
             const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${link}`;
             const phoneNumber = "972508860896"; // Pre-set phone number
@@ -1208,4 +1281,3 @@
     </script>
 </body>
 </html>
-�
