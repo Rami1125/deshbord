@@ -159,7 +159,10 @@
             font-weight: 700;
             margin: 50px 0 35px; /* More spacing */
             color: var(--dark-color);
-            display: inline-block;
+            display: flex; /* Use flexbox to align title and button */
+            justify-content: center; /* Center the content */
+            align-items: center; /* Align items vertically */
+            gap: 20px; /* Space between title and button */
             padding: 10px 30px;
             border-radius: 60px;
             background-color: var(--light-color); /* Light background for the title */
@@ -168,6 +171,7 @@
             z-index: 2; /* Ensure title is above timeline elements */
             border: 3px solid var(--primary-color); /* Thicker border to highlight */
             overflow: hidden; /* For shine effect */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
         
         .driver-section-title::before {
@@ -190,6 +194,31 @@
         .driver-section-title:hover::before {
             left: 100%;
         }
+
+        /* AI Summary Button */
+        .ai-summary-button {
+            background: linear-gradient(45deg, #FF6B6B, #FFCD6B); /* Warm, energetic gradient */
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        .ai-summary-button:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #FF8E8E, #FFDA8E); /* Lighter gradient on hover */
+        }
+
 
         /* Styling for the timeline effect - now a grid container for two columns */
         .timeline-grid {
@@ -557,6 +586,39 @@
             background-color: rgba(231, 76, 60, 0.1);
             border-radius: 8px;
         }
+
+        /* Daily Summary Modal Styling */
+        #dailySummaryModal .modal-content {
+            max-width: 600px;
+            text-align: right;
+        }
+
+        #dailySummaryModal pre {
+            white-space: pre-wrap; /* Allow text wrapping for long summaries */
+            word-wrap: break-word; /* Break long words */
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            text-align: right;
+        }
+        
+        #dailySummaryModal .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         
         /* Responsive design adjustments */
         @media (max-width: 992px) {
@@ -575,6 +637,10 @@
             }
             .order-details p {
                 font-size: 1.2rem;
+            }
+            .driver-section-title {
+                flex-direction: column; /* Stack title and button */
+                gap: 10px;
             }
         }
 
@@ -707,13 +773,19 @@
 
     <div class="container">
         <!-- Driver Ali's section -->
-        <div class="driver-section-title">נהג: עלי</div>
+        <div class="driver-section-title" id="aliSectionTitle">
+            <span>נהג: עלי</span>
+            <button class="ai-summary-button" onclick="showDailySummary('עלי')">✨ סיכום יומי לנהג</button>
+        </div>
         <div id="aliTimeline" class="timeline-grid">
             <!-- Orders for Ali will be dynamically inserted here -->
         </div>
 
         <!-- Driver Hakmat's section -->
-        <div class="driver-section-title">נהג: חכמת</div>
+        <div class="driver-section-title" id="hakmatSectionTitle">
+            <span>נהג: חכמת</span>
+            <button class="ai-summary-button" onclick="showDailySummary('חכמת')">✨ סיכום יומי לנהג</button>
+        </div>
         <div id="hakmatTimeline" class="timeline-grid">
             <!-- Orders for Hakmat will be dynamically inserted here -->
         </div>
@@ -731,7 +803,7 @@
             <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
             <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
-            <p><strong><i class="fas fa-user"></i> לקוח:</b> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
@@ -777,6 +849,18 @@
         </div>
     </div>
 
+    <!-- Daily Summary Modal -->
+    <div id="dailySummaryModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('dailySummaryModal')">&times;</button>
+            <h2 id="dailySummaryTitle"></h2>
+            <div id="dailySummaryContent">
+                <div class="loading-spinner"></div>
+                <p style="text-align: center;">טוען סיכום יומי...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables for Google Maps
         let map;
@@ -814,11 +898,14 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
+        const apiKey = 'YOUR_GOOGLE_SHEETS_API_KEY'; // Your Google API Key (ensure it has access to Google Sheets API)
         
         // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
         // This key MUST be enabled for Maps JavaScript API, Places API, and Geocoding API
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'YOUR_GOOGLE_MAPS_JAVASCRIPT_API_KEY'; 
+
+        // Gemini API Key (leave empty, Canvas will inject it)
+        const GEMINI_API_KEY = ""; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -826,6 +913,10 @@
 
         // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
+
+        // Global storage for orders data by driver
+        let aliOrdersData = [];
+        let hakmatOrdersData = [];
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -854,9 +945,10 @@
                 const timelineContainer = document.getElementById(timelineId);
                 timelineContainer.innerHTML = ""; // Clear existing content
 
+                let currentDriverOrders = []; // To store orders for the current driver
+
                 if (data.values && data.values.length > 0) {
                     // Filter out empty rows and sort by time.
-                    // Assumes row[1] is time, row[5] is address. row[6] is potential city from column H.
                     const filteredAndSortedData = data.values
                         .filter(row => row.length >= 6 && row[1]) 
                         .sort((a, b) => {
@@ -866,26 +958,23 @@
                         });
 
                     filteredAndSortedData.forEach((row) => {
-                        // Dynamically determine how many columns are available in the row
-                        // and assign them to variables
                         const date = row[0] || "לא ידוע";
                         const time = row[1] || "לא ידוע";
                         const warehouse = row[2] || "לא ידוע";
                         const status = row[3] || "לא ידוע";
                         const customer = row[4] || "לא ידוע";
                         const address = row[5] || "לא ידוע";
-                        const additionalData = row.length > 6 ? row[6] : "לא ידוע"; // Data from column H
+                        const additionalData = row.length > 6 ? row[6] : "לא ידוע"; 
 
-                        // Use column H data for city if available, otherwise use the full address for geocoding later
-                        // The full address from column 5 is passed to showCityMap
                         const fullAddressForMap = address; 
+
+                        const orderDetails = { date, time, warehouse, status, customer, address, additionalData };
+                        currentDriverOrders.push(orderDetails); // Store for summary
 
                         const orderCard = document.createElement("div");
                         orderCard.classList.add("order-card");
-                        // Store full order data as a JSON string for easy retrieval in modal
-                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address, additionalData });
+                        orderCard.dataset.order = JSON.stringify(orderDetails);
                         
-                        // Add click listener to open full details modal
                         orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
 
                         orderCard.innerHTML = `
@@ -904,11 +993,20 @@
                         timelineContainer.appendChild(orderCard);
                     });
 
+                    // Store the fetched orders data globally for each driver
+                    if (timelineId === "aliTimeline") {
+                        aliOrdersData = currentDriverOrders;
+                        document.getElementById('aliSectionTitle').dataset.orders = JSON.stringify(aliOrdersData);
+                    } else if (timelineId === "hakmatTimeline") {
+                        hakmatOrdersData = currentDriverOrders;
+                        document.getElementById('hakmatSectionTitle').dataset.orders = JSON.stringify(hakmatOrdersData);
+                    }
+
                     // Add event listeners for city links after all cards are rendered
                     timelineContainer.querySelectorAll('.city-link').forEach(link => {
                         link.onclick = (event) => {
-                            event.preventDefault(); // Prevent default link behavior (navigating)
-                            event.stopPropagation(); // Prevent order card click when city link is clicked
+                            event.preventDefault(); 
+                            event.stopPropagation(); 
                             showCityMap(link.dataset.fullAddress);
                         };
                     });
@@ -960,7 +1058,7 @@
             const streetViewPanoramaDiv = document.getElementById('streetViewPanorama');
             const toggleSvButton = document.querySelector('#mapControls button:first-child');
             
-            // Debugging checks for elements
+            // Defensive check: Ensure elements exist before trying to manipulate them
             if (!mapContainer) {
                 showAlertModal("שגיאה", "שגיאה פנימית: אלמנט המפה הראשי (mapContainer) לא נמצא ב-HTML.");
                 console.error("Critical: mapContainer element not found.", { mapContainer });
@@ -1159,9 +1257,9 @@
             if (currentLatLng) {
                 const lat = currentLatLng.lat();
                 const lng = currentLatLng.lng();
-                // Use a general search query if full address is available for better results
-                const query = currentLatLng.address_components ? encodeURIComponent(currentLatLng.address_components.map(c => c.long_name).join(', ')) : `${lat},${lng}`;
-                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(document.getElementById('cityModalTitle').textContent.replace('מפה עבור: ', ''))}&query_place_id=${currentLatLng.place_id || ''}`;
+                // Get the full address from the modal title to use in the Google Maps URL
+                const addressFromTitle = document.getElementById('cityModalTitle').textContent.replace('מפה עבור: ', '');
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressFromTitle)}`;
                 window.open(googleMapsUrl, '_blank');
             } else {
                 showAlertModal("שגיאה", "לא ניתן לפתוח במפות Google. מיקום לא ידוע.");
@@ -1266,13 +1364,90 @@
         async function shareToWhatsAppConfirmed() {
             const aliData = await formatWhatsAppData(aliRange, "עלי");
             const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
-            const link = "🔗 https://did.li/berOf"; // Assuming this link is constant
+            const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
 
             const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${link}`;
             const phoneNumber = "972508860896"; // Pre-set phone number
             const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
 
             window.open(url, "_blank"); // Open WhatsApp in a new tab
+        }
+
+        /**
+         * Shows the daily summary modal and fetches content from LLM.
+         * @param {string} driverName The name of the driver.
+         */
+        async function showDailySummary(driverName) {
+            const summaryModal = document.getElementById('dailySummaryModal');
+            const summaryTitle = document.getElementById('dailySummaryTitle');
+            const summaryContent = document.getElementById('dailySummaryContent');
+            
+            summaryTitle.textContent = `✨ סיכום יומי עבור ${driverName}`;
+            summaryContent.innerHTML = '<div class="loading-spinner"></div><p style="text-align: center;">טוען סיכום יומי...</p>';
+            summaryModal.classList.add('visible');
+
+            let ordersToSummarize = [];
+            if (driverName === 'עלי') {
+                ordersToSummarize = aliOrdersData;
+            } else if (driverName === 'חכמת') {
+                ordersToSummarize = hakmatOrdersData;
+            }
+
+            if (ordersToSummarize.length === 0) {
+                summaryContent.innerHTML = `<p>אין הזמנות זמינות עבור ${driverName} לסיכום יומי.</p>`;
+                return;
+            }
+
+            try {
+                const summaryText = await getDailySummaryFromLLM(driverName, ordersToSummarize);
+                summaryContent.innerHTML = `<pre>${summaryText}</pre>`;
+            } catch (error) {
+                console.error("Error fetching daily summary:", error);
+                summaryContent.innerHTML = `<p style="color: var(--accent-color);">שגיאה בטעינת הסיכום היומי: ${error.message}. אנא נסה שוב מאוחר יותר.</p>`;
+            }
+        }
+
+        /**
+         * Fetches a daily summary from the Gemini LLM.
+         * @param {string} driverName The name of the driver.
+         * @param {Array<Object>} orders The array of order objects for the driver.
+         * @returns {Promise<string>} The generated daily summary text.
+         */
+        async function getDailySummaryFromLLM(driverName, orders) {
+            let ordersPrompt = orders.map((order, index) => {
+                return `הזמנה ${index + 1}: זמן: ${order.time}, לקוח: ${order.customer}, כתובת: ${order.address}, מחסן: ${order.warehouse}, סטטוס: ${order.status}`;
+            }).join('\n');
+
+            if (orders.length === 0) {
+                ordersPrompt = "אין הזמנות להיום.";
+            }
+
+            const prompt = `נתונים יומיים עבור נהג ${driverName}:\n\n${ordersPrompt}\n\nבהתבסס על הנתונים לעיל, אנא כתוב סיכום קצר וקליל עבור הנהג, שיכלול: את מספר ההזמנות, ההזמנה המוקדמת ביותר והמאוחרת ביותר, והאם יש משהו מיוחד (לדוגמה, ריכוז הזמנות באזור מסוים, או מספר רב של הזמנות). השתמש בטון מקצועי וידידותי. אם אין הזמנות, ציין זאת במפורש. כתוב את הסיכום בשפה העברית.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("לא התקבלה תגובה תקפה מ-Gemini API.");
+            }
         }
 
         // Initial fetch and render of data for both drivers on page load
