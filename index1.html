@@ -25,30 +25,32 @@
             --glass-bg: rgba(255, 255, 255, 0.7); /* Less transparent white for glass effect, adjusted from 0.5 */
             --glass-border: rgba(255, 255, 255, 0.8); /* Subtle white border for glass effect, less transparent */
             --glass-shadow: rgba(0, 0, 0, 0.2); /* Slightly stronger shadow for glass effect */
+            --glass-light-20: rgba(255, 255, 255, 0.2); /* 20% transparent white for new glass elements */
+            --glass-border-20: rgba(255, 255, 255, 0.3);
 
-            /* New driver specific colors for order cards */
-            --ali-card-bg: rgba(173, 216, 230, 0.7); /* Light blue for Ali, increased opacity */
+            /* New driver specific colors for order cards with gradients */
+            --ali-card-bg-gradient: linear-gradient(135deg, rgba(173, 216, 230, 0.7), rgba(135, 206, 235, 0.7)); /* Light blue to Sky Blue */
             --ali-card-border: rgba(173, 216, 230, 0.9);
             --ali-card-hover-border: #87CEEB; /* Sky Blue */
 
-            --hakmat-card-bg: rgba(255, 223, 186, 0.7); /* Light orange for Hakmat, increased opacity */
+            --hakmat-card-bg-gradient: linear-gradient(135deg, rgba(255, 223, 186, 0.7), rgba(255, 200, 100, 0.7)); /* Light orange to a more vibrant orange */
             --hakmat-card-border: rgba(255, 223, 186, 0.9);
             --hakmat-card-hover-border: #FFDAB9; /* Peach Puff */
 
-            /* New warehouse specific colors for summary cards */
-            --student-warehouse-bg: rgba(147, 112, 219, 0.7); /* Medium Purple, increased opacity */
+            /* New warehouse specific colors for summary cards with gradients */
+            --student-warehouse-bg-gradient: linear-gradient(135deg, rgba(147, 112, 219, 0.7), rgba(128, 0, 128, 0.7)); /* Medium Purple to Purple */
             --student-warehouse-border: rgba(147, 112, 219, 0.9);
             --student-warehouse-text: white; /* Text color for better contrast on colored glass */
             --student-warehouse-count: #DA70D6; /* Orchid */
             --student-warehouse-hover-border: #8A2BE2; /* Blue Violet */
 
-            --carpenter-warehouse-bg: rgba(60, 179, 113, 0.7); /* Medium Sea Green, increased opacity */
+            --carpenter-warehouse-bg-gradient: linear-gradient(135deg, rgba(60, 179, 113, 0.7), rgba(34, 139, 34, 0.7)); /* Medium Sea Green to Forest Green */
             --carpenter-warehouse-border: rgba(60, 179, 113, 0.9);
             --carpenter-warehouse-text: white; /* Text color for better contrast on colored glass */
             --carpenter-warehouse-count: #32CD32; /* Lime Green */
             --carpenter-warehouse-hover-border: #2E8B57; /* Sea Green */
 
-            --morning-orders-bg: rgba(255, 165, 0, 0.7); /* Orange for morning orders, increased opacity */
+            --morning-orders-bg-gradient: linear-gradient(135deg, rgba(255, 165, 0, 0.7), rgba(255, 140, 0, 0.7)); /* Orange to Dark Orange */
             --morning-orders-border: rgba(255, 165, 0, 0.9);
             --morning-orders-text: white; /* Text color for better contrast on colored glass */
             --morning-orders-count: #FFD700; /* Gold */
@@ -60,16 +62,30 @@
             text-align: center;
             direction: rtl; /* Right-to-left for Hebrew */
             background-color: #f0f2f5; /* Light background for app feel */
-            background-image: url('https://i.postimg.cc/mD2FXJ7B/Whats-App-Image-2025-06-23-at-8-07-26-AM.jpg'); /* User provided background image */
-            background-size: cover; /* Cover the entire background */
-            background-position: center;
-            background-attachment: fixed; /* Keep background fixed when scrolling */
             color: var(--text-color);
             margin: 0;
             padding: 0;
             min-height: 100vh;
             display: flex;
             flex-direction: column; /* For sticky footer/bottom content */
+            position: relative; /* Needed for ::before pseudo-element */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        /* Full page background image with transparency */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/mD2FXJ7B/Whats-App-Image-2025-06-23-at-8-07-26-AM.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0.7; /* Adjust background image transparency here */
+            z-index: -1; /* Place behind other content */
         }
 
         /* Main container for app content - wider for grid layout */
@@ -78,6 +94,8 @@
             margin: 20px auto;
             padding: 0 20px; /* Increased padding */
             flex-grow: 1; /* Allows container to grow and push footer/bottom elements down */
+            position: relative; /* Ensure content is above the background pseudo-element */
+            z-index: 1;
         }
         
         /* Header styling with gradient and clock/date */
@@ -186,7 +204,10 @@
             font-weight: 700;
             margin: 50px 0 35px; /* More spacing */
             color: var(--dark-color);
-            display: inline-block;
+            display: flex; /* Use flexbox for avatar and title */
+            align-items: center; /* Align items vertically */
+            justify-content: center; /* Center horizontally */
+            gap: 20px; /* Space between avatar and title */
             padding: 10px 30px;
             border-radius: 60px;
             background-color: var(--light-color); /* Light background for the title */
@@ -195,6 +216,9 @@
             z-index: 2; /* Ensure title is above timeline elements */
             border: 3px solid var(--primary-color); /* Thicker border to highlight */
             overflow: hidden; /* For shine effect */
+            max-width: fit-content; /* Shrink to content width */
+            margin-left: auto; /* Center with flexbox */
+            margin-right: auto; /* Center with flexbox */
         }
         
         .driver-section-title::before {
@@ -218,10 +242,26 @@
             left: 100%;
         }
 
+        /* Driver Avatar Styling */
+        .driver-avatar {
+            width: 60px; /* Size of the avatar */
+            height: 60px;
+            border-radius: 50%; /* Make it circular */
+            object-fit: cover; /* Cover the area, cropping if necessary */
+            border: 3px solid var(--primary-color); /* Border around avatar */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+            transition: transform 0.3s ease;
+        }
+
+        .driver-section-title:hover .driver-avatar {
+            transform: scale(1.1); /* Slightly enlarge on hover */
+        }
+
         /* Styling for the timeline effect - now a grid container for two columns */
         .timeline-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); /* Adjusted minmax for 2 per row */
+            /* Aim for 2 columns when space allows, or 1 column on smaller screens */
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
             gap: 20px; /* Reduced gap for compactness */
             padding: 20px 0;
             margin: 0 auto;
@@ -233,7 +273,7 @@
 
         /* Individual order "cube" styling - Glassmorphism */
         .order-card {
-            background: var(--glass-bg); /* Transparent background */
+            background: var(--glass-bg); /* Default transparent background */
             backdrop-filter: blur(10px); /* Glassmorphism blur effect */
             -webkit-backdrop-filter: blur(10px); /* Safari support */
             border-radius: 25px; /* Even larger rounded corners */
@@ -255,12 +295,12 @@
         .order-card:hover {
             transform: translateY(-8px); /* Slightly less pronounced lift effect on hover */
             box-shadow: 0 12px 25px var(--shadow); /* Deeper shadow on hover */
-            border-color: var(--primary-color); /* Default border color on hover */
+            /* border-color: var(--primary-color); */ /* This will be overridden by driver-specific hover colors */
         }
 
-        /* Driver-specific order card styling */
+        /* Driver-specific order card styling with gradients */
         .order-card.ali {
-            background: var(--ali-card-bg);
+            background: var(--ali-card-bg-gradient); /* Apply gradient */
             border: 1px solid var(--ali-card-border);
         }
         .order-card.ali:hover {
@@ -268,14 +308,14 @@
         }
 
         .order-card.hakmat {
-            background: var(--hakmat-card-bg);
+            background: var(--hakmat-card-bg-gradient); /* Apply gradient */
             border: 1px solid var(--hakmat-card-border);
         }
         .order-card.hakmat:hover {
             border-color: var(--hakmat-card-hover-border);
         }
 
-        /* Shine effect for order cards */
+        /* Shine effect for order cards (already exists, but ensures it works with gradients) */
         .order-card::before {
             content: '';
             position: absolute;
@@ -330,6 +370,16 @@
         .order-time i {
             color: var(--accent-color); /* Clock icon color */
             font-size: 1.6rem; /* Make icon slightly smaller than text */
+        }
+        
+        .order-time .biachad-indicator {
+            font-size: 0.9em; /* Smaller for indicator */
+            padding: 3px 8px;
+            background-color: #ffeb3b; /* Yellow background */
+            color: #333;
+            border-radius: 8px;
+            margin-right: 10px;
+            font-weight: 500;
         }
 
         .order-details p {
@@ -651,6 +701,55 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Customer List glass card design */
+        .chart-card .chart-customer-list {
+            background: var(--glass-light-20); /* 20% transparent white */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border-20);
+            padding: 15px;
+            margin-top: 20px; /* Space from chart */
+            text-align: right;
+            max-height: 150px; /* Allow more height for list */
+            overflow-y: auto;
+        }
+
+        .chart-card .chart-customer-list h4 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-card .chart-customer-list p {
+            margin: 8px 0;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-right: 5px; /* Indent for list items */
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .chart-card .chart-customer-list p:hover {
+            color: var(--primary-color);
+            transform: translateX(-5px); /* Subtle hover effect */
+        }
+
+        .chart-card .chart-customer-list p i {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
         .chart-card {
             grid-column: span 2; /* Chart takes full width on larger screens */
             background: var(--glass-bg); /* Glassmorphism */
@@ -688,28 +787,6 @@
             margin: 0 auto;
         }
 
-        .chart-customer-list {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px dashed rgba(0,0,0,0.1);
-            text-align: right;
-            font-size: 1.1rem;
-            color: var(--dark-color);
-            max-height: 100px; /* Limit height for scroll if many customers */
-            overflow-y: auto; /* Enable scroll if content overflows */
-        }
-        .chart-customer-list p {
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .chart-customer-list i {
-            color: var(--primary-color);
-            font-size: 0.9rem;
-        }
-
-
         /* Page containers for app-like navigation */
         .page-content {
             display: none; /* Hidden by default */
@@ -741,26 +818,58 @@
             background-color: transparent;
             border: none;
             color: white;
-            padding: 10px 15px;
-            font-size: 1.1rem;
+            padding: 8px 12px; /* Reduced padding for smaller height */
+            font-size: 1rem; /* Slightly reduced font size */
             font-weight: 500;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 5px;
-            transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+            transition: all 0.3s ease; /* Smooth transition for all properties */
             border-radius: 15px;
-            position: relative; /* For dropdown */
-        }
-
-        .nav-button i {
-            font-size: 1.5rem;
+            position: relative; /* For dropdown and hover effects */
+            flex: 1; /* Allow buttons to take equal space */
+            margin: 0 5px; /* Spacing between buttons */
+            border: 2px solid transparent; /* Default transparent border */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle initial shadow */
+            overflow: hidden; /* For shine effect */
         }
 
         .nav-button:hover, .nav-button.active {
             background-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-3px);
+            transform: translateY(-3px) scale(1.02); /* More pronounced lift and slight scale */
+            border-color: rgba(255, 255, 255, 0.5); /* White border on hover/active */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Deeper shadow on hover */
+        }
+
+        /* Shine effect for nav buttons on hover */
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.5) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-20deg);
+            transition: left 0.7s ease-in-out;
+            opacity: 0; /* Hidden by default */
+        }
+
+        .nav-button:hover::before {
+            left: 100%;
+            opacity: 1; /* Visible on hover */
+        }
+
+
+        .nav-button i {
+            font-size: 1.3rem; /* Slightly smaller icon to match reduced button height */
         }
 
         .nav-button.active {
@@ -830,7 +939,7 @@
 
         /* Specific Summary Card Styling */
         .summary-card.student-warehouse {
-            background: var(--student-warehouse-bg);
+            background: var(--student-warehouse-bg-gradient); /* Apply gradient */
             border: 1px solid var(--student-warehouse-border);
         }
         .summary-card.student-warehouse h3 {
@@ -844,7 +953,7 @@
         }
 
         .summary-card.carpenter-warehouse {
-            background: var(--carpenter-warehouse-bg);
+            background: var(--carpenter-warehouse-bg-gradient); /* Apply gradient */
             border: 1px solid var(--carpenter-warehouse-border);
         }
         .summary-card.carpenter-warehouse h3 {
@@ -858,7 +967,7 @@
         }
 
         .summary-card.morning-orders {
-            background: var(--morning-orders-bg);
+            background: var(--morning-orders-bg-gradient); /* Apply gradient */
             border: 1px solid var(--morning-orders-border);
         }
         .summary-card.morning-orders h3 {
@@ -871,42 +980,35 @@
             border-color: var(--morning-orders-hover-border);
         }
 
-        /* Top Navigation Bar */
+        /* Top Navigation Bar - Now a distinct block above the header */
         .top-nav {
             display: flex;
-            justify-content: center; /* Center the buttons */
-            gap: 10px; /* Space between buttons */
-            padding: 10px 0;
+            justify-content: space-around; /* Distribute items evenly */
+            align-items: center;
+            padding: 10px; /* Adjust padding */
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); /* Same gradient as bottom nav */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
             margin-bottom: 20px; /* Space below top nav */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            position: sticky; /* Make it sticky at the top */
+            top: 0;
+            z-index: 990; /* Ensure it's above other content but below modals */
+            width: 100%; /* Take full width */
+            box-sizing: border-box; /* Include padding in width calculation */
         }
 
         .top-nav .nav-button {
-            padding: 8px 12px; /* Slightly smaller padding for top buttons */
-            font-size: 1rem;
+            padding: 8px 12px; /* Match bottom nav padding */
+            font-size: 1rem; /* Match bottom nav font size */
+            margin: 5px; /* Add margin for spacing when wrapping */
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            max-width: 200px; /* Limit max width for individual buttons */
         }
 
         .top-nav .nav-button i {
-            font-size: 1.3rem; /* Slightly smaller icon for top buttons */
-        }
-
-        /* Responsive adjustments for top nav */
-        @media (max-width: 768px) {
-            .top-nav {
-                flex-wrap: wrap; /* Allow wrapping on smaller screens */
-                gap: 5px; /* Smaller gap */
-                padding: 8px 5px;
-            }
-            .top-nav .nav-button {
-                font-size: 0.8rem;
-                padding: 6px 8px;
-            }
-            .top-nav .nav-button i {
-                font-size: 1.1rem;
-            }
+            font-size: 1.3rem; /* Match bottom nav icon size */
         }
 
         /* Responsive design adjustments */
@@ -918,13 +1020,15 @@
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
             .timeline-grid {
-                grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); /* Adjusted for two columns on smaller wide screens */
+                /* Target 2 columns when width is between ~800px and 1200px */
+                grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
             }
         }
 
         @media (max-width: 992px) {
             .timeline-grid {
-                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjust for smaller screens */
+                /* On smaller tablets, if two columns are too cramped, allow for single column more easily */
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
                 gap: 20px;
             }
             .container {
@@ -1022,6 +1126,13 @@
             .nav-button i {
                 font-size: 1.2rem;
             }
+            .top-nav {
+                padding: 8px; /* More compact on mobile */
+            }
+            .top-nav .nav-button {
+                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
+                max-width: none; /* Remove max-width constraint for flexibility */
+            }
         }
 
         @media (max-width: 480px) {
@@ -1092,21 +1203,14 @@
             .nav-button i {
                 font-size: 1.1rem;
             }
+            .top-nav .nav-button {
+                flex-basis: calc(50% - 10px); /* Two buttons per row on small screens */
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="datetime">
-                <div class="time" id="currentTime"></div>
-                <div class="date" id="currentDate"></div>
-            </div>
-            <h1>🚛 דוח בוקר - סידור הובלות</h1>
-        </div>
-    </div>
-
-    <!-- Top Navigation Bar (New) -->
+    <!-- Top Navigation Bar (Now positioned as the very first element) -->
     <nav class="top-nav">
         <button class="nav-button active" onclick="showPage('mainPage', this)">
             <i class="fas fa-home"></i> ראשי
@@ -1125,6 +1229,16 @@
             </div>
         </button>
     </nav>
+
+    <div class="header">
+        <div class="header-content">
+            <div class="datetime">
+                <div class="time" id="currentTime"></div>
+                <div class="date" id="currentDate"></div>
+            </div>
+            <h1>🚛 דוח בוקר - סידור הובלות</h1>
+        </div>
+    </div>
 
     <div class="container">
         <!-- Main Page Content -->
@@ -1169,7 +1283,6 @@
                         <canvas id="aliChart"></canvas>
                     </div>
                     <div class="chart-customer-list" id="aliMorningCustomers">
-                        <h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>
                         <!-- Customer names will be inserted here -->
                     </div>
                 </div>
@@ -1179,20 +1292,25 @@
                         <canvas id="hakmatChart"></canvas>
                     </div>
                     <div class="chart-customer-list" id="hakmatMorningCustomers">
-                        <h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>
                         <!-- Customer names will be inserted here -->
                     </div>
                 </div>
             </div>
 
             <!-- Driver Ali's section on Main Page -->
-            <div class="driver-section-title">נהג: עלי</div>
+            <div class="driver-section-title">
+                <img src="https://placehold.co/60x60/87CEEB/FFFFFF?text=עלי" alt="Avatar for Ali" class="driver-avatar" id="aliAvatar">
+                נהג: עלי
+            </div>
             <div id="aliTimeline" class="timeline-grid">
                 <!-- Orders for Ali will be dynamically inserted here -->
             </div>
 
             <!-- Driver Hakmat's section on Main Page -->
-            <div class="driver-section-title">נהג: חכמת</div>
+            <div class="driver-section-title">
+                <img src="https://placehold.co/60x60/FFDAB9/333333?text=חכמת" alt="Avatar for Hakmat" class="driver-avatar" id="hakmatAvatar">
+                נהג: חכמת
+            </div>
             <div id="hakmatTimeline" class="timeline-grid">
                 <!-- Orders for Hakmat will be dynamically inserted here -->
             </div>
@@ -1200,7 +1318,10 @@
 
         <!-- Hakmat's Page Content -->
         <div id="hakmatPage" class="page-content">
-            <div class="driver-section-title">נהג: חכמת</div>
+            <div class="driver-section-title">
+                <img src="https://placehold.co/60x60/FFDAB9/333333?text=חכמת" alt="Avatar for Hakmat" class="driver-avatar">
+                נהג: חכמת
+            </div>
             <div id="hakmatOnlyTimeline" class="timeline-grid">
                 <!-- Orders for Hakmat only will be dynamically inserted here -->
             </div>
@@ -1208,7 +1329,10 @@
 
         <!-- Ali's Page Content -->
         <div id="aliPage" class="page-content">
-            <div class="driver-section-title">נהג: עלי</div>
+            <div class="driver-section-title">
+                <img src="https://placehold.co/60x60/87CEEB/FFFFFF?text=עלי" alt="Avatar for Ali" class="driver-avatar">
+                נהג: עלי
+            </div>
             <div id="aliOnlyTimeline" class="timeline-grid">
                 <!-- Orders for Ali only will be dynamically inserted here -->
             </div>
@@ -1312,7 +1436,7 @@
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyBV_2JwCLtow5F6C7463NmfP2py5W-fj5I'; 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyBV_2JwCLtow5F6C7463NmfP2py5W-fj5I'; // Changed to explicit placeholder for user to replace
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1320,6 +1444,10 @@
 
         // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
+
+        // Avatar image URLs for drivers (replace with actual image links)
+        const ALI_AVATAR_URL = "https://placehold.co/60x60/87CEEB/FFFFFF?text=עלי"; // Replace with Ali's actual avatar URL
+        const HAKMAT_AVATAR_URL = "https://placehold.co/60x60/FFDAB9/333333?text=חכמת"; // Replace with Hakmat's actual avatar URL
 
         let allAliOrders = []; // Stores all fetched Ali orders
         let allHakmatOrders = []; // Stores all fetched Hakmat orders
@@ -1379,9 +1507,14 @@
                     // Add click listener to open full details modal
                     orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
 
+                    // Add "ביחד" indicator if applicable
+                    const timeDisplay = order.time && order.time.includes("ביחד") ? 
+                        `${order.time} <span class="biachad-indicator">ביחד</span>` : 
+                        (order.time || "לא ידוע");
+
                     orderCard.innerHTML = `
                         <div class="order-time">
-                            <i class="far fa-clock"></i> ${order.time || "לא ידוע"}
+                            <i class="far fa-clock"></i> ${timeDisplay}
                         </div>
                         <div class="order-details">
                             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${order.date || "לא ידוע"}</p>
@@ -1447,6 +1580,10 @@
         async function initializeApp() {
             allAliOrders = await fetchOrdersData(aliRange);
             allHakmatOrders = await fetchOrdersData(hakmatRange);
+
+            // Set avatar image sources on load
+            document.getElementById('aliAvatar').src = ALI_AVATAR_URL;
+            document.getElementById('hakmatAvatar').src = HAKMAT_AVATAR_URL;
 
             // Render orders on the main page with driver-specific styling
             renderOrders(allAliOrders, "aliTimeline", "עלי");
@@ -1528,7 +1665,7 @@
             if (aliOrdersInTimeRange.length > 0) {
                 aliOrdersInTimeRange.forEach(order => {
                     const p = document.createElement('p');
-                    p.innerHTML = `<i class="fas fa-arrow-left"></i> ${order.customer || 'לקוח לא ידוע'}`;
+                    p.innerHTML = `<i class="fas fa-arrow-left"></i> <strong>${order.customer || 'לקוח לא ידוע'}</strong>`;
                     aliCustomersList.appendChild(p);
                 });
             } else {
@@ -1540,7 +1677,7 @@
             if (hakmatOrdersInTimeRange.length > 0) {
                 hakmatOrdersInTimeRange.forEach(order => {
                     const p = document.createElement('p');
-                    p.innerHTML = `<i class="fas fa-arrow-left"></i> ${order.customer || 'לקוח לא ידוע'}`;
+                    p.innerHTML = `<i class="fas fa-arrow-left"></i> <strong>${order.customer || 'לקוח לא ידוע'}</strong>`;
                     hakmatCustomersList.appendChild(p);
                 });
             } else {
@@ -1685,9 +1822,9 @@
             // IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE' with your actual, valid Google Maps Static API Key.
             // You can get one from the Google Cloud Console.
             // For more info: https://developers.google.com/maps/documentation/maps-static/get-api-key
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'AIzaSyCd8lAxk7KfQvwzDGszaseiJXgc4eMfq-E') { // Check against the original placeholder value
+            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
                 // Construct Google Static Maps API URL
-                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
                 // Clear previous content and set image
                 mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Invalid+API+Key+or+Network+Issue';" />`;
@@ -1818,6 +1955,7 @@
             // Set the clicked button as active, and find its counterpart in the other nav bar
             const clickedButtonText = clickedButton.textContent.trim();
             document.querySelectorAll('.nav-button').forEach(button => {
+                // Check if the button's inner HTML (text + potential icon) matches
                 if (button.textContent.trim() === clickedButtonText) {
                     button.classList.add('active');
                 }
@@ -1855,14 +1993,23 @@
          */
         function showWarehouseOrders(warehouseType) {
             // Close the dropdown after selection
-            document.querySelector('.nav-button.warehouse-button').classList.remove('active');
+            // Find the warehouse button by its class and ensure its dropdown is closed
+            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
 
             // Switch to the warehouse page and activate the warehouse button
-            showPage('warehousePage', document.querySelector('.nav-button.warehouse-button'));
+            // Find *any* warehouse button to activate it, assuming they are linked visually
+            const warehouseButton = document.querySelector('.nav-button.warehouse-button');
+            showPage('warehousePage', warehouseButton);
             
             const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
             warehouseDisplayContainer.innerHTML = `
-                <div class="driver-section-title">מחסן: ${warehouseType}</div>
+                <div class="driver-section-title">
+                    <img src="${warehouseType === 'התלמיד' ? 'https://placehold.co/60x60/9370DB/FFFFFF?text=תלמיד' : 'https://placehold.co/60x60/3CB371/FFFFFF?text=חרש'}" alt="Avatar for ${warehouseType}" class="driver-avatar">
+                    מחסן: ${warehouseType}
+                </div>
                 <div id="filteredWarehouseTimeline" class="timeline-grid"></div>
             `;
 
