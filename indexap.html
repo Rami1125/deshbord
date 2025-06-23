@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📋 דוח בוקר - סידור עבודה</title>
+    <title>� דוח בוקר - סידור עבודה</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -20,6 +20,8 @@
             --text-color: #333; /* Dark text */
             --shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Soft shadow */
             --card-bg: rgba(255, 255, 255, 0.95); /* Slightly transparent white for cards */
+            --modal-bg: rgba(255, 255, 255, 0.98); /* Near opaque white for modals */
+            --overlay-bg: rgba(0, 0, 0, 0.6); /* Darker overlay for modals */
         }
         
         body {
@@ -154,75 +156,224 @@
         /* Individual order "cube" styling */
         .order-card {
             background: var(--card-bg);
-            border-radius: 15px;
+            border-radius: 20px; /* Larger rounded corners */
             box-shadow: var(--shadow);
-            padding: 20px;
-            margin-bottom: 30px; /* Space between cards */
+            padding: 25px; /* Increased padding for larger box */
+            margin-bottom: 35px; /* More space between cards */
             text-align: right;
             position: relative;
-            transition: transform 0.2s ease-in-out;
-            border-left: 5px solid var(--primary-color); /* Accent border for orders */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border-left: 6px solid var(--primary-color); /* Thicker accent border for orders */
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px; /* Increased gap between elements */
             margin-right: -15px; /* Overlap with timeline line */
             animation: fadeIn 0.8s ease-out forwards; /* Fade in animation */
+            cursor: pointer; /* Indicate clickable */
         }
 
         .order-card:hover {
-            transform: translateY(-5px); /* Lift effect on hover */
+            transform: translateY(-7px); /* More pronounced lift effect on hover */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); /* Deeper shadow on hover */
         }
 
         /* Timeline arrow styling */
         .order-arrow {
             position: absolute;
-            right: -28px; /* Position next to the timeline line */
-            top: 25px;
+            right: -30px; /* Position next to the timeline line, slightly adjusted */
+            top: 30px; /* Adjusted vertical position */
             width: 0;
             height: 0;
-            border-top: 15px solid transparent;
-            border-bottom: 15px solid transparent;
-            border-right: 15px solid var(--accent-color); /* Red arrow pointing left */
+            border-top: 18px solid transparent; /* Larger arrow */
+            border-bottom: 18px solid transparent;
+            border-right: 18px solid var(--accent-color); /* Red arrow pointing left */
             z-index: 3; /* Ensure arrow is on top */
         }
 
         /* Specific styling for the content within the order card */
         .order-time {
-            font-size: 1.6rem;
+            font-size: 1.8rem; /* Larger time font */
             font-weight: 700;
             color: var(--primary-color);
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 10px; /* Increased gap */
+            margin-bottom: 15px; /* More space below time */
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.1); /* Separator line */
+            padding-bottom: 10px;
         }
 
         .order-time i {
             color: var(--accent-color); /* Clock icon color */
+            font-size: 1.6rem; /* Make icon slightly smaller than text */
         }
 
         .order-details p {
-            margin: 5px 0;
-            font-size: 1.1rem;
+            margin: 6px 0; /* More spacing */
+            font-size: 1.2rem; /* Larger detail font */
             color: var(--text-color);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px; /* Increased gap */
         }
 
         .order-details p strong {
             color: var(--dark-color);
-            font-weight: 500;
+            font-weight: 600; /* Slightly bolder */
         }
 
         .order-details i {
             color: var(--secondary-color); /* Icon color for details */
+            font-size: 1.1rem; /* Make icon slightly smaller than text */
+        }
+
+        .order-details p .city-link {
+            text-decoration: underline;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .order-details p .city-link:hover {
+            color: var(--accent-color);
         }
 
         /* Keyframe animation for fade in */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--overlay-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            text-align: right;
+            border: 2px solid var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--dark-color);
+            font-size: 2.2rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            margin: 8px 0;
+            font-size: 1.2rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-content p strong {
+            color: var(--dark-color);
+            font-weight: 600;
+            min-width: 80px; /* Align content */
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .modal-close-button:hover {
+            background-color: #c0392b;
+            transform: rotate(90deg);
+        }
+
+        /* City Map Modal specific styling */
+        #cityMapModal .modal-content {
+            max-width: 600px;
+            height: 400px; /* Fixed height for the map view */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        #cityMapModal .modal-content h2 {
+            font-size: 2rem;
+            border-bottom: none;
+        }
+
+        #cityMapDisplay {
+            width: 90%;
+            height: 250px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #666;
+            margin-top: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+            background-image: url('https://placehold.co/400x250/cccccc/333333?text=Map+Placeholder'); /* Placeholder map image */
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        #cityMapDisplay p {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         
         /* Responsive design adjustments */
@@ -266,6 +417,27 @@
                 font-size: 18px;
                 padding: 15px 25px;
             }
+
+            .modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .modal-content h2 {
+                font-size: 1.8rem;
+            }
+
+            .modal-content p {
+                font-size: 1rem;
+            }
+
+            #cityMapModal .modal-content {
+                height: 300px;
+            }
+
+            #cityMapDisplay {
+                height: 180px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -306,6 +478,11 @@
             .order-details p {
                 font-size: 0.9rem;
             }
+
+            .share-button {
+                font-size: 16px;
+                padding: 12px 20px;
+            }
         }
     </style>
 </head>
@@ -339,6 +516,31 @@
         </button>
     </div>
 
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
+            <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
+            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
+            <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
+            <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+        </div>
+    </div>
+
+    <!-- City Map Modal -->
+    <div id="cityMapModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
+            <h2 id="cityModalTitle">מפה של העיר</h2>
+            <div id="cityMapDisplay">
+                <p id="cityMapName"></p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Function to update the current time and date
         function updateDateTime() {
@@ -365,15 +567,28 @@
         
         // Google Sheets API configuration
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; // Your Google Sheet ID
-        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Your Google API Key (ensure it has access to Google Sheets API)
-        const aliRange = 'Sheet2!B2:h10'; // Range for Ali's data
-        const hakmatRange = 'Sheet1!B2:h10'; // Range for Hakmat's data
+        const apiKey = ''; // Your Google API Key (ensure it has access to Google Sheets API)
+        const aliRange = 'Sheet2!B2:G10'; // Range for Ali's data
+        const hakmatRange = 'Sheet1!B2:G10'; // Range for Hakmat's data
+
+        /**
+         * Parses a time string (e.g., "14:30") into a Date object for sorting.
+         * Assumes times are for the current date for comparison purposes.
+         * @param {string} timeStr The time string in HH:MM format.
+         * @returns {Date} A Date object representing the time.
+         */
+        function parseTimeForSorting(timeStr) {
+            if (!timeStr) return new Date(0); // Return a very early date for empty times
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
 
         /**
          * Fetches data from Google Sheets and renders it as "order cubes" in the timeline.
          * @param {string} range The A1 notation of the range to retrieve from the spreadsheet.
          * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
-         * @param {string} driverName The name of the driver for WhatsApp formatting.
          */
         async function fetchDataAndRender(range, timelineId) {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
@@ -384,38 +599,59 @@
                 timelineContainer.innerHTML = ""; // Clear existing content
 
                 if (data.values && data.values.length > 0) {
-                    data.values.forEach((row) => {
-                        // Ensure row has enough data for all fields
-                        if (row.length >= 6) {
-                            const [date, time, warehouse, status, customer, address] = row;
+                    // Filter out empty rows and sort by time
+                    const filteredAndSortedData = data.values
+                        .filter(row => row.length >= 6 && row[1]) // Ensure row has enough data and a time value
+                        .sort((a, b) => {
+                            const timeA = parseTimeForSorting(a[1]);
+                            const timeB = parseTimeForSorting(b[1]);
+                            return timeA - timeB;
+                        });
 
-                            const orderCard = document.createElement("div");
-                            orderCard.classList.add("order-card");
-                            
-                            // Create the HTML structure for each order cube
-                            orderCard.innerHTML = `
-                                <div class="order-time">
-                                    <i class="far fa-clock"></i> ${time || "לא ידוע"}
-                                </div>
-                                <div class="order-details">
-                                    <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date || "לא ידוע"}</p>
-                                    <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer || "לא ידוע"}</p>
-                                    <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${address || "לא ידוע"}</p>
-                                    <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${warehouse || "לא ידוע"}</p>
-                                    <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status || "לא ידוע"}</p>
-                                </div>
-                                <div class="order-arrow"></div>
-                            `;
-                            timelineContainer.appendChild(orderCard);
-                        }
+                    filteredAndSortedData.forEach((row, index) => {
+                        const [date, time, warehouse, status, customer, address] = row;
+
+                        const orderCard = document.createElement("div");
+                        orderCard.classList.add("order-card");
+                        // Store full order data as a JSON string for easy retrieval in modal
+                        orderCard.dataset.order = JSON.stringify({ date, time, warehouse, status, customer, address });
+                        
+                        // Add click listener to open full details modal
+                        orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
+
+                        // Extract city from address if possible (simple split by comma for example)
+                        const city = address ? address.split(',').pop().trim() : 'לא ידוע';
+
+                        orderCard.innerHTML = `
+                            <div class="order-time">
+                                <i class="far fa-clock"></i> ${time || "לא ידוע"}
+                            </div>
+                            <div class="order-details">
+                                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${date || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${customer || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span class="city-link" data-city="${city}">${address || "לא ידוע"}</span></p>
+                                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${warehouse || "לא ידוע"}</p>
+                                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${status || "לא ידוע"}</p>
+                            </div>
+                            <div class="order-arrow"></div>
+                        `;
+                        timelineContainer.appendChild(orderCard);
                     });
+
+                    // Add event listeners for city links after all cards are rendered
+                    timelineContainer.querySelectorAll('.city-link').forEach(link => {
+                        link.onclick = (event) => {
+                            event.stopPropagation(); // Prevent order card click when city link is clicked
+                            showCityMap(link.dataset.city);
+                        };
+                    });
+
                 } else {
                     const noOrdersMessage = document.createElement("p");
                     noOrdersMessage.textContent = "אין הזמנות זמינות עבור נהג זה.";
                     noOrdersMessage.style.textAlign = "center";
                     noOrdersMessage.style.marginTop = "30px";
                     noOrdersMessage.style.fontSize = "1.2rem";
-                    // Fixed: Access CSS custom properties correctly in JS
                     noOrdersMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--dark-color'); 
                     timelineContainer.appendChild(noOrdersMessage);
                 }
@@ -426,18 +662,54 @@
                 errorMessage.style.textAlign = "center";
                 errorMessage.style.marginTop = "30px";
                 errorMessage.style.fontSize = "1.2rem";
-                // Fixed: Access CSS custom properties correctly in JS
                 errorMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
                 timelineContainer.appendChild(errorMessage);
             }
         }
         
         /**
-         * Formats the data from a table (now virtual) into a WhatsApp message string.
-         * This function will need to adapt as the data is no longer directly in HTML tables,
-         * but is instead fetched and used to build the cards.
-         * For simplicity, this will assume we can still get the data or re-fetch for the message.
-         * A more robust solution would store the fetched data in a global variable.
+         * Displays the full order details in a modal.
+         * @param {string} orderJson The JSON string of the order data.
+         */
+        function showOrderDetails(orderJson) {
+            const order = JSON.parse(orderJson);
+            document.getElementById('modalDate').textContent = order.date || 'אין נתונים';
+            document.getElementById('modalTime').textContent = order.time || 'אין נתונים';
+            document.getElementById('modalCustomer').textContent = order.customer || 'אין נתונים';
+            document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
+            document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
+            document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
+
+            document.getElementById('orderDetailsModal').classList.add('visible');
+        }
+
+        /**
+         * Displays a mock map view for a given city in a modal.
+         * @param {string} city The city name to display on the map.
+         */
+        function showCityMap(city) {
+            document.getElementById('cityModalTitle').textContent = `מפה של ${city || 'העיר לא ידועה'}`;
+            document.getElementById('cityMapName').textContent = `זו תהיה מפה אינטראקטיבית של ${city || 'העיר לא ידועה'}`;
+            // You can replace the background-image of #cityMapDisplay with a static map image API if available and within constraints.
+            // For example: `url('https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=400x250&key=YOUR_API_KEY')`
+            // But this would require a Google Maps Static API key and enabling it.
+            // For now, we use a generic placeholder image and update the text.
+            document.getElementById('cityMapModal').classList.add('visible');
+        }
+
+        /**
+         * Closes a specified modal.
+         * @param {string} modalId The ID of the modal overlay to close.
+         */
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('visible');
+        }
+        
+        /**
+         * Formats the data from a virtual table (fetched from sheets) into a WhatsApp message string.
+         * @param {string} range The A1 notation of the range to retrieve from the spreadsheet.
+         * @param {string} driverName The name of the driver for WhatsApp formatting.
+         * @returns {Promise<string>} A promise that resolves to the formatted message string.
          */
         async function formatWhatsAppData(range, driverName) {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
@@ -447,14 +719,21 @@
                 let message = `📝 *${driverName} - דוח בוקר*\n`;
 
                 if (data.values && data.values.length > 0) {
-                    data.values.forEach((row) => {
-                        if (row.length >= 6) {
-                            const [date, time, warehouse, status, customer, address] = row;
-                            message += `📅 ${date || ""} ⏰ ${time || ""}\n`;
-                            message += `🏠 ${warehouse || ""} 📄 ${status || ""}\n`;
-                            message += `👤 ${customer || ""} 📍 ${address || ""}\n`;
-                            message += `➖➖➖\n`;
-                        }
+                    // Sort data by time before formatting for WhatsApp
+                    const sortedData = data.values
+                        .filter(row => row.length >= 6 && row[1])
+                        .sort((a, b) => {
+                            const timeA = parseTimeForSorting(a[1]);
+                            const timeB = parseTimeForSorting(b[1]);
+                            return timeA - timeB;
+                        });
+
+                    sortedData.forEach((row) => {
+                        const [date, time, warehouse, status, customer, address] = row;
+                        message += `📅 ${date || ""} ⏰ ${time || ""}\n`;
+                        message += `🏠 ${warehouse || ""} 📄 ${status || ""}\n`;
+                        message += `👤 ${customer || ""} 📍 ${address || ""}\n`;
+                        message += `➖➖➖\n`;
                     });
                 } else {
                     message += "אין הזמנות זמינות.\n";
@@ -470,7 +749,6 @@
          * Shares the formatted driver reports to WhatsApp.
          */
         async function shareToWhatsApp() {
-            // Fetch data again specifically for WhatsApp formatting
             const aliData = await formatWhatsAppData(aliRange, "עלי");
             const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
             const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
@@ -488,3 +766,4 @@
     </script>
 </body>
 </html>
+�
