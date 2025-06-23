@@ -106,7 +106,7 @@
         }
         
         /* WhatsApp Share Button styling */
-        .share-button {
+        .share-button, .add-order-button {
             background-color: #25D366; /* WhatsApp green */
             color: white;
             padding: 20px 35px; /* More padding for a bigger button */
@@ -115,7 +115,7 @@
             border: none;
             border-radius: 60px; /* More pill-shaped */
             cursor: pointer;
-            margin: 50px auto 40px auto; /* More margin */
+            margin: 50px 10px 40px 10px; /* More margin, adjusted for two buttons */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -128,15 +128,24 @@
             position: relative; /* For shine effect */
             overflow: hidden; /* For shine effect */
         }
-        
+
+        .add-order-button {
+            background: linear-gradient(135deg, #FF9900, #FFCC66); /* Orange/Yellow gradient for add order */
+        }
+
         .share-button:hover {
             transform: translateY(-5px); /* More pronounced lift effect on hover */
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); /* Even deeper shadow */
             background-color: #128C7E; /* Darker green on hover */
         }
+        .add-order-button:hover {
+            transform: translateY(-5px); /* More pronounced lift effect on hover */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); /* Even deeper shadow */
+            background: linear-gradient(135deg, #E68A00, #E0B354); /* Darker orange on hover */
+        }
 
-        /* Shine effect for button */
-        .share-button::before {
+        /* Shine effect for buttons */
+        .share-button::before, .add-order-button::before {
             content: '';
             position: absolute;
             top: 0;
@@ -148,10 +157,17 @@
             transition: left 0.5s ease-in-out;
         }
 
-        .share-button:hover::before {
+        .share-button:hover::before, .add-order-button:hover::before {
             left: 125%;
         }
 
+        .main-buttons-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 20px; /* Space between buttons */
+            margin-bottom: 40px;
+        }
 
         /* Section title for each driver */
         .driver-section-title {
@@ -587,15 +603,16 @@
             border-radius: 8px;
         }
 
-        /* Daily Summary Modal Styling */
-        #dailySummaryModal .modal-content {
+        /* Daily Summary Modal Styling - Now for general AI interaction */
+        #aiInteractionModal .modal-content {
             max-width: 600px;
             text-align: right;
         }
 
-        #dailySummaryModal pre {
-            white-space: pre-wrap; /* Allow text wrapping for long summaries */
-            word-wrap: break-word; /* Break long words */
+        #aiInteractionModal pre,
+        #aiInteractionModal textarea { /* Apply to pre and textarea */
+            white-space: pre-wrap;
+            word-wrap: break-word;
             background-color: #f8f8f8;
             border: 1px solid #ddd;
             border-radius: 10px;
@@ -603,9 +620,12 @@
             font-size: 1.1rem;
             line-height: 1.6;
             text-align: right;
+            width: calc(100% - 30px); /* Adjust for padding */
+            box-sizing: border-box; /* Include padding in width */
+            resize: vertical; /* Allow vertical resizing */
         }
         
-        #dailySummaryModal .loading-spinner {
+        #aiInteractionModal .loading-spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
@@ -619,143 +639,336 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* Responsive design adjustments */
-        @media (max-width: 992px) {
-            .timeline-grid {
-                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjust for smaller screens */
-                gap: 30px;
-            }
-            .container {
-                max-width: 900px;
-            }
-            .order-card {
-                padding: 25px;
-            }
-            .order-time {
-                font-size: 1.8rem;
-            }
-            .order-details p {
-                font-size: 1.2rem;
-            }
-            .driver-section-title {
-                flex-direction: column; /* Stack title and button */
-                gap: 10px;
-            }
+
+        /* AI Customer Message Button */
+        .ai-customer-message-button {
+            background: linear-gradient(90deg, #6BFF6B, #6BBFFF); /* Green-blue gradient */
+            color: white;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center content */
+            gap: 8px;
+            white-space: nowrap;
+            margin-top: 20px; /* Space from other modal content */
+            width: fit-content; /* Adjust width to content */
+            margin-right: auto; /* Push to the right (rtl) */
+            margin-left: auto;
         }
 
+        .ai-customer-message-button:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(90deg, #8EFF8E, #8ECFFF); /* Lighter gradient on hover */
+        }
+
+        /* AI Copy Button */
+        .ai-copy-button {
+            background-color: var(--secondary-color); /* Green */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.2s ease;
+            display: block; /* Make it a block element */
+            width: fit-content; /* Fit content */
+            margin-right: auto; /* Align to center */
+            margin-left: auto; /* Align to center */
+        }
+
+        .ai-copy-button:hover {
+            background-color: #28a745; /* Darker green */
+        }
+
+        /* Add Order Modal Styling */
+        #addOrderModal .modal-content {
+            max-width: 600px;
+            text-align: right;
+        }
+        #addOrderModal form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #addOrderModal label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            display: block; /* Ensures label takes full width */
+        }
+        #addOrderModal input[type="text"],
+        #addOrderModal input[type="time"],
+        #addOrderModal input[type="date"],
+        #addOrderModal select {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            direction: rtl; /* For Hebrew input */
+            text-align: right;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        #addOrderModal input[type="text"]:focus,
+        #addOrderModal input[type="time"]:focus,
+        #addOrderModal input[type="date"]:focus,
+        #addOrderModal select:focus {
+            border-color: var(--primary-color);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1), 0 0 8px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        #addOrderModal button[type="submit"] {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            margin-top: 20px;
+        }
+        #addOrderModal button[type="submit"]:hover {
+            background-color: #28a745;
+            transform: translateY(-2px);
+        }
+        
+        /* Stats and Charts Section */
+        .stats-and-charts {
+            background-color: var(--card-bg);
+            border-radius: 25px;
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .stats-summary {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .stat-item {
+            background-color: var(--light-color);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 180px; /* Ensure items don't get too small */
+            transition: transform 0.2s ease;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-item h3 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-item p {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .chart-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-box h3 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        /* Refresh Button for Stats/Charts */
+        .refresh-stats-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            margin-top: 20px;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .refresh-stats-button:hover {
+            background-color: var(--dark-color);
+            transform: translateY(-2px);
+        }
+
+        /* Horizontal Timeline */
+        .horizontal-timeline-container {
+            background-color: var(--card-bg);
+            border-radius: 25px;
+            box-shadow: var(--shadow);
+            padding: 25px 20px;
+            margin-bottom: 40px;
+            overflow-x: auto; /* Allow horizontal scrolling if content overflows */
+            direction: ltr; /* Force LTR for the timeline axis */
+            position: relative;
+            min-height: 150px; /* Ensure space for pins */
+            display: flex;
+            align-items: center; /* Vertically center the line */
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+
+        .timeline-pin {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%); /* Center pin on the line */
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border: 3px solid var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .timeline-pin:hover {
+            transform: translate(-50%, -65%) scale(1.1); /* Lift and scale on hover */
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 2; /* Bring to front on hover */
+        }
+
+        .pin-info {
+            position: absolute;
+            background-color: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 15px;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            text-align: right;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(-10px); /* Initial offset for animation */
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            z-index: 10; /* Above all other elements */
+            top: -100px; /* Position above the pin */
+            left: 50%;
+            direction: rtl; /* Ensure Hebrew text is right-to-left */
+        }
+
+        .timeline-pin:hover .pin-info {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-110px); /* Final position above the pin */
+        }
+
+        .pin-info p {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pin-info p i {
+            color: var(--secondary-color);
+        }
+        .pin-info p .driver-icon {
+            color: var(--accent-color);
+        }
+
+        /* Responsive adjustments for timeline */
         @media (max-width: 768px) {
-            .header {
-                padding: 20px 0;
+            .horizontal-timeline-container {
+                padding: 15px 10px;
+                min-height: 120px;
+            }
+            .timeline-pin {
+                width: 25px;
+                height: 25px;
+                font-size: 1rem;
+                border-width: 2px;
+            }
+            .timeline-pin:hover {
+                transform: translate(-50%, -60%) scale(1.08);
+            }
+            .pin-info {
+                font-size: 0.8rem;
+                padding: 10px;
+                top: -80px; /* Adjust vertical position */
+            }
+            .timeline-pin:hover .pin-info {
+                 transform: translateX(-50%) translateY(-90px);
+            }
+        }
+        @media (max-width: 480px) {
+            .horizontal-timeline-container {
+                padding: 10px 5px;
                 min-height: 100px;
             }
-            .datetime {
-                flex-direction: column;
-                gap: 10px;
+            .timeline-pin {
+                width: 20px;
+                height: 20px;
+                font-size: 0.9rem;
+                border-width: 2px;
             }
-            .time {
-                font-size: 2.8rem;
+            .timeline-pin:hover {
+                transform: translate(-50%, -55%) scale(1.05);
             }
-            .date {
-                font-size: 1.6rem;
+            .pin-info {
+                font-size: 0.75rem;
+                padding: 8px;
+                top: -70px; /* Adjust vertical position */
             }
-            h1 {
-                font-size: 2.2rem;
-            }
-            .driver-section-title {
-                font-size: 26px;
-                padding: 8px 25px;
-            }
-            .timeline-grid {
-                grid-template-columns: 1fr; /* Single column on mobile */
-                gap: 25px;
-            }
-            .order-card {
-                padding: 20px;
-                border-radius: 20px;
-                border-left: 6px solid var(--primary-color);
-            }
-            .order-time {
-                font-size: 1.6rem;
-            }
-            .order-details p {
-                font-size: 1.1rem;
-            }
-            .share-button {
-                font-size: 20px;
-                padding: 16px 30px;
-            }
-            .modal-content {
-                padding: 25px;
-            }
-            .modal-content h2 {
-                font-size: 2rem;
-            }
-            .modal-content p {
-                font-size: 1.1rem;
-            }
-            #cityMapModal .modal-content {
-                height: 500px; /* Adjust height for smaller screens */
-            }
-            #mapContainer {
-                height: 300px; /* Adjust map height for smaller screens */
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                margin: 10px auto;
-                padding: 0 10px;
-            }
-            .header {
-                padding: 15px 0;
-            }
-            .time {
-                font-size: 2.2rem;
-            }
-            .date {
-                font-size: 1.4rem;
-            }
-            h1 {
-                font-size: 1.8rem;
-            }
-            .driver-section-title {
-                font-size: 22px;
-                padding: 6px 20px;
-                margin: 30px 0 20px;
-            }
-            .order-card {
-                padding: 15px;
-            }
-            .order-time {
-                font-size: 1.4rem;
-            }
-            .order-details p {
-                font-size: 1rem;
-            }
-            .share-button {
-                font-size: 18px;
-                padding: 14px 25px;
-                margin: 30px auto;
-            }
-            .modal-close-button {
-                width: 30px;
-                height: 30px;
-                font-size: 1.3rem;
-            }
-            #cityMapModal .modal-content {
-                height: 400px;
-            }
-            #mapContainer {
-                height: 250px;
-            }
-            #passwordModal input[type="password"] {
-                font-size: 1.1rem;
-                padding: 12px;
-            }
-            #passwordModal button {
-                font-size: 1.2rem;
-                padding: 12px 20px;
+            .timeline-pin:hover .pin-info {
+                 transform: translateX(-50%) translateY(-80px);
             }
         }
     </style>
@@ -764,14 +977,47 @@
     <div class="header">
         <div class="header-content">
             <div class="datetime">
-                <div class="time" id="currentTime"></div>
-                <div class="date" id="currentDate"></div>
+                <div class="time" id="currentDate"></div> <!-- Swapped for Hebrew display -->
+                <div class="date" id="currentTime"></div> <!-- Swapped for Hebrew display -->
             </div>
             <h1>🚛 דוח בוקר - סידור הובלות</h1>
         </div>
     </div>
 
     <div class="container">
+        <!-- Stats and Charts Section -->
+        <div class="stats-and-charts">
+            <h2 style="color: var(--dark-color); margin-bottom: 20px;">📊 סיכום והזמנות</h2>
+            <div class="stats-summary">
+                <div class="stat-item">
+                    <h3><span id="totalOrdersCount">0</span></h3>
+                    <p>סה"כ הזמנות</p>
+                </div>
+                <div class="stat-item">
+                    <h3><span id="morningOrdersCount">0</span></h3>
+                    <p>הזמנות 06:00-09:00</p>
+                </div>
+                <!-- Warehouse counts will be dynamically added here -->
+            </div>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>הזמנות לפי מחסן</h3>
+                    <canvas id="warehouseChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>הזמנות בוקר</h3>
+                    <canvas id="morningOrdersChart"></canvas>
+                </div>
+            </div>
+            <button class="refresh-stats-button" onclick="updateAllStatsAndCharts()">רענן נתונים וגרפים</button>
+        </div>
+
+        <!-- Horizontal Timeline Section -->
+        <div class="horizontal-timeline-container" id="horizontalTimeline">
+             <div class="timeline-line"></div>
+             <!-- Timeline pins will be dynamically inserted here -->
+        </div>
+
         <!-- Driver Ali's section -->
         <div class="driver-section-title" id="aliSectionTitle">
             <span>נהג: עלי</span>
@@ -790,10 +1036,15 @@
             <!-- Orders for Hakmat will be dynamically inserted here -->
         </div>
 
-        <!-- WhatsApp share button -->
-        <button class="share-button" onclick="showPasswordModal()">
-            <i class="fab fa-whatsapp"></i> שתף לווצאפ
-        </button>
+        <!-- Main action buttons -->
+        <div class="main-buttons-container">
+            <button class="share-button" onclick="showPasswordModal()">
+                <i class="fab fa-whatsapp"></i> שתף לווצאפ
+            </button>
+            <button class="add-order-button" onclick="showAddOrderModal()">
+                <i class="fas fa-plus-circle"></i> הוסף הזמנה
+            </button>
+        </div>
     </div>
 
     <!-- Order Details Modal -->
@@ -807,6 +1058,9 @@
             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+            <button class="ai-customer-message-button" onclick="generateAndShowCustomerMessage(this.dataset.order)">
+                <i class="fas fa-magic"></i> ✨ צור הודעה ללקוח
+            </button>
         </div>
     </div>
 
@@ -827,6 +1081,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Order Modal -->
+    <div id="addOrderModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('addOrderModal')">&times;</button>
+            <h2>הוסף הזמנה חדשה</h2>
+            <form id="addOrderForm">
+                <label for="orderDate">תאריך:</label>
+                <input type="date" id="orderDate" required>
+
+                <label for="orderTime">שעה:</label>
+                <input type="time" id="orderTime" required>
+
+                <label for="orderCustomer">לקוח:</label>
+                <input type="text" id="orderCustomer" placeholder="שם הלקוח" required>
+
+                <label for="orderAddress">כתובת:</label>
+                <input type="text" id="orderAddress" placeholder="רחוב, מספר, עיר" required>
+
+                <label for="orderWarehouse">מחסן:</label>
+                <input type="text" id="orderWarehouse" placeholder="שם המחסן" required>
+
+                <label for="orderStatus">סטטוס:</label>
+                <select id="orderStatus" required>
+                    <option value="">בחר סטטוס</option>
+                    <option value="ממתין">ממתין</option>
+                    <option value="בדרך">בדרך</option>
+                    <option value="בוצע">בוצע</option>
+                    <option value="נדחה">נדחה</option>
+                </select>
+
+                <label for="orderDriver">נהג:</label>
+                <select id="orderDriver" required>
+                    <option value="">בחר נהג</option>
+                    <option value="עלי">עלי</option>
+                    <option value="חכמת">חכמת</option>
+                </select>
+                
+                <button type="submit">הוסף הזמנה</button>
+            </form>
+        </div>
+    </div>
+
 
     <!-- Password Modal -->
     <div id="passwordModal" class="modal-overlay">
@@ -849,14 +1146,14 @@
         </div>
     </div>
 
-    <!-- Daily Summary Modal -->
-    <div id="dailySummaryModal" class="modal-overlay">
+    <!-- AI Interaction Modal (for Daily Summary and Customer Message) -->
+    <div id="aiInteractionModal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('dailySummaryModal')">&times;</button>
-            <h2 id="dailySummaryTitle"></h2>
-            <div id="dailySummaryContent">
+            <button class="modal-close-button" onclick="closeModal('aiInteractionModal')">&times;</button>
+            <h2 id="aiModalTitle"></h2>
+            <div id="aiModalContent">
                 <div class="loading-spinner"></div>
-                <p style="text-align: center;">טוען סיכום יומי...</p>
+                <p style="text-align: center;">טוען תוכן...</p>
             </div>
         </div>
     </div>
@@ -871,6 +1168,9 @@
         // Callback function for Google Maps API loading
         function initMapLibraries() {
             geocoder = new google.maps.Geocoder();
+            // Once map libraries are loaded, fetch data and render everything
+            fetchDataAndRender(aliRange, "aliTimeline");
+            fetchDataAndRender(hakmatRange, "hakmatTimeline");
         }
 
         // Function to update the current time and date
@@ -888,8 +1188,8 @@
             // Remove "יום " prefix for a more natural Hebrew feel
             formattedDate = formattedDate.replace('יום ', '');
             
-            document.getElementById('currentTime').textContent = formattedDate;
-            document.getElementById('currentDate').textContent = formattedTime;
+            document.getElementById('currentTime').textContent = formattedTime; // Corrected: Time for current time element
+            document.getElementById('currentDate').textContent = formattedDate; // Corrected: Date for current date element
         }
         
         // Update date and time every second
@@ -902,7 +1202,8 @@
         
         // Google Maps JavaScript API Key - REPLACE WITH YOUR ACTUAL KEY
         // This key MUST be enabled for Maps JavaScript API, Places API, and Geocoding API
-        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        const GOOGLE_MAPS_JAVASCRIPT_API_KEY = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI
+'; 
 
         // Gemini API Key (leave empty, Canvas will inject it)
         const GEMINI_API_KEY = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
@@ -915,8 +1216,13 @@
         const WHATSAPP_PASSWORD = "1125";
 
         // Global storage for orders data by driver
+        let allOrders = []; // Stores all fetched orders
         let aliOrdersData = [];
         let hakmatOrdersData = [];
+
+        // Chart instances
+        let warehouseChart;
+        let morningOrdersChart;
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -934,6 +1240,7 @@
 
         /**
          * Fetches data from Google Sheets and renders it as "order cubes" in the timeline.
+         * Also updates global order data arrays.
          * @param {string} range The A1 notation of the range to retrieve from the spreadsheet.
          * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
          */
@@ -964,11 +1271,12 @@
                         const status = row[3] || "לא ידוע";
                         const customer = row[4] || "לא ידוע";
                         const address = row[5] || "לא ידוע";
+                        const driver = (timelineId === "aliTimeline") ? "עלי" : "חכמת"; // Determine driver based on timeline ID
                         const additionalData = row.length > 6 ? row[6] : "לא ידוע"; 
 
                         const fullAddressForMap = address; 
 
-                        const orderDetails = { date, time, warehouse, status, customer, address, additionalData };
+                        const orderDetails = { date, time, warehouse, status, customer, address, driver, additionalData };
                         currentDriverOrders.push(orderDetails); // Store for summary
 
                         const orderCard = document.createElement("div");
@@ -996,11 +1304,10 @@
                     // Store the fetched orders data globally for each driver
                     if (timelineId === "aliTimeline") {
                         aliOrdersData = currentDriverOrders;
-                        document.getElementById('aliSectionTitle').dataset.orders = JSON.stringify(aliOrdersData);
                     } else if (timelineId === "hakmatTimeline") {
                         hakmatOrdersData = currentDriverOrders;
-                        document.getElementById('hakmatSectionTitle').dataset.orders = JSON.stringify(hakmatOrdersData);
                     }
+                    allOrders = aliOrdersData.concat(hakmatOrdersData); // Update combined orders
 
                     // Add event listeners for city links after all cards are rendered
                     timelineContainer.querySelectorAll('.city-link').forEach(link => {
@@ -1030,6 +1337,8 @@
                 errorMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
                 timelineContainer.appendChild(errorMessage);
             }
+            updateAllStatsAndCharts(); // Update stats after data fetch
+            updateHorizontalTimeline(); // Update horizontal timeline
         }
         
         /**
@@ -1044,6 +1353,11 @@
             document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
             document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
+
+            const customerMessageButton = document.querySelector('#orderDetailsModal .ai-customer-message-button');
+            if (customerMessageButton) {
+                customerMessageButton.dataset.order = orderJson; // Set the full JSON string
+            }
 
             document.getElementById('orderDetailsModal').classList.add('visible');
         }
@@ -1366,7 +1680,31 @@
             const hakmatData = await formatWhatsAppData(hakmatRange, "חכמת");
             const link = "🔗 https://did.li/njaDN"; // Assuming this link is constant
 
-            const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${link}`;
+            // Add stats to WhatsApp message
+            const totalOrders = allOrders.length;
+            const morningOrders = allOrders.filter(order => {
+                const timeParts = order.time.split(':').map(Number);
+                const hour = timeParts[0];
+                return hour >= 6 && hour < 9;
+            }).length;
+
+            const warehouseCounts = {};
+            allOrders.forEach(order => {
+                const warehouse = order.warehouse || 'לא ידוע';
+                warehouseCounts[warehouse] = (warehouseCounts[warehouse] || 0) + 1;
+            });
+
+            let warehouseSummary = '';
+            for (const warehouse in warehouseCounts) {
+                warehouseSummary += `* ${warehouse}: ${warehouseCounts[warehouse]} הזמנות\n`;
+            }
+
+            const statsMessage = `\n📊 *סיכום יומי:*\n` +
+                                 `* סה"כ הזמנות: ${totalOrders}\n` +
+                                 `* הזמנות 06:00-09:00: ${morningOrders}\n` +
+                                 `* הזמנות לפי מחסן:\n${warehouseSummary}`;
+
+            const fullMessage = `🚛 *סידור בוקר - הזמנות*\n\n${aliData}\n\n${hakmatData}\n\n${statsMessage}${link}`;
             const phoneNumber = "972508860896"; // Pre-set phone number
             const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
 
@@ -1378,13 +1716,13 @@
          * @param {string} driverName The name of the driver.
          */
         async function showDailySummary(driverName) {
-            const summaryModal = document.getElementById('dailySummaryModal');
-            const summaryTitle = document.getElementById('dailySummaryTitle');
-            const summaryContent = document.getElementById('dailySummaryContent');
+            const aiModal = document.getElementById('aiInteractionModal');
+            const aiModalTitle = document.getElementById('aiModalTitle');
+            const aiModalContent = document.getElementById('aiModalContent');
             
-            summaryTitle.textContent = `✨ סיכום יומי עבור ${driverName}`;
-            summaryContent.innerHTML = '<div class="loading-spinner"></div><p style="text-align: center;">טוען סיכום יומי...</p>';
-            summaryModal.classList.add('visible');
+            aiModalTitle.textContent = `✨ סיכום יומי עבור ${driverName}`;
+            aiModalContent.innerHTML = '<div class="loading-spinner"></div><p style="text-align: center;">טוען סיכום יומי...</p>';
+            aiModal.classList.add('visible');
 
             let ordersToSummarize = [];
             if (driverName === 'עלי') {
@@ -1394,16 +1732,16 @@
             }
 
             if (ordersToSummarize.length === 0) {
-                summaryContent.innerHTML = `<p>אין הזמנות זמינות עבור ${driverName} לסיכום יומי.</p>`;
+                aiModalContent.innerHTML = `<p>אין הזמנות זמינות עבור ${driverName} לסיכום יומי.</p>`;
                 return;
             }
 
             try {
                 const summaryText = await getDailySummaryFromLLM(driverName, ordersToSummarize);
-                summaryContent.innerHTML = `<pre>${summaryText}</pre>`;
+                aiModalContent.innerHTML = `<pre>${summaryText}</pre>`;
             } catch (error) {
                 console.error("Error fetching daily summary:", error);
-                summaryContent.innerHTML = `<p style="color: var(--accent-color);">שגיאה בטעינת הסיכום היומי: ${error.message}. אנא נסה שוב מאוחר יותר.</p>`;
+                aiModalContent.innerHTML = `<p style="color: var(--accent-color);">שגיאה בטעינת הסיכום היומי: ${error.message}. אנא נסה שוב מאוחר יותר.</p>`;
             }
         }
 
@@ -1450,9 +1788,376 @@
             }
         }
 
+        /**
+         * Generates and displays a customer message draft using LLM.
+         * @param {string} orderJson The JSON string of the order data.
+         */
+        async function generateAndShowCustomerMessage(orderJson) {
+            const order = JSON.parse(orderJson);
+            const aiModal = document.getElementById('aiInteractionModal');
+            const aiModalTitle = document.getElementById('aiModalTitle');
+            const aiModalContent = document.getElementById('aiModalContent');
+
+            aiModalTitle.textContent = `✨ טיוטת הודעה ללקוח: ${order.customer}`;
+            aiModalContent.innerHTML = '<div class="loading-spinner"></div><p style="text-align: center;">מכין טיוטה...</p>';
+            aiModal.classList.add('visible');
+
+            try {
+                const messageText = await getCustomerMessageFromLLM(order);
+                aiModalContent.innerHTML = `
+                    <textarea id="customerMessageTextarea" rows="10" cols="50" readonly>${messageText}</textarea>
+                    <button class="ai-copy-button" onclick="copyCustomerMessage()">העתק הודעה</button>
+                `;
+            } catch (error) {
+                console.error("Error generating customer message:", error);
+                aiModalContent.innerHTML = `<p style="color: var(--accent-color);">שגיאה ביצירת הטיוטה: ${error.message}. אנא נסה שוב מאוחר יותר.</p>`;
+            }
+        }
+
+        /**
+         * Fetches a customer message draft from the Gemini LLM.
+         * @param {Object} order The order object for the customer.
+         * @returns {Promise<string>} The generated customer message text.
+         */
+        async function getCustomerMessageFromLLM(order) {
+            const prompt = `צור טיוטת הודעה קצרה ומקצועית ללקוח "${order.customer}" בנוגע להזמנה לכתובת "${order.address}".
+            הסטטוס הנוכחי של ההזמנה הוא: "${order.status}".
+            זמן משוער: ${order.time}.
+            המחסן המטפל הוא: ${order.warehouse}.
+            
+            ההודעה צריכה להיות בעברית וקצרה. התחל עם פנייה אישית ללקוח. לדוגמה, אם הסטטוס הוא "בדרך", צור הודעה כמו "שלום [שם לקוח], אנחנו בדרך לכתובת [כתובת]. זמן הגעה משוער הוא [שעה].". אם הסטטוס הוא "בוצע", צור הודעה כמו "שלום [שם לקוח], ההזמנה לכתובת [כתובת] בוצעה בהצלחה.".`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("לא התקבלה תגובה תקפה מ-Gemini API.");
+            }
+        }
+
+        /**
+         * Copies the generated customer message to the clipboard.
+         */
+        function copyCustomerMessage() {
+            const textarea = document.getElementById('customerMessageTextarea');
+            if (textarea) {
+                textarea.select();
+                document.execCommand('copy'); // Use execCommand for broader compatibility in iframes
+                showAlertModal("הועתק!", "ההודעה הועתקה ללוח העריכה.");
+            } else {
+                showAlertModal("שגיאה", "לא נמצאה הודעה להעתקה.");
+            }
+        }
+
+        /**
+         * Shows the Add Order Modal.
+         */
+        function showAddOrderModal() {
+            // Reset form fields
+            document.getElementById('addOrderForm').reset();
+            // Set current date as default for orderDate
+            document.getElementById('orderDate').valueAsDate = new Date();
+            document.getElementById('addOrderModal').classList.add('visible');
+        }
+
+        /**
+         * Handles the submission of the Add Order Form.
+         * For now, it logs the data and can optionally use AI.
+         */
+        document.getElementById('addOrderForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const newOrder = {
+                date: document.getElementById('orderDate').value,
+                time: document.getElementById('orderTime').value,
+                customer: document.getElementById('orderCustomer').value,
+                address: document.getElementById('orderAddress').value,
+                warehouse: document.getElementById('orderWarehouse').value,
+                status: document.getElementById('orderStatus').value,
+                driver: document.getElementById('orderDriver').value
+            };
+
+            console.log("New order to add (not saved to Sheets directly):", newOrder);
+            showAlertModal("הזמנה התקבלה", `הזמנה חדשה ללקוח ${newOrder.customer} עבור ${newOrder.driver} התקבלה בהצלחה (לא נשמרה בגיליון).`);
+            closeModal('addOrderModal');
+
+            // Optionally, you can trigger an AI action here, e.g., to confirm the order.
+            // Example:
+            // const aiConfirmationPrompt = `Confirm the following new order: ${JSON.stringify(newOrder)}`;
+            // const aiResponse = await getGeminiResponse(aiConfirmationPrompt);
+            // console.log("AI confirmation for new order:", aiResponse);
+
+            // Re-fetch data to update display (though new order won't persist without Sheets save)
+            fetchDataAndRender(aliRange, "aliTimeline");
+            fetchDataAndRender(hakmatRange, "hakmatTimeline");
+        });
+
+        /**
+         * Updates all statistics and charts based on current allOrders data.
+         */
+        function updateAllStatsAndCharts() {
+            // 1. Total Orders Count
+            document.getElementById('totalOrdersCount').textContent = allOrders.length;
+
+            // 2. Morning Orders (06:00-09:00)
+            const morningOrders = allOrders.filter(order => {
+                try {
+                    const timeParts = order.time.split(':').map(Number);
+                    const hour = timeParts[0];
+                    return hour >= 6 && hour < 9;
+                } catch (e) {
+                    console.warn("Invalid time format for morning order check:", order.time, e);
+                    return false; // Exclude invalid times
+                }
+            }).length;
+            document.getElementById('morningOrdersCount').textContent = morningOrders;
+
+            // 3. Orders by Warehouse
+            const warehouseCounts = {};
+            allOrders.forEach(order => {
+                const warehouse = order.warehouse || 'לא ידוע';
+                warehouseCounts[warehouse] = (warehouseCounts[warehouse] || 0) + 1;
+            });
+
+            // Dynamically add warehouse stats
+            const statsSummaryContainer = document.querySelector('.stats-summary');
+            // Remove existing dynamic warehouse stats (keep total and morning)
+            statsSummaryContainer.querySelectorAll('.dynamic-stat-item').forEach(item => item.remove());
+
+            for (const warehouse in warehouseCounts) {
+                const statItem = document.createElement('div');
+                statItem.classList.add('stat-item', 'dynamic-stat-item');
+                statItem.innerHTML = `<h3>${warehouseCounts[warehouse]}</h3><p>הזמנות מ${warehouse}</p>`;
+                statsSummaryContainer.appendChild(statItem);
+            }
+
+            // 4. Render Warehouse Chart
+            const warehouseCtx = document.getElementById('warehouseChart').getContext('2d');
+            const warehouseLabels = Object.keys(warehouseCounts);
+            const warehouseData = Object.values(warehouseCounts);
+
+            if (warehouseChart) {
+                warehouseChart.destroy(); // Destroy previous chart instance
+            }
+            warehouseChart = new Chart(warehouseCtx, {
+                type: 'pie',
+                data: {
+                    labels: warehouseLabels,
+                    datasets: [{
+                        data: warehouseData,
+                        backgroundColor: [
+                            '#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f', '#1abc9c', '#d35400'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { family: 'Rubik' }
+                            }
+                        },
+                        title: {
+                            display: false,
+                        }
+                    }
+                }
+            });
+
+            // 5. Render Morning Orders Chart
+            const morningOrdersCtx = document.getElementById('morningOrdersChart').getContext('2d');
+            
+            // Prepare data for morning orders by hour
+            const morningHourCounts = {};
+            for (let i = 6; i < 9; i++) { // Hours 6, 7, 8
+                morningHourCounts[i] = 0;
+            }
+            allOrders.forEach(order => {
+                try {
+                    const timeParts = order.time.split(':').map(Number);
+                    const hour = timeParts[0];
+                    if (hour >= 6 && hour < 9) {
+                        morningHourCounts[hour]++;
+                    }
+                } catch (e) {
+                    console.warn("Invalid time format for morning chart:", order.time, e);
+                }
+            });
+
+            const morningChartLabels = Object.keys(morningHourCounts).map(hour => `${hour}:00-${parseInt(hour) + 1}:00`);
+            const morningChartData = Object.values(morningHourCounts);
+
+            if (morningOrdersChart) {
+                morningOrdersChart.destroy(); // Destroy previous chart instance
+            }
+            morningOrdersChart = new Chart(morningOrdersCtx, {
+                type: 'bar',
+                data: {
+                    labels: morningChartLabels,
+                    datasets: [{
+                        label: 'מספר הזמנות',
+                        data: morningChartData,
+                        backgroundColor: '#2ecc71',
+                        borderColor: '#27ae60',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        title: {
+                            display: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0, // Ensure integer ticks
+                                font: { family: 'Rubik' }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { family: 'Rubik' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Updates the horizontal timeline with order pins.
+         */
+        function updateHorizontalTimeline() {
+            const timelineContainer = document.getElementById('horizontalTimeline');
+            // Clear existing pins, but keep the line div
+            timelineContainer.querySelectorAll('.timeline-pin').forEach(pin => pin.remove());
+
+            // Collect all orders and sort them by time
+            const sortedAllOrders = [...allOrders].sort((a, b) => {
+                const timeA = parseTimeForSorting(a.time);
+                const timeB = parseTimeForSorting(b.time);
+                return timeA - timeB;
+            });
+
+            if (sortedAllOrders.length === 0) {
+                // Display a message if no orders for timeline
+                timelineContainer.innerHTML = '<div class="timeline-line"></div><p style="text-align: center; width: 100%; position: relative; z-index: 1;">אין הזמנות להצגה בציר הזמן.</p>';
+                return;
+            }
+
+            // Find min/max hours to normalize pin positions
+            let minHour = 24, maxHour = 0;
+            sortedAllOrders.forEach(order => {
+                try {
+                    const hour = parseInt(order.time.split(':')[0]);
+                    if (hour < minHour) minHour = hour;
+                    if (hour > maxHour) maxHour = hour;
+                } catch (e) {
+                    console.warn("Invalid time format for timeline position:", order.time, e);
+                }
+            });
+
+            // Adjust min/max to ensure a reasonable time window, e.g., 6 AM to 18 PM
+            minHour = Math.min(minHour, 6); // At least 6 AM
+            maxHour = Math.max(maxHour, 18); // At least 6 PM
+            // Add some buffer for visual appeal
+            minHour = Math.max(0, minHour - 1); 
+            maxHour = Math.min(23, maxHour + 1);
+
+            const totalHoursSpan = maxHour - minHour;
+            if (totalHoursSpan <= 0) { // Avoid division by zero or negative span
+                 timelineContainer.innerHTML = '<div class="timeline-line"></div><p style="text-align: center; width: 100%; position: relative; z-index: 1;">לא ניתן להציג ציר זמן עם הזמנות אלו.</p>';
+                 return;
+            }
+
+
+            sortedAllOrders.forEach(order => {
+                try {
+                    const [hour, minute] = order.time.split(':').map(Number);
+                    const totalMinutesOfDay = (hour * 60) + minute;
+                    const totalMinutesSpan = (maxHour * 60) - (minHour * 60);
+                    const currentMinutesFromMin = totalMinutesOfDay - (minHour * 60);
+
+                    // Calculate position as percentage along the timeline
+                    const positionPercentage = (currentMinutesFromMin / totalMinutesSpan) * 100;
+
+                    const pin = document.createElement('div');
+                    pin.classList.add('timeline-pin');
+                    pin.style.left = `${positionPercentage}%`;
+                    pin.innerHTML = `📌
+                        <div class="pin-info">
+                            <p><i class="far fa-clock"></i> שעה: ${order.time}</p>
+                            <p><i class="fas fa-user"></i> לקוח: ${order.customer}</p>
+                            <p><i class="fas fa-truck driver-icon"></i> נהג: ${order.driver}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> כתובת: ${order.address}</p>
+                        </div>
+                    `;
+                    timelineContainer.appendChild(pin);
+                } catch (e) {
+                    console.warn("Failed to add pin for order due to invalid time:", order, e);
+                }
+            });
+
+            // Optionally add hour markers to the timeline (e.g., 07:00, 08:00)
+            for (let h = minHour; h <= maxHour; h++) {
+                const hourMarker = document.createElement('div');
+                hourMarker.classList.add('timeline-pin'); // Reusing pin styling for markers
+                hourMarker.style.borderColor = 'transparent'; // No border for hour markers
+                hourMarker.style.backgroundColor = 'transparent'; // Transparent background
+                hourMarker.style.boxShadow = 'none'; // No shadow
+                hourMarker.style.pointerEvents = 'none'; // Not interactive
+                hourMarker.style.fontSize = '0.9rem';
+                hourMarker.style.color = var('--text-color');
+
+
+                const totalMinutesSpan = (maxHour * 60) - (minHour * 60);
+                const currentMinutesFromMin = (h * 60) - (minHour * 60);
+                const positionPercentage = (currentMinutesFromMin / totalMinutesSpan) * 100;
+                
+                // If it's a valid position, add the marker
+                if (positionPercentage >= 0 && positionPercentage <= 100) {
+                    hourMarker.style.left = `${positionPercentage}%`;
+                    hourMarker.textContent = `${h}:00`;
+                    timelineContainer.appendChild(hourMarker);
+                }
+            }
+        }
+
+
         // Initial fetch and render of data for both drivers on page load
-        fetchDataAndRender(aliRange, "aliTimeline");
-        fetchDataAndRender(hakmatRange, "hakmatTimeline");
+        // This is called AFTER initMapLibraries to ensure Google Maps objects are ready
+        // fetchDataAndRender is now called in initMapLibraries
+        // fetchDataAndRender(aliRange, "aliTimeline");
+        // fetchDataAndRender(hakmatRange, "hakmatTimeline");
     </script>
 </body>
 </html>
