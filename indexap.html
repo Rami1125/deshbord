@@ -758,10 +758,13 @@
             box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.1);
             border: 1px solid var(--glass-border-20);
             padding: 15px;
-            margin-top: 20px; /* Space from chart */
+            /* Removed margin-top for horizontal layout */
             text-align: right;
-            max-height: 150px; /* Allow more height for list */
+            max-height: 250px; /* Set max height to align with chart, overflow scroll */
             overflow-y: auto;
+            flex: 1; /* Allow list to take remaining space */
+            min-width: 180px; /* Ensure a minimum width for the list */
+            box-sizing: border-box; /* Include padding in width/height */
         }
 
         .chart-card .chart-customer-list h4 {
@@ -798,6 +801,7 @@
             font-size: 0.9rem;
         }
 
+        /* CHANGED: Chart Card Layout for horizontal chart and customer list */
         .chart-card {
             grid-column: span 2; /* Chart takes full width on larger screens */
             background: var(--glass-bg); /* Glassmorphism */
@@ -808,15 +812,28 @@
             border: 1px solid var(--glass-border);
             padding: 25px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row-reverse; /* For RTL: List on the right, chart on the left */
+            align-items: center; /* Vertically center content */
+            justify-content: space-between; /* Space out the chart and the list */
+            gap: 20px; /* Space between chart and list */
+            box-sizing: border-box; /* Include padding in width/height calculation */
         }
 
         .chart-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        /* New wrapper for chart content to control its size within the flex container */
+        .chart-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 2; /* Allow chart content to take more space */
+            min-width: 250px; /* Ensure chart has enough space */
         }
 
         .chart-card h3 {
@@ -825,14 +842,60 @@
             margin-bottom: 15px;
             border-bottom: 2px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 10px;
-            width: 100%;
+            width: 100%; /* Ensure title takes full width within its wrapper */
+            text-align: center; /* Center the title */
         }
 
         .chart-container {
-            width: 95%;
-            max-width: 600px; /* Limit chart width */
-            height: 300px; /* Fixed height for chart */
-            margin: 0 auto;
+            position: relative; /* For absolute positioning of count overlay */
+            width: 100%; /* Max width within its flex item */
+            max-width: 400px; /* Limit chart width even within flex */
+            height: 250px; /* Adjusted height if needed */
+            margin: 0 auto; /* Center the canvas horizontally */
+        }
+
+        /* Styling for the in-chart count overlay */
+        .chart-count-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem; /* Large font for count */
+            font-weight: 700;
+            color: white; /* White text for contrast */
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            pointer-events: none; /* Allow clicks to pass through to the chart canvas if needed */
+            overflow: hidden; /* For shine effect */
+            z-index: 10; /* Ensure it's above the chart bars */
+            border: 2px solid rgba(255, 255, 255, 0.4); /* Subtle border for glass effect */
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.7); /* Text shadow for prominence */
+        }
+
+        /* Shine effect for the in-chart count overlay */
+        .chart-count-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.5) 50%, /* Increased visibility for shine */
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-20deg);
+            animation: shine 2s infinite linear; /* Shine animation */
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: -100%; }
         }
 
         /* Fixed bottom navigation bar */
@@ -1072,6 +1135,24 @@
         }
 
         @media (max-width: 992px) {
+            /* CHART CARD: Revert to column on smaller screens */
+            .chart-card {
+                flex-direction: column; 
+                gap: 20px;
+            }
+            .chart-content-wrapper {
+                flex: none; /* Remove flex grow */
+                width: 100%;
+                min-width: unset;
+            }
+            .chart-card .chart-customer-list {
+                margin-top: 20px; /* Re-add top margin for list when in column layout */
+                max-height: 150px; /* Restore original max-height for list on small screens */
+                flex: none; /* Remove flex grow */
+                width: 100%;
+                min-width: unset;
+            }
+
             .timeline-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
@@ -1091,9 +1172,6 @@
             }
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-            .chart-card {
-                grid-column: span 1;
             }
             .top-nav .nav-button {
                 max-width: none; 
@@ -1333,18 +1411,24 @@
             <!-- Charts Section -->
             <div class="summary-grid">
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - עלי</h3>
-                    <div class="chart-container">
-                        <canvas id="aliChart"></canvas>
+                    <div class="chart-content-wrapper">
+                        <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - עלי</h3>
+                        <div class="chart-container">
+                            <canvas id="aliChart"></canvas>
+                            <div class="chart-count-overlay" id="aliChartCountOverlay">0</div>
+                        </div>
                     </div>
                     <div class="chart-customer-list" id="aliMorningCustomers">
                         <!-- Customer names will be inserted here -->
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - חכמת</h3>
-                    <div class="chart-container">
-                        <canvas id="hakmatChart"></canvas>
+                    <div class="chart-content-wrapper">
+                        <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - חכמת</h3>
+                        <div class="chart-container">
+                            <canvas id="hakmatChart"></canvas>
+                            <div class="chart-count-overlay" id="hakmatChartCountOverlay">0</div>
+                        </div>
                     </div>
                     <div class="chart-customer-list" id="hakmatMorningCustomers">
                         <!-- Customer names will be inserted here -->
@@ -1494,7 +1578,7 @@
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; 
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow'; 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1726,7 +1810,7 @@
                 return (orderTime >= sixAM && orderTime <= nineAM) || order.time.includes("ביחד");
             });
 
-            // Update customer lists below charts
+            // Update customer lists next to charts
             const aliCustomersList = document.getElementById('aliMorningCustomers');
             aliCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
             if (aliOrdersInTimeRange.length > 0) {
@@ -1750,6 +1834,10 @@
             } else {
                 hakmatCustomersList.innerHTML += '<p>אין לקוחות בטווח שעות זה.</p>';
             }
+
+            // Update the in-chart count overlays
+            document.getElementById('aliChartCountOverlay').textContent = aliOrdersInTimeRange.length;
+            document.getElementById('hakmatChartCountOverlay').textContent = hakmatOrdersInTimeRange.length;
 
 
             const aliChartData = {
