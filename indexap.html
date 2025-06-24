@@ -1346,10 +1346,10 @@
             }
             .nav-button {
                 font-size: 0.9rem;
-                padding: 8px 10px;
+                padding: 5px 8px;
             }
             .nav-button i {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
             }
             .top-nav .nav-button {
                 flex-basis: calc(50% - 10px); 
@@ -1437,6 +1437,156 @@
             .share-button {
                 width: calc(100% - 20px); 
             }
+        }
+
+        /* New styles for the advanced messaging modal */
+        .message-section {
+            background-color: var(--light-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-section h4 {
+            margin-top: 0;
+            color: var(--dark-color);
+            font-size: 1.5rem;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .message-section label {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .message-section input[type="text"],
+        .message-section input[type="tel"],
+        .message-section textarea,
+        .message-section select {
+            width: calc(100% - 20px);
+            padding: 12px;
+            border: 1px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            direction: rtl;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .message-section input[type="text"]:focus,
+        .message-section input[type="tel"]:focus,
+        .message-section textarea:focus,
+        .message-section select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+        }
+
+        .message-section textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .message-section .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end; /* Align buttons to the right (RTL) */
+        }
+
+        .message-section .button-group button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-section .button-group button:hover {
+            background-color: var(--dark-color);
+            transform: translateY(-2px);
+        }
+
+        /* WhatsApp send button within modal */
+        #sendCustomerMessageButton {
+            background-color: #25D366; /* WhatsApp green */
+        }
+        #sendCustomerMessageButton:hover {
+            background-color: #128C7E; /* Darker WhatsApp green */
+        }
+
+        /* Waze Icon Styling */
+        .waze-icon-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .waze-icon {
+            font-size: 1.8rem;
+            color: #4CAF50; /* Green for Waze */
+            cursor: pointer;
+            position: relative;
+            animation: bounce 1s infinite alternate; /* Moving emoji effect */
+        }
+
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-5px); }
+        }
+
+        .waze-icon.blinking-light::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            background-color: #ff0000; /* Red light */
+            border-radius: 50%;
+            animation: blink 1s infinite alternate;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Waze Pop-up Modal */
+        #wazePopupModal .modal-content {
+            max-width: 450px;
+            text-align: center;
+        }
+        #wazePopupModal .modal-content p {
+            word-break: break-all; /* Break long URLs */
+            font-size: 1.1rem;
+            direction: ltr; /* LTR for URL */
+            text-align: center;
+        }
+        #wazePopupModal .modal-content a {
+            color: var(--primary-color);
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -1588,7 +1738,7 @@
         </button>
     </div>
 
-    <!-- Order Details Modal: This is where the LLM button is located -->
+    <!-- Order Details Modal: This is where the LLM button and new messaging features are located -->
     <div id="orderDetailsModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
@@ -1600,15 +1750,85 @@
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
             
-            <!-- LLM button to generate customer message -->
-            <button class="llm-button" id="generateMessageButton">
-                <i class="fas fa-magic"></i> ✨ צור הודעת לקוח
-            </button>
-            <!-- Area where the LLM's generated message will be displayed -->
+            <!-- New: Customer contact info and Order ID -->
+            <div class="message-section">
+                <h4><i class="fas fa-address-card"></i> פרטי יצירת קשר והזמנה</h4>
+                <label for="customerContactName">שם איש קשר:</label>
+                <input type="text" id="customerContactName" placeholder="הכנס שם איש קשר">
+                
+                <label for="customerPhoneNumberInput">מספר טלפון לווצאפ:</label>
+                <input type="tel" id="customerPhoneNumberInput" placeholder="דוגמה: 972501234567">
+
+                <label for="orderIdInput">מספר הזמנה:</label>
+                <input type="text" id="orderIdInput" placeholder="דוגמה: 6201547">
+            </div>
+
+            <!-- New: Waze Integration Section -->
+            <div class="message-section">
+                <h4><i class="fas fa-map-marked-alt"></i> שילוב Waze</h4>
+                <label for="wazeShareTextInput">הדבק כאן את טקסט השיתוף המלא מ-Waze:</label>
+                <input type="text" id="wazeShareTextInput" placeholder="לדוגמה: אני בדרך אל הפטיש 3, הוד השרון...">
+                <div class="button-group">
+                    <button onclick="processWazeShareText()"><i class="fas fa-route"></i> נתח קישור Waze</button>
+                </div>
+                <p id="wazeLinkDisplay" style="margin-top: 10px; font-size: 0.9rem;"></p>
+                <!-- Waze Icon with Blinking Light and Moving Emoji -->
+                <div id="wazeIconContainer" class="waze-icon-container" style="display: none;">
+                    <i class="fab fa-waze waze-icon" id="animatedWazeIcon" onclick="showWazePopupWrapper()"></i>
+                    <span>לחץ על אייקון Waze למעקב במפה!</span>
+                </div>
+            </div>
+
+            <!-- New: Predefined Messages Section -->
+            <div class="message-section">
+                <h4><i class="fas fa-comment-dots"></i> בחר הודעה מוכנה</h4>
+                <select id="predefinedMessageSelect">
+                    <option value="">בחר תבנית הודעה</option>
+                    <option value="template1">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].</option>
+                    <option value="template2">ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].</option>
+                    <option value="template3">ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!</option>
+                    <option value="template4">עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.</option>
+                    <option value="template5">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [שם מחסן]. שעות פעילות: [שעות פעילות].</option>
+                    <option value="template6">לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.</option>
+                    <option value="template7">בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.</option>
+                    <option value="template8">נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].</option>
+                    <option value="template9">תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.</option>
+                    <option value="template10">אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת] בעוד כ[זמן משוער] דקות. לחץ כאן למעקב: [קישור Waze].</option>
+                </select>
+                <div class="button-group">
+                    <button onclick="fillMessageFromTemplate()"><i class="fas fa-file-alt"></i> מלא מהתבנית</button>
+                </div>
+            </div>
+
+            <!-- New: Free Text Message and AI Emoji/Styling -->
+            <div class="message-section">
+                <h4><i class="fas fa-pencil-alt"></i> כתיבה חופשית</h4>
+                <textarea id="freeTextMessage" placeholder="כתוב הודעה חופשית כאן..."></textarea>
+                <div class="button-group">
+                    <button onclick="applyAIEmojiAndStyle()"><i class="fas fa-magic"></i> AI: עיצוב והוספת אימוג'י</button>
+                </div>
+            </div>
+            
+            <!-- LLM generated message preview area -->
             <div id="llmResponseContainer">
                 <div class="loader" id="llmLoader"></div>
-                <div id="llmResponseMessage">לחץ על הכפתור למעלה ליצירת הודעה.</div>
+                <div id="llmResponseMessage">לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.</div>
             </div>
+
+            <!-- New: Main Send WhatsApp Message Button for customer -->
+            <button class="share-button" id="sendCustomerMessageButton" style="width: 100%; max-width: none;">
+                <i class="fab fa-whatsapp"></i> שלח הודעת ווצאפ ללקוח
+            </button>
+
+            <!-- New: Driver Specific Messages Section -->
+            <div class="message-section">
+                <h4><i class="fas fa-truck-loading"></i> שליחת הודעה לנהגים</h4>
+                <div class="button-group">
+                    <button onclick="sendOrderToDriver('hakmat')"><i class="fab fa-whatsapp"></i> שלח לחכמת (972532316985)</button>
+                    <button onclick="sendOrderToDriver('ali')"><i class="fab fa-whatsapp"></i> שלח לעלי (9725475188)</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1633,6 +1853,17 @@
             <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
         </div>
     </div>
+
+    <!-- Waze Pop-up Modal -->
+    <div id="wazePopupModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('wazePopupModal')">&times;</button>
+            <h2>קישור Waze</h2>
+            <p id="wazePopupLink"></p>
+            <a id="wazeOpenLink" href="#" target="_blank" class="button" style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; margin-top: 20px;">פתח ב-Waze</a>
+        </div>
+    </div>
+
 
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
@@ -1686,7 +1917,7 @@
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; 
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-EE'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -1712,6 +1943,23 @@
         let morningOrdersCount = 0;
 
         let currentOrderDetails = null; // Stores the order data currently displayed in the modal
+        let currentWazeLink = null; // Stores the raw Waze link for popup
+
+
+        // Predefined message templates (Hebrew)
+        const predefinedMessages = {
+            template1: "שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].",
+            template2: "ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].",
+            template3: "ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!",
+            template4: "עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.",
+            template5: "שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [שם מחסן]. שעות פעילות: [שעות פעילות].",
+            template6: "לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.",
+            template7: "בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.",
+            template8: "נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].",
+            template9: "תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.",
+            template10: "אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת] בעוד כ[זמן משוער] דקות. לחץ כאן למעקב: [קישור Waze]."
+        };
+
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -1816,9 +2064,10 @@
                     return data.values
                         .filter(row => row.length >= 6 && row[1]) // Ensure row has enough data and a time
                         .map((row) => {
-                            const [date, time, warehouse, status, customer, address, cityFromColumnH] = row;
+                            // Date, Time, Warehouse, Status, Customer, Address, City (from Column H), Waze Link (new)
+                            const [date, time, warehouse, status, customer, address, cityFromColumnH, wazeLink] = row;
                             const city = cityFromColumnH ? cityFromColumnH.trim() : (address ? address.split(',').pop().trim() : 'לא ידוע');
-                            return { date, time, warehouse, status, customer, address, city };
+                            return { date, time, warehouse, status, customer, address, city, wazeLink: wazeLink || null };
                         })
                         .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time)); // Sort by time
                 }
@@ -2066,6 +2315,7 @@
         function showOrderDetails(orderJson) {
             const order = JSON.parse(orderJson);
             currentOrderDetails = order; // Store the current order details globally
+            currentWazeLink = order.wazeLink; // Store Waze link
 
             document.getElementById('modalDate').textContent = order.date || 'אין נתונים';
             document.getElementById('modalTime').textContent = order.time || 'אין נתונים';
@@ -2074,16 +2324,41 @@
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
             document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
 
+            // New fields reset/populate
+            document.getElementById('customerContactName').value = ''; // Assuming no contact name in sheets for now
+            document.getElementById('customerPhoneNumberInput').value = ''; // Assuming no customer phone in sheets for now
+            document.getElementById('orderIdInput').value = order.orderId || ''; // Populate if order ID exists
+
+            // Waze elements
+            const wazeIconContainer = document.getElementById('wazeIconContainer');
+            const wazeLinkDisplay = document.getElementById('wazeLinkDisplay');
+            const animatedWazeIcon = document.getElementById('animatedWazeIcon');
+
+            if (order.wazeLink) {
+                wazeLinkDisplay.innerHTML = `קישור Waze: <a href="${order.wazeLink}" target="_blank">${order.wazeLink.substring(0, 30)}...</a>`;
+                wazeIconContainer.style.display = 'flex';
+                animatedWazeIcon.classList.add('blinking-light');
+            } else {
+                wazeLinkDisplay.textContent = 'אין קישור Waze זמין.';
+                wazeIconContainer.style.display = 'none';
+                animatedWazeIcon.classList.remove('blinking-light');
+            }
+            document.getElementById('wazeShareTextInput').value = ''; // Clear Waze text input
+
             // Reset LLM response area
-            document.getElementById('llmResponseMessage').textContent = 'לחץ על הכפתור למעלה ליצירת הודעה.';
+            document.getElementById('llmResponseMessage').textContent = 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.';
             document.getElementById('llmLoader').classList.remove('visible');
             document.getElementById('llmResponseContainer').classList.remove('loading');
 
             // Attach event listener to the generate message button
             const generateButton = document.getElementById('generateMessageButton');
-            // Remove any existing listeners to prevent multiple calls
-            generateButton.onclick = null; 
-            generateButton.onclick = () => generateCustomerMessage(currentOrderDetails);
+            generateButton.onclick = null; // Remove any existing listeners
+            generateButton.onclick = () => generateCustomerMessage();
+
+            // Attach event listener to the main WhatsApp send button
+            const sendCustomerMessageButton = document.getElementById('sendCustomerMessageButton');
+            sendCustomerMessageButton.onclick = null;
+            sendCustomerMessageButton.onclick = () => sendWhatsAppCustomerMessage();
 
             document.getElementById('orderDetailsModal').classList.add('visible');
         }
@@ -2155,7 +2430,7 @@
          */
         function formatDriverWhatsAppData(ordersData, driverName) {
             if (!ordersData || ordersData.length === 0) {
-                return `� *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
+                return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
             }
 
             // Sort data by time before formatting for WhatsApp
@@ -2375,33 +2650,89 @@
         }
 
         /**
-         * Generates a customer message using Gemini API.
-         * @param {Object} order The order object for which to generate a message.
+         * Fills the free text message area with a selected predefined template, replacing placeholders.
          */
-        async function generateCustomerMessage(order) {
+        function fillMessageFromTemplate() {
+            const selectElement = document.getElementById('predefinedMessageSelect');
+            const selectedTemplateKey = selectElement.value;
+            const freeTextMessageArea = document.getElementById('freeTextMessage');
+
+            if (selectedTemplateKey && predefinedMessages[selectedTemplateKey]) {
+                let message = predefinedMessages[selectedTemplateKey];
+
+                // Replace placeholders with current order details
+                if (currentOrderDetails) {
+                    message = message.replace(/\[שם לקוח\]/g, document.getElementById('customerContactName').value || currentOrderDetails.customer || 'לקוח יקר');
+                    message = message.replace(/\[מספר הזמנה\]/g, document.getElementById('orderIdInput').value || 'לא ידוע');
+                    message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב');
+                    message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driverName || 'הנהג'); // Assuming driverName might be added to order object or determined contextually
+                    message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת');
+                    message = message.replace(/\[שם מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
+                    message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); // Placeholder, adjust as needed
+                    message = message.replace(/\[מספר הזמנה1\]/g, currentOrderDetails.orderId || 'הזמנה זו');
+                    message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); // Placeholder for combined orders
+                    message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); // Placeholder for delay reason
+                    message = message.replace(/\[זמן משוער\]/g, '20'); // Placeholder for estimated time
+                    message = message.replace(/\[קישור Waze\]/g, currentWazeLink || 'קישור למפה');
+                }
+
+                freeTextMessageArea.value = message;
+                document.getElementById('llmResponseMessage').textContent = message; // Show in preview
+                document.getElementById('llmResponseContainer').classList.remove('loading');
+                document.getElementById('llmLoader').classList.remove('visible');
+            } else {
+                freeTextMessageArea.value = '';
+                document.getElementById('llmResponseMessage').textContent = 'בחר תבנית הודעה מהרשימה.';
+            }
+        }
+
+
+        /**
+         * Generates a customer message using Gemini API, applying emoji and styling.
+         * The message can come from a template or free text.
+         */
+        async function generateCustomerMessage() {
             const llmLoader = document.getElementById('llmLoader');
             const llmResponseMessage = document.getElementById('llmResponseMessage');
             const llmResponseContainer = document.getElementById('llmResponseContainer');
+            const freeTextMessage = document.getElementById('freeTextMessage').value;
+            const selectedTemplateKey = document.getElementById('predefinedMessageSelect').value;
+
+            let baseMessage = freeTextMessage;
+            if (!baseMessage && selectedTemplateKey) {
+                 // If no free text, but template is selected, use template logic to get the message
+                 baseMessage = predefinedMessages[selectedTemplateKey];
+                 if (currentOrderDetails) {
+                    baseMessage = baseMessage.replace(/\[שם לקוח\]/g, document.getElementById('customerContactName').value || currentOrderDetails.customer || 'לקוח יקר');
+                    baseMessage = baseMessage.replace(/\[מספר הזמנה\]/g, document.getElementById('orderIdInput').value || 'לא ידוע');
+                    baseMessage = baseMessage.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב');
+                    baseMessage = baseMessage.replace(/\[שם נהג\]/g, currentOrderDetails.driverName || 'הנהג');
+                    baseMessage = baseMessage.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת');
+                    baseMessage = baseMessage.replace(/\[שם מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
+                    baseMessage = baseMessage.replace(/\[שעות פעילות\]/g, '08:00-17:00');
+                    baseMessage = baseMessage.replace(/\[מספר הזמנה1\]/g, currentOrderDetails.orderId || 'הזמנה זו');
+                    baseMessage = baseMessage.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת');
+                    baseMessage = baseMessage.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג');
+                    baseMessage = baseMessage.replace(/\[זמן משוער\]/g, '20');
+                    baseMessage = baseMessage.replace(/\[קישור Waze\]/g, currentWazeLink || 'קישור למפה');
+                 }
+            }
+            
+            if (!baseMessage) {
+                llmResponseMessage.textContent = 'יש לכתוב הודעה או לבחור תבנית לפני יצירת הודעה.';
+                return;
+            }
 
             llmResponseMessage.textContent = ''; // Clear previous message
             llmLoader.classList.add('visible'); // Show loader
             llmResponseContainer.classList.add('loading'); // Add loading class for styling
 
             try {
-                // Construct a detailed prompt for the LLM
-                let prompt = `Generate a concise, polite Hebrew message for a customer regarding their delivery.`;
-                prompt += `\nCustomer Name: ${order.customer || 'לא ידוע'}`;
-                prompt += `\nStatus: ${order.status || 'לא ידוע'}`;
-                prompt += `\nTime: ${order.time || 'לא ידוע'}`;
-                prompt += `\nWarehouse: ${order.warehouse || 'לא ידוע'}`;
-                prompt += `\nAddress: ${order.address || 'לא ידוע'}`;
-                prompt += `\n\nBased on the status, suggest the appropriate context.`;
-                prompt += ` If status is 'בדרך', state the driver is on the way.`;
-                prompt += ` If 'הושלם', state it's delivered.`;
-                prompt += ` If 'נדחה', explain it's delayed.`;
-                prompt += ` If 'ביחד', explain that multiple items are combined in the delivery.`;
-                prompt += ` Keep it friendly and professional.`;
-                prompt += `\n\nExample output format: שלום [שם לקוח], ההזמנה שלך [סטטוס]. נא לצפות ל[שעה]. תודה!`;
+                // Construct a detailed Hebrew prompt for the LLM to add emojis and style
+                let prompt = `אנא עצב מחדש את ההודעה הבאה בעברית, הוסף אימוג'י רלוונטיים כדי להפוך אותה לידידותית וברורה יותר, ושמור על הנימה המקצועית. `;
+                prompt += `ההודעה: "${baseMessage}".`;
+                prompt += `\n\nדוגמה רצויה: שלום [שם], ההזמנה שלך 📦 בדרך אליך! נהג יגיע 🚚 בערך ב-14:30. תודה 🙏!`;
+
 
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
@@ -2424,6 +2755,7 @@
                     result.candidates[0].content.parts.length > 0) {
                     const text = result.candidates[0].content.parts[0].text;
                     llmResponseMessage.textContent = text;
+                    document.getElementById('freeTextMessage').value = text; // Update free text area with AI response
                 } else {
                     llmResponseMessage.textContent = 'שגיאה: לא התקבלה תגובה מה-LLM. נסה שוב.';
                     console.error("Unexpected LLM response structure:", result);
@@ -2437,6 +2769,194 @@
             }
         }
 
+        /**
+         * Processes the Waze share text to extract address and ETA using LLM.
+         * Updates the modal's address and time fields.
+         */
+        async function processWazeShareText() {
+            const wazeText = document.getElementById('wazeShareTextInput').value;
+            const llmLoader = document.getElementById('llmLoader');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const llmResponseContainer = document.getElementById('llmResponseContainer');
+            const modalAddress = document.getElementById('modalAddress');
+            const modalTime = document.getElementById('modalTime');
+            const wazeIconContainer = document.getElementById('wazeIconContainer');
+            const animatedWazeIcon = document.getElementById('animatedWazeIcon');
+            const wazeLinkDisplay = document.getElementById('wazeLinkDisplay');
+
+
+            if (!wazeText) {
+                llmResponseMessage.textContent = 'אנא הדבק טקסט שיתוף של Waze.';
+                return;
+            }
+
+            llmResponseMessage.textContent = ''; // Clear previous message
+            llmLoader.classList.add('visible'); // Show loader
+            llmResponseContainer.classList.add('loading'); // Add loading class for styling
+
+            try {
+                // Prompt for LLM to extract address and ETA
+                const prompt = `הטקסט הבא הוא הודעת שיתוף נסיעה מ-Waze. חלץ ממנו את הכתובת המלאה (עיר, רחוב ומספר בית) ואת שעת ההגעה המשוערת. אם יש קישור Waze, חלץ גם אותו.
+                                החזר את הנתונים בפורמט JSON בלבד:
+                                { "address": "הכתובת שחולצה", "eta": "שעת ההגעה שחולצה", "waze_url": "קישור Waze שחולץ או null" }
+                                
+                                טקסט Waze: "${wazeText}"`;
+                
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { 
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "address": { "type": "STRING" },
+                                "eta": { "type": "STRING" },
+                                "waze_url": { "type": "STRING", "nullable": true }
+                            }
+                        }
+                    }
+                };
+                
+                const geminiApiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    
+                    const extractedAddress = jsonResponse.address;
+                    const extractedEta = jsonResponse.eta;
+                    const extractedWazeUrl = jsonResponse.waze_url;
+
+                    // Update modal fields
+                    if (extractedAddress) {
+                        modalAddress.textContent = extractedAddress;
+                        currentOrderDetails.address = extractedAddress; // Update internal object
+                    }
+                    if (extractedEta) {
+                        modalTime.textContent = extractedEta;
+                        currentOrderDetails.time = extractedEta; // Update internal object
+                    }
+                    if (extractedWazeUrl) {
+                        currentWazeLink = extractedWazeUrl; // Store global Waze link
+                        wazeLinkDisplay.innerHTML = `קישור Waze: <a href="${extractedWazeUrl}" target="_blank">${extractedWazeUrl.substring(0, 30)}...</a>`;
+                        wazeIconContainer.style.display = 'flex';
+                        animatedWazeIcon.classList.add('blinking-light');
+                    } else {
+                        wazeIconContainer.style.display = 'none';
+                        animatedWazeIcon.classList.remove('blinking-light');
+                        currentWazeLink = null;
+                        wazeLinkDisplay.textContent = 'אין קישור Waze שחולץ מההודעה.';
+                    }
+
+                    llmResponseMessage.textContent = `הנתונים חולצו בהצלחה!`;
+                    // Optional: You might want to update the actual displayed order card on the main timeline here too.
+                    // This would involve finding the specific card div (using dataset.order) and updating its textContent.
+                    // This is more complex and depends on how orders are stored/re-rendered. For now, it updates the modal view.
+
+                } else {
+                    llmResponseMessage.textContent = 'שגיאה: לא ניתן לחלץ נתונים מ-Waze. ודא שהטקסט תקין.';
+                    console.error("Unexpected LLM response structure for Waze:", result);
+                }
+            } catch (error) {
+                llmResponseMessage.textContent = 'שגיאה: אירעה תקלה בחילוץ נתוני Waze. אנא נסה שוב.';
+                console.error("Error calling Gemini API for Waze parsing:", error);
+            } finally {
+                llmLoader.classList.remove('visible'); // Hide loader
+                llmResponseContainer.classList.remove('loading'); // Remove loading class
+            }
+        }
+
+        /**
+         * Displays the Waze link in a popup modal.
+         */
+        function showWazePopupWrapper() {
+            if (currentWazeLink) {
+                document.getElementById('wazePopupLink').textContent = currentWazeLink;
+                document.getElementById('wazeOpenLink').href = currentWazeLink;
+                document.getElementById('wazePopupModal').classList.add('visible');
+            } else {
+                alert("אין קישור Waze זמין עבור הזמנה זו."); // Fallback for no Waze link
+            }
+        }
+
+        /**
+         * Sends a WhatsApp message to the customer using the input fields in the modal.
+         */
+        function sendWhatsAppCustomerMessage() {
+            const phoneNumber = document.getElementById('customerPhoneNumberInput').value;
+            const message = document.getElementById('llmResponseMessage').textContent; // Use the AI-generated/template message
+
+            if (!phoneNumber) {
+                alert('אנא הזן מספר טלפון של הלקוח.');
+                return;
+            }
+            if (!message || message === 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.') {
+                alert('אנא צור/בחר הודעה לפני השליחה.');
+                return;
+            }
+
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, "_blank");
+        }
+
+        /**
+         * Sends a WhatsApp message for the current order to a specific driver.
+         * @param {string} driverType 'hakmat' or 'ali'
+         */
+        function sendOrderToDriver(driverType) {
+            let driverPhoneNumber;
+            let driverName;
+
+            if (driverType === 'hakmat') {
+                driverPhoneNumber = '972532316985';
+                driverName = 'חכמת';
+            } else if (driverType === 'ali') {
+                driverPhoneNumber = '9725475188';
+                driverName = 'עלי';
+            } else {
+                alert('נהג לא חוקי.');
+                return;
+            }
+
+            if (!currentOrderDetails) {
+                alert('אנא בחר הזמנה לשליחה.');
+                return;
+            }
+
+            const orderId = document.getElementById('orderIdInput').value || 'לא ידוע';
+            const customerName = document.getElementById('customerContactName').value || currentOrderDetails.customer || 'לקוח יקר';
+            const messageText = document.getElementById('freeTextMessage').value || 'אין הודעה מוגדרת.'; // Use free text or default
+
+            // Construct a message for the driver
+            let message = `*הודעת הזמנה לנהג ${driverName}*\n`;
+            message += `מספר הזמנה: ${orderId}\n`;
+            message += `לקוח: ${customerName}\n`;
+            message += `כתובת: ${currentOrderDetails.address || 'לא ידוע'}\n`;
+            message += `שעה: ${currentOrderDetails.time || 'לא ידוע'}\n`;
+            message += `סטטוס: ${currentOrderDetails.status || 'לא ידוע'}\n`;
+            message += `מחסן: ${currentOrderDetails.warehouse || 'לא ידוע'}\n`;
+            if (currentWazeLink) {
+                message += `קישור Waze: ${currentWazeLink}\n`;
+            }
+            message += `\n*הערות/הודעה לנהג:*\n${messageText}`;
+
+
+            const url = `https://wa.me/${driverPhoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, "_blank");
+        }
+
 
         // Initialize the app when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', initializeApp);
@@ -2444,4 +2964,3 @@
     </script>
 </body>
 </html>
-�
