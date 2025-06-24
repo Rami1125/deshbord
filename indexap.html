@@ -2090,7 +2090,7 @@
         // The Canvas environment automatically injects the Gemini API key at runtime,
         // making it unnecessary and potentially insecure to hardcode it here.
         // The user provided key 'AIzaSyCNn7GZMsPPCdRSfgz_o08M1YV63CkA3Ow' serves as a reference.
-        const geminiApiKey = "AIzaSyCNn7GZMsPPCdRSfgz_o08M1YV63CkA3Ow"; 
+        const geminiApiKey = ""; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -2694,7 +2694,7 @@
                 return timeA - timeB;
             });
 
-            let message = `📝 *${driverName} - דוח בוקר*\n`;
+            let message = `� *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
                 message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
@@ -3301,3 +3301,4 @@
     </script>
 </body>
 </html>
+�
