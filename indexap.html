@@ -437,6 +437,17 @@
             color: var(--accent-color);
         }
 
+        /* NEW: Waze linked icon in order card */
+        .order-details .waze-linked-icon {
+            color: #4CAF50; /* Waze green */
+            font-size: 1.2rem;
+            margin-right: 5px; /* Space from text */
+            transition: transform 0.2s ease;
+        }
+        .order-details p:hover .waze-linked-icon {
+            transform: scale(1.1);
+        }
+
         /* Keyframe animation for page content transition */
         .page-content {
             display: none;
@@ -1582,16 +1593,161 @@
         #wazePopupModal .modal-content {
             max-width: 450px;
             text-align: center;
+            background: linear-gradient(135deg, #e0f2f7, #d4ebf2); /* Light blue gradient */
+            border: 3px solid #87CEEB; /* Sky Blue border */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        #wazePopupModal .modal-content h2 {
+            font-size: 2.2rem;
+            color: #2C3E50; /* Dark blue-gray */
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+        }
+        #wazePopupModal .modal-content .waze-info-title { /* New style for the prominent title */
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-top: 10px;
+            margin-bottom: 5px;
+            display: block;
         }
         #wazePopupModal .modal-content p {
             word-break: break-all; /* Break long URLs */
             font-size: 1.1rem;
             direction: ltr; /* LTR for URL */
             text-align: center;
+            color: var(--text-color);
+            margin-bottom: 15px;
         }
         #wazePopupModal .modal-content a {
             color: var(--primary-color);
             text-decoration: underline;
+        }
+        #wazePopupModal .modal-content .button {
+            background-color: #4CAF50; /* Waze green */
+            color: white;
+            padding: 12px 25px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        #wazePopupModal .modal-content .button:hover {
+            background-color: #388E3C; /* Darker green */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Order Details Modal specific styling (make it more colorful and modern) */
+        #orderDetailsModal .modal-content {
+            background: linear-gradient(135deg, rgba(230, 240, 255, 0.98), rgba(200, 220, 245, 0.98)); /* Light blue gradient */
+            border: 3px solid var(--primary-color);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            padding: 40px; /* More padding */
+            gap: 25px; /* More gap */
+        }
+        #orderDetailsModal .modal-content h2 {
+            color: #2C3E50; /* Dark title */
+            font-size: 2.8rem; /* Larger title */
+            border-bottom: 3px solid var(--primary-color); /* Thicker border */
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        #orderDetailsModal .modal-content p {
+            font-size: 1.5rem; /* Larger text */
+            color: #444;
+            margin: 12px 0;
+        }
+        #orderDetailsModal .message-section {
+            background-color: rgba(255, 255, 255, 0.7); /* Slightly transparent white for sections */
+            border: 1px solid rgba(0,0,0,0.15);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            border-radius: 20px;
+            gap: 18px;
+        }
+        #orderDetailsModal .message-section h4 {
+            font-size: 1.7rem;
+            color: var(--primary-color); /* Blue section title */
+            border-bottom: 2px solid rgba(52, 152, 219, 0.3); /* Lighter blue dashed border */
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        #orderDetailsModal .message-section label {
+            font-size: 1.2rem;
+            color: var(--dark-color);
+        }
+        #orderDetailsModal .message-section input,
+        #orderDetailsModal .message-section textarea,
+        #orderDetailsModal .message-section select {
+            border: 2px solid var(--secondary-color); /* Green border for inputs */
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.1rem;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        #orderDetailsModal .message-section input:focus,
+        #orderDetailsModal .message-section textarea:focus,
+        #orderDetailsModal .message-section select:focus {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
+        }
+        #orderDetailsModal .button-group button {
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--primary-color), #5DADE2); /* Lighter blue gradient */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        #orderDetailsModal .button-group button:hover {
+            background: linear-gradient(135deg, #5DADE2, var(--primary-color));
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Specific override for LLM button in order details modal */
+        #orderDetailsModal .llm-button {
+            background: linear-gradient(135deg, #FF6F00, #FFD700); /* Orange to Gold gradient */
+            padding: 15px 30px;
+            font-size: 1.3rem;
+            border-radius: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 30px;
+        }
+        #orderDetailsModal .llm-button:hover {
+            background: linear-gradient(135deg, #FFA000, #FFEA00);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        /* Specific override for WhatsApp send button in order details modal */
+        #orderDetailsModal #sendCustomerMessageButton {
+            background: linear-gradient(135deg, #25D366, #128C7E); /* WhatsApp green gradient */
+            padding: 20px 35px;
+            font-size: 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 40px;
+            max-width: none; /* Ensure it takes full width */
+        }
+        #orderDetailsModal #sendCustomerMessageButton:hover {
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        #orderDetailsModal .message-section .button-group button { /* Driver buttons */
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+        #orderDetailsModal .message-section .button-group button:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -1829,6 +1985,8 @@
             <!-- New: Driver Specific Messages Section -->
             <div class="message-section">
                 <h4><i class="fas fa-truck-loading"></i> שליחת הודעה לנהגים</h4>
+                <label for="workTypeInput">סוג עבודה/הערות:</label>
+                <input type="text" id="workTypeInput" placeholder="לדוגמה: עבודת מנוף לשעתיים / איסוף בלות">
                 <div class="button-group">
                     <button onclick="sendOrderToDriver('hakmat')"><i class="fab fa-whatsapp"></i> שלח לחכמת (972532316985)</button>
                     <button onclick="sendOrderToDriver('ali')"><i class="fab fa-whatsapp"></i> שלח לעלי (9725475188)</button>
@@ -1864,9 +2022,12 @@
     <div id="wazePopupModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('wazePopupModal')">&times;</button>
-            <h2>קישור Waze</h2>
+            <!-- New: Prominent Waze details title -->
+            <h2 id="wazePopupMainTitle">פרטי הגעה Waze</h2>
+            <span class="waze-info-title">📍 כתובת: <span id="wazePopupAddress"></span></span>
+            <span class="waze-info-title">⏰ הגעה משוערת: <span id="wazePopupEta"></span></span>
             <p id="wazePopupLink"></p>
-            <a id="wazeOpenLink" href="#" target="_blank" class="button" style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; margin-top: 20px;">פתח ב-Waze</a>
+            <a id="wazeOpenLink" href="#" target="_blank" class="button">פתח ב-Waze</a>
         </div>
     </div>
 
@@ -1928,7 +2089,7 @@
         // Gemini API Key - NOTE: This variable is intentionally left as an empty string.
         // The Canvas environment automatically injects the Gemini API key at runtime,
         // making it unnecessary and potentially insecure to hardcode it here.
-        // The user provided key 'AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow' serves as a reference.
+        // The user provided key 'AIzaSyCNn7GZMsPPCdRSfgz_o08M1YV63CkA3Ow' serves as a reference.
         const geminiApiKey = ""; 
 
         // Updated ranges to include column H
@@ -2032,6 +2193,9 @@
                         `${order.time} <span class="biachad-indicator">ביחד</span>` : 
                         (order.time || "לא ידוע");
 
+                    // Add Waze icon if wazeLink exists
+                    const wazeIconHtml = order.wazeLink ? '<i class="fab fa-waze waze-linked-icon"></i>' : '';
+
                     orderCard.innerHTML = `
                         <div class="order-time">
                             <i class="far fa-clock"></i> ${timeDisplay}
@@ -2039,7 +2203,7 @@
                         <div class="order-details">
                             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${order.date || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || "לא ידוע"}</p>
-                            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
+                            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${wazeIconHtml} <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
                             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${order.status || "לא ידוע"}</p>
                         </div>
@@ -2375,6 +2539,7 @@
             const orderDetailsModal = document.getElementById('orderDetailsModal');
             const generateButton = document.getElementById('generateMessageButton');
             const sendCustomerMessageButton = document.getElementById('sendCustomerMessageButton');
+            const workTypeInput = document.getElementById('workTypeInput'); // NEW: Get work type input
 
 
             if (modalDate) modalDate.textContent = order.date || 'אין נתונים';
@@ -2387,11 +2552,12 @@
             if (customerContactNameInput) customerContactNameInput.value = ''; // Assuming no contact name in sheets for now
             if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; // Assuming no customer phone in sheets for now
             if (orderIdInput) orderIdInput.value = order.orderId || ''; // Populate if order ID exists
+            if (workTypeInput) workTypeInput.value = ''; // Clear work type input on new order details load
 
             // Waze elements logic
             if (wazeLinkDisplay && wazeIconContainer && animatedWazeIcon) {
                 if (order.wazeLink) {
-                    wazeLinkDisplay.innerHTML = `קישור Waze: <a href="${order.wazeLink}" target="_blank">${order.wazeLink.substring(0, 30)}...</a>`;
+                    wazeLinkDisplay.innerHTML = `קישור Waze: <a href="${order.wazeLink}" target="_blank">${order.wazeLink.substring(0, Math.min(order.wazeLink.length, 30))}...</a>`;
                     wazeIconContainer.style.display = 'flex';
                     animatedWazeIcon.classList.add('blinking-light');
                 } else {
@@ -2528,7 +2694,7 @@
                 return timeA - timeB;
             });
 
-            let message = `� *${driverName} - דוח בוקר*\n`;
+            let message = `📝 *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
                 message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
@@ -2892,7 +3058,11 @@
             const animatedWazeIcon = document.getElementById('animatedWazeIcon');
             const wazeLinkDisplay = document.getElementById('wazeLinkDisplay');
 
-            if (!wazeShareTextInput || !llmLoader || !llmResponseMessage || !llmResponseContainer || !modalAddress || !modalTime || !wazeIconContainer || !animatedWazeIcon || !wazeLinkDisplay) {
+            // NEW: Waze popup modal elements for prominent display
+            const wazePopupAddress = document.getElementById('wazePopupAddress');
+            const wazePopupEta = document.getElementById('wazePopupEta');
+
+            if (!wazeShareTextInput || !llmLoader || !llmResponseMessage || !llmResponseContainer || !modalAddress || !modalTime || !wazeIconContainer || !animatedWazeIcon || !wazeLinkDisplay || !wazePopupAddress || !wazePopupEta) {
                 console.error("Error: One or more required Waze processing elements not found.");
                 return;
             }
@@ -2976,10 +3146,12 @@
                         modalAddress.textContent = extractedAddress;
                         // Update currentOrderDetails only if it's not null
                         if (currentOrderDetails) currentOrderDetails.address = extractedAddress; 
+                        wazePopupAddress.textContent = extractedAddress; // NEW: Update Waze popup address
                     }
                     if (extractedEta) {
                         modalTime.textContent = extractedEta;
                         if (currentOrderDetails) currentOrderDetails.time = extractedEta;
+                        wazePopupEta.textContent = extractedEta; // NEW: Update Waze popup ETA
                     }
                     if (extractedWazeUrl) {
                         currentWazeLink = extractedWazeUrl; // Store global Waze link
@@ -2991,6 +3163,8 @@
                         animatedWazeIcon.classList.remove('blinking-light');
                         currentWazeLink = null;
                         wazeLinkDisplay.textContent = 'אין קישור Waze שחולץ מההודעה.';
+                        wazePopupAddress.textContent = 'לא נמצא'; // NEW: Clear Waze popup address
+                        wazePopupEta.textContent = 'לא נמצא'; // NEW: Clear Waze popup ETA
                     }
 
                     llmResponseMessage.textContent = `הנתונים חולצו בהצלחה!`;
@@ -3015,8 +3189,10 @@
             const wazePopupLink = document.getElementById('wazePopupLink');
             const wazeOpenLink = document.getElementById('wazeOpenLink');
             const wazePopupModal = document.getElementById('wazePopupModal');
+            const wazePopupAddress = document.getElementById('wazePopupAddress'); // NEW
+            const wazePopupEta = document.getElementById('wazePopupEta'); // NEW
 
-            if (!wazePopupLink || !wazeOpenLink || !wazePopupModal) {
+            if (!wazePopupLink || !wazeOpenLink || !wazePopupModal || !wazePopupAddress || !wazePopupEta) {
                 console.error("Error: One or more Waze popup elements not found.");
                 return;
             }
@@ -3024,6 +3200,9 @@
             if (currentWazeLink) {
                 wazePopupLink.textContent = currentWazeLink;
                 wazeOpenLink.href = currentWazeLink;
+                // Ensure prominent elements are populated from currentOrderDetails if Waze parsing didn't happen
+                wazePopupAddress.textContent = currentOrderDetails.address || 'לא נמצא';
+                wazePopupEta.textContent = currentOrderDetails.time || 'לא נמצא';
                 wazePopupModal.classList.add('visible');
             } else {
                 alert("אין קישור Waze זמין עבור הזמנה זו."); // Fallback for no Waze link
@@ -3084,11 +3263,13 @@
             const orderIdInput = document.getElementById('orderIdInput');
             const customerContactNameInput = document.getElementById('customerContactName');
             const freeTextMessageElement = document.getElementById('freeTextMessage');
+            const workTypeInput = document.getElementById('workTypeInput'); // NEW: Get work type input
 
 
             const orderId = orderIdInput ? orderIdInput.value : 'לא ידוע';
             const customerName = customerContactNameInput ? customerContactNameInput.value : (currentOrderDetails.customer || 'לקוח יקר');
-            const messageText = freeTextMessageElement ? freeTextMessageElement.value : 'אין הודעה מוגדרת.'; // Use free text or default
+            const messageText = freeTextMessageElement ? freeTextMessageElement.value : ''; // Free text can be empty
+            const workType = workTypeInput ? workTypeInput.value : ''; // NEW: Get work type
 
             // Construct a message for the driver
             let message = `*הודעת הזמנה לנהג ${driverName}*\n`;
@@ -3101,7 +3282,12 @@
             if (currentWazeLink) {
                 message += `קישור Waze: ${currentWazeLink}\n`;
             }
-            message += `\n*הערות/הודעה לנהג:*\n${messageText}`;
+            if (workType) { // NEW: Add work type if provided
+                message += `*סוג עבודה/הערות:*\n${workType}\n`;
+            }
+            if (messageText) { // Only add free text if it's not empty
+                message += `\n*הודעה/הערות נוספות:*\n${messageText}`;
+            }
 
 
             const url = `https://wa.me/${driverPhoneNumber}?text=${encodeURIComponent(message)}`;
@@ -3115,4 +3301,3 @@
     </script>
 </body>
 </html>
-�
