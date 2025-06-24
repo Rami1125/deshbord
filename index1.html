@@ -1588,7 +1588,7 @@
         </button>
     </div>
 
-    <!-- Order Details Modal -->
+    <!-- Order Details Modal: This is where the LLM button is located -->
     <div id="orderDetailsModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
@@ -1600,10 +1600,11 @@
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
             
-            <!-- New LLM button and response area -->
+            <!-- LLM button to generate customer message -->
             <button class="llm-button" id="generateMessageButton">
                 <i class="fas fa-magic"></i> ✨ צור הודעת לקוח
             </button>
+            <!-- Area where the LLM's generated message will be displayed -->
             <div id="llmResponseContainer">
                 <div class="loader" id="llmLoader"></div>
                 <div id="llmResponseMessage">לחץ על הכפתור למעלה ליצירת הודעה.</div>
@@ -1682,11 +1683,10 @@
         // IMPORTANT: Replace 'YOUR_GOOGLE_SHEETS_API_KEY_HERE' with your actual Google Sheets API Key.
         // You can obtain one from the Google Cloud Console (APIs & Services -> Credentials).
         // Ensure Google Sheets API is enabled for your project in the API Library.
-        const apiKey = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E
-'; 
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; 
         
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow'; 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
         // Updated ranges to include column H
         const aliRange = 'Sheet2!B2:H10'; 
@@ -2155,7 +2155,7 @@
          */
         function formatDriverWhatsAppData(ordersData, driverName) {
             if (!ordersData || ordersData.length === 0) {
-                return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
+                return `� *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
             }
 
             // Sort data by time before formatting for WhatsApp
@@ -2444,3 +2444,4 @@
     </script>
 </body>
 </html>
+�
