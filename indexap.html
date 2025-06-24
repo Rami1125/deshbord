@@ -528,6 +528,104 @@
             min-width: 90px; /* Align content */
         }
 
+        /* New: LLM button styling */
+        .llm-button {
+            background: linear-gradient(135deg, #FF6F00, #FFD700); /* Orange to Gold gradient */
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            width: fit-content;
+            margin-left: auto; /* Align to right in RTL */
+            margin-right: 0;
+            position: relative; /* For shine effect */
+            overflow: hidden; /* For shine effect */
+        }
+
+        .llm-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #FFA000, #FFEA00); /* Slightly brighter on hover */
+        }
+        
+        .llm-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3); /* White shimmer */
+            transform: skewX(-20deg);
+            transition: left 0.5s ease-in-out;
+        }
+
+        .llm-button:hover::before {
+            left: 125%;
+        }
+
+        /* New: LLM response display area */
+        #llmResponseContainer {
+            background-color: var(--light-color); /* Light background for the response */
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 25px; /* More space from button */
+            text-align: right;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            min-height: 80px; /* Minimum height for response area */
+            display: flex; /* For loading indicator centering */
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        #llmResponseContainer.loading {
+            min-height: 100px;
+            justify-content: center;
+        }
+
+        #llmResponseMessage {
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+            direction: rtl; /* Ensure RTL for Hebrew text */
+            text-align: right;
+            width: 100%;
+        }
+
+        /* Loading spinner for LLM response */
+        .loader {
+            border: 6px solid #f3f3f3; /* Light grey */
+            border-top: 6px solid var(--primary-color); /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+            margin: 0 auto;
+        }
+
+        .loader.visible {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
         .modal-close-button {
             position: absolute;
             top: 20px;
@@ -745,8 +843,8 @@
         }
 
         @keyframes spiralShine {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Customer List glass card design */
@@ -1490,7 +1588,7 @@
         </button>
     </div>
 
-    <!-- Order Details Modal -->
+    <!-- Order Details Modal: This is where the LLM button is located -->
     <div id="orderDetailsModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
@@ -1501,6 +1599,16 @@
             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+            
+            <!-- LLM button to generate customer message -->
+            <button class="llm-button" id="generateMessageButton">
+                <i class="fas fa-magic"></i> ✨ צור הודעת לקוח
+            </button>
+            <!-- Area where the LLM's generated message will be displayed -->
+            <div id="llmResponseContainer">
+                <div class="loader" id="llmLoader"></div>
+                <div id="llmResponseMessage">לחץ על הכפתור למעלה ליצירת הודעה.</div>
+            </div>
         </div>
     </div>
 
@@ -1603,6 +1711,7 @@
         let carpenterWarehouseOrderCount = 0;
         let morningOrdersCount = 0;
 
+        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
@@ -1956,12 +2065,25 @@
          */
         function showOrderDetails(orderJson) {
             const order = JSON.parse(orderJson);
+            currentOrderDetails = order; // Store the current order details globally
+
             document.getElementById('modalDate').textContent = order.date || 'אין נתונים';
             document.getElementById('modalTime').textContent = order.time || 'אין נתונים';
             document.getElementById('modalCustomer').textContent = order.customer || 'אין נתונים';
             document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
             document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
+
+            // Reset LLM response area
+            document.getElementById('llmResponseMessage').textContent = 'לחץ על הכפתור למעלה ליצירת הודעה.';
+            document.getElementById('llmLoader').classList.remove('visible');
+            document.getElementById('llmResponseContainer').classList.remove('loading');
+
+            // Attach event listener to the generate message button
+            const generateButton = document.getElementById('generateMessageButton');
+            // Remove any existing listeners to prevent multiple calls
+            generateButton.onclick = null; 
+            generateButton.onclick = () => generateCustomerMessage(currentOrderDetails);
 
             document.getElementById('orderDetailsModal').classList.add('visible');
         }
@@ -2033,7 +2155,7 @@
          */
         function formatDriverWhatsAppData(ordersData, driverName) {
             if (!ordersData || ordersData.length === 0) {
-                return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
+                return `� *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
             }
 
             // Sort data by time before formatting for WhatsApp
@@ -2252,6 +2374,69 @@
             renderOrders(filteredOrders, "filteredWarehouseTimeline", null);
         }
 
+        /**
+         * Generates a customer message using Gemini API.
+         * @param {Object} order The order object for which to generate a message.
+         */
+        async function generateCustomerMessage(order) {
+            const llmLoader = document.getElementById('llmLoader');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const llmResponseContainer = document.getElementById('llmResponseContainer');
+
+            llmResponseMessage.textContent = ''; // Clear previous message
+            llmLoader.classList.add('visible'); // Show loader
+            llmResponseContainer.classList.add('loading'); // Add loading class for styling
+
+            try {
+                // Construct a detailed prompt for the LLM
+                let prompt = `Generate a concise, polite Hebrew message for a customer regarding their delivery.`;
+                prompt += `\nCustomer Name: ${order.customer || 'לא ידוע'}`;
+                prompt += `\nStatus: ${order.status || 'לא ידוע'}`;
+                prompt += `\nTime: ${order.time || 'לא ידוע'}`;
+                prompt += `\nWarehouse: ${order.warehouse || 'לא ידוע'}`;
+                prompt += `\nAddress: ${order.address || 'לא ידוע'}`;
+                prompt += `\n\nBased on the status, suggest the appropriate context.`;
+                prompt += ` If status is 'בדרך', state the driver is on the way.`;
+                prompt += ` If 'הושלם', state it's delivered.`;
+                prompt += ` If 'נדחה', explain it's delayed.`;
+                prompt += ` If 'ביחד', explain that multiple items are combined in the delivery.`;
+                prompt += ` Keep it friendly and professional.`;
+                prompt += `\n\nExample output format: שלום [שם לקוח], ההזמנה שלך [סטטוס]. נא לצפות ל[שעה]. תודה!`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                
+                // Gemini API Key is expected to be provided by the environment, leave empty string
+                const geminiApiKey = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    llmResponseMessage.textContent = text;
+                } else {
+                    llmResponseMessage.textContent = 'שגיאה: לא התקבלה תגובה מה-LLM. נסה שוב.';
+                    console.error("Unexpected LLM response structure:", result);
+                }
+            } catch (error) {
+                llmResponseMessage.textContent = 'שגיאה: אירעה תקלה ביצירת ההודעה. אנא נסה שוב מאוחר יותר.';
+                console.error("Error calling Gemini API:", error);
+            } finally {
+                llmLoader.classList.remove('visible'); // Hide loader
+                llmResponseContainer.classList.remove('loading'); // Remove loading class
+            }
+        }
+
 
         // Initialize the app when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', initializeApp);
@@ -2259,3 +2444,4 @@
     </script>
 </body>
 </html>
+�
