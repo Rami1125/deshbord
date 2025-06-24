@@ -1591,11 +1591,13 @@
 
         /* Waze Pop-up Modal */
         #wazePopupModal .modal-content {
-            max-width: 450px;
+            width: 95%; /* Wider for full page feel */
+            max-width: 800px; /* Limit max width for very large screens */
             text-align: center;
             background: linear-gradient(135deg, #e0f2f7, #d4ebf2); /* Light blue gradient */
             border: 3px solid #87CEEB; /* Sky Blue border */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 30px; /* Adjust padding for new size */
         }
         #wazePopupModal .modal-content h2 {
             font-size: 2.2rem;
@@ -1610,7 +1612,7 @@
             color: var(--primary-color);
             margin-top: 10px;
             margin-bottom: 5px;
-            display: block;
+            display: block; /* Ensure it takes full width and breaks line */
         }
         #wazePopupModal .modal-content p {
             word-break: break-all; /* Break long URLs */
@@ -2549,9 +2551,12 @@
             if (modalWarehouse) modalWarehouse.textContent = order.warehouse || 'אין נתונים';
             if (modalStatus) modalStatus.textContent = order.status || 'אין נתונים';
 
-            if (customerContactNameInput) customerContactNameInput.value = ''; // Assuming no contact name in sheets for now
-            if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; // Assuming no customer phone in sheets for now
-            if (orderIdInput) orderIdInput.value = order.orderId || ''; // Populate if order ID exists
+            // Auto-fill customer contact name with order customer
+            if (customerContactNameInput) customerContactNameInput.value = order.customer || '';
+            // Phone number is not in the sheet, so it remains empty for manual entry
+            if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; 
+            // Order ID is not explicitly mapped from sheet, remains empty unless data structure changes
+            if (orderIdInput) orderIdInput.value = order.orderId || ''; 
             if (workTypeInput) workTypeInput.value = ''; // Clear work type input on new order details load
 
             // Waze elements logic
@@ -2694,7 +2699,7 @@
                 return timeA - timeB;
             });
 
-            let message = `� *${driverName} - דוח בוקר*\n`;
+            let message = `📝 *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
                 message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
@@ -2941,8 +2946,11 @@
             const llmResponseMessage = document.getElementById('llmResponseMessage');
             const llmResponseContainer = document.getElementById('llmResponseContainer');
             const llmLoader = document.getElementById('llmLoader');
+            const customerContactNameInput = document.getElementById('customerContactName');
+            const orderIdInput = document.getElementById('orderIdInput');
 
-            if (!selectElement || !freeTextMessageArea || !llmResponseMessage || !llmResponseContainer || !llmLoader) {
+
+            if (!selectElement || !freeTextMessageArea || !llmResponseMessage || !llmResponseContainer || !llmLoader || !customerContactNameInput || !orderIdInput) {
                 console.error("Error: One or more required elements for fillMessageFromTemplate not found.");
                 return;
             }
@@ -2954,14 +2962,14 @@
 
                 // Replace placeholders with current order details
                 if (currentOrderDetails) {
-                    message = message.replace(/\[שם לקוח\]/g, document.getElementById('customerContactName').value || currentOrderDetails.customer || 'לקוח יקר');
-                    message = message.replace(/\[מספר הזמנה\]/g, document.getElementById('orderIdInput').value || 'לא ידוע');
+                    message = message.replace(/\[שם לקוח\]/g, customerContactNameInput.value || currentOrderDetails.customer || 'לקוח יקר');
+                    message = message.replace(/\[מספר הזמנה\]/g, orderIdInput.value || 'לא ידוע');
                     message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב');
                     message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driverName || 'הנהג'); // Assuming driverName might be added to order object or determined contextually
                     message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת');
                     message = message.replace(/\[שם מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
                     message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); // Placeholder, adjust as needed
-                    message = message.replace(/\[מספר הזמנה1\]/g, currentOrderDetails.orderId || 'הזמנה זו');
+                    message = message.replace(/\[מספר הזמנה1\]/g, orderIdInput.value || 'הזמנה זו');
                     message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); // Placeholder for combined orders
                     message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); // Placeholder for delay reason
                     message = message.replace(/\[זמן משוער\]/g, '20'); // Placeholder for estimated time
@@ -3201,6 +3209,7 @@
                 wazePopupLink.textContent = currentWazeLink;
                 wazeOpenLink.href = currentWazeLink;
                 // Ensure prominent elements are populated from currentOrderDetails if Waze parsing didn't happen
+                // or if Waze parsing succeeded, use the extracted values.
                 wazePopupAddress.textContent = currentOrderDetails.address || 'לא נמצא';
                 wazePopupEta.textContent = currentOrderDetails.time || 'לא נמצא';
                 wazePopupModal.classList.add('visible');
@@ -3301,4 +3310,3 @@
     </script>
 </body>
 </html>
-�
