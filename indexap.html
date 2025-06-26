@@ -3,87 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📋 מערכת ניהול הזמנות ח.סבן - לוח בקרה</title>
+    <title>ח. סבן חומרי בניין - מערכת ניהול הזמנות</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Firebase SDKs -->
+
+    <!-- Firebase SDK Imports -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, onSnapshot, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Firebase instances and user data
-        window.firebaseApp = null;
-        window.db = null;
-        window.auth = null;
-        window.currentUser = null;
-        window.currentRole = null; // Store the role string
-        window.currentUserName = null; // Store the user's display name
-
-        // Firebase Configuration - IMPORTANT: Replace with your actual Firebase project config
-        const firebaseConfig = {
-            // Your Firebase project configuration object here
-            // Example structure:
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        // IMPORTANT: These global variables are provided by the Canvas environment.
+        // DO NOT remove or modify these lines.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
             projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
             appId: "YOUR_APP_ID"
         };
 
-        // Initialize Firebase
-        function initFirebase() {
-            try {
-                window.firebaseApp = initializeApp(firebaseConfig);
-                window.db = getFirestore(window.firebaseApp);
-                window.auth = getAuth(window.firebaseApp);
-                console.log("Firebase initialized successfully.");
+        let app;
+        let db;
+        let auth;
 
-                // Listen for authentication state changes
-                onAuthStateChanged(window.auth, async (user) => {
+        // Initialize Firebase when the script loads
+        window.initFirebase = () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                window.firebaseApp = app; // Make accessible globally for other scripts
+                window.firestoreDb = db;
+                window.firebaseAuth = auth;
+
+                // Listen for auth state changes to manage user session
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        // User is signed in.
-                        console.log("Firebase Auth State Changed: User signed in", user.uid);
-                        // In a real app, you'd fetch user roles from Firestore or a backend.
-                        // For this demo, we'll map UIDs to roles if using Firebase Auth users,
-                        // or rely on our simulated USERS object for simplicity.
-                        // For this demo, since we are doing custom login, we will set currentUser details AFTER successful local login.
+                        console.log("User is signed in:", user.uid);
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        if (userDocSnap.exists()) {
+                            const userData = userDocSnap.data();
+                            window.currentUserRole = userData.role;
+                            window.currentUserName = userData.username; // Store username
+                            window.currentUserId = user.uid; // Store user ID
+                            console.log("User role:", window.currentUserRole);
+                            // Hide login, show main app
+                            document.getElementById('loginPage').style.display = 'none';
+                            document.getElementById('mainAppContainer').style.display = 'block';
+                            initializeAppContent(); // Initialize app content after login
+                        } else {
+                            console.error("User document not found for UID:", user.uid);
+                            // This should ideally not happen if users are pre-created
+                            signOut(auth);
+                        }
                     } else {
-                        // User is signed out.
-                        console.log("Firebase Auth State Changed: User signed out.");
-                        // Clear local user state
-                        window.currentUser = null;
-                        window.currentRole = null;
+                        console.log("No user is signed in.");
+                        // Show login, hide main app
+                        document.getElementById('loginPage').style.display = 'block';
+                        document.getElementById('mainAppContainer').style.display = 'none';
+                        window.currentUserRole = null;
                         window.currentUserName = null;
-                        sessionStorage.removeItem('loggedInUser');
-                        sessionStorage.removeItem('loggedInRole');
-                        sessionStorage.removeItem('loggedInUserName');
-                        showLoginScreen(); // Redirect to login
+                        window.currentUserId = null;
                     }
                 });
+
+                // Pre-create users in Firestore if they don't exist (for initial setup)
+                // This part should only run once, e.g., on first deploy or manually.
+                // In a production app, user management is done via Admin SDK or a proper backend.
+                // For this Canvas app, we'll ensure the roles exist on initial run.
+                ensureUsersExist(db, auth);
+
             } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                // Optionally display an error to the user
-                alert("שגיאה באתחול Firebase. אנא בדוק את הגדרות הפרויקט והחיבור לאינטרנט.");
+                console.error("Firebase initialization error:", error);
+                alert("שגיאה באתחול Firebase. אנא בדוק את הגדרות הפרויקט.");
+            }
+        };
+
+        // Make functions accessible globally for HTML event handlers
+        window.signInUser = async () => {
+            const email = document.getElementById('usernameInput').value + "@yourdomain.com"; // Using email format for Firebase Auth
+            const password = document.getElementById('passwordInputLogin').value;
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = "";
+
+            if (!email || !password) {
+                loginError.textContent = "אנא הזן שם משתמש וסיסמה.";
+                return;
+            }
+
+            try {
+                // Attempt to sign in with email/password
+                await signInWithEmailAndPassword(auth, email, password);
+                console.log("User signed in successfully!");
+                // onAuthStateChanged will handle UI update
+            } catch (error) {
+                console.error("Login error:", error);
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        loginError.textContent = "שם משתמש או סיסמה שגויים.";
+                        break;
+                    case 'auth/invalid-email':
+                        loginError.textContent = "פורמט שם משתמש לא תקין.";
+                        break;
+                    default:
+                        loginError.textContent = `שגיאת התחברות: ${error.message}`;
+                        break;
+                }
+            }
+        };
+
+        window.signOutUser = async () => {
+            try {
+                await signOut(auth);
+                console.log("User signed out.");
+                // onAuthStateChanged will handle UI update
+            } catch (error) {
+                console.error("Error signing out:", error);
+                alert("שגיאה ביציאה מהמערכת. נסה שוב.");
+            }
+        };
+
+        /**
+         * Pre-creates users in Firestore and Firebase Auth for demonstration purposes.
+         * In a real application, this would be managed securely via an admin panel.
+         */
+        async function ensureUsersExist(db, auth) {
+            const users = [
+                { username: 'admin', password: 'adminpass', role: 'manager' },
+                { username: 'oren', password: '1234', role: 'warehouse_carpenter' },
+                { username: 'amir', password: '4321', role: 'warehouse_student' },
+                { username: 'hakmat', password: 'driverhak', role: 'driver_hakmat' },
+                { username: 'ali', password: 'driverali', role: 'driver_ali' },
+                { username: 'rami', password: 'sorterami', role: 'sorter' },
+                { username: 'yoav', password: 'sortyoav', role: 'sorter' },
+                { username: 'viewer', password: 'viewonly', role: 'viewer' }
+            ];
+
+            for (const user of users) {
+                const email = user.username + "@yourdomain.com"; // Use a consistent domain
+                try {
+                    // Try to sign in to check if user exists (simple check, not robust)
+                    await signInWithEmailAndPassword(auth, email, user.password);
+                    console.log(`User ${user.username} already exists and signed in.`);
+                    // Sign out immediately if succeeded, to not interfere with current session
+                    await signOut(auth);
+                } catch (authError) {
+                    if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
+                        // User not found or wrong password (meaning it's not the pre-defined password)
+                        // Try to create the user
+                        try {
+                            const userCredential = await createUserWithEmailAndPassword(auth, email, user.password);
+                            console.log(`Created new Firebase Auth user: ${user.username}`);
+                            // Save user role in Firestore
+                            await setDoc(doc(db, "users", userCredential.user.uid), {
+                                username: user.username,
+                                role: user.role,
+                                createdAt: new Date()
+                            });
+                            console.log(`Saved user role to Firestore for ${user.username}`);
+                            await signOut(auth); // Sign out after creating
+                        } catch (createError) {
+                            if (createError.code === 'auth/email-already-in-use') {
+                                console.log(`Firebase Auth user ${user.username} already exists (email in use).`);
+                                // Ensure Firestore record exists for existing users
+                                // This is a fallback in case Firebase Auth user exists but Firestore doc is missing
+                                const existingUserQuery = await getDoc(doc(db, "users", user.uid)); // This requires knowing UID, which is tricky without sign-in
+                                // A more robust approach would be to attempt sign in first, then if successful, check/update Firestore.
+                                // For simplicity here, we assume if email-already-in-use, the Firestore doc probably exists.
+                            } else {
+                                console.error(`Error creating Firebase Auth user ${user.username}:`, createError.code, createError.message);
+                            }
+                        }
+                    } else {
+                        console.error(`Unexpected Firebase Auth error for ${user.username}:`, authError.code, authError.message);
+                    }
+                }
             }
         }
 
-        // Expose Firebase objects globally for use in the main script
-        window.initFirebase = initFirebase;
-        window.getFirestore = getFirestore;
-        window.collection = collection;
-        window.onSnapshot = onSnapshot;
-        window.doc = doc;
-        window.addDoc = addDoc;
-        window.updateDoc = updateDoc;
-        window.query = query;
-        window.where = where;
-        window.orderBy = orderBy;
-        window.getDocs = getDocs;
-        window.signOutFirebase = signOut; // Expose signOut function
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if Firebase is already initialized by the browser
+            if (typeof window.firebaseApp === 'undefined') {
+                 window.initFirebase();
+            } else {
+                console.log("Firebase already initialized, skipping initFirebase call.");
+            }
+        });
 
     </script>
 
@@ -133,10 +245,6 @@
             --morning-orders-text: white; /* Text color for better contrast on colored glass */
             --morning-orders-count: #FFD700; /* Gold */
             --morning-orders-hover-border: #FF8C00; /* Dark Orange */
-
-            /* Login Page Specific Colors */
-            --login-bg-gradient: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); /* Deep blue to red to yellow */
-            --login-card-bg: rgba(255, 255, 255, 0.9); /* Opaque white */
         }
         
         body {
@@ -177,125 +285,6 @@
             visibility: hidden;
         }
 
-        /* Login Page Styling */
-        #login-page {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--login-bg-gradient);
-            background-size: 400% 400%;
-            animation: gradientShiftLogin 15s ease infinite alternate;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000; /* Above everything else */
-            flex-direction: column;
-            gap: 20px;
-            color: white;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        @keyframes gradientShiftLogin {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 100% 100%; }
-        }
-
-        .login-card {
-            background: var(--login-card-bg);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            max-width: 450px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .login-card h2 {
-            color: var(--dark-color);
-            font-size: 2.8rem;
-            margin-bottom: 25px;
-            border-bottom: 3px solid var(--primary-color);
-            padding-bottom: 15px;
-        }
-
-        .login-card input[type="text"],
-        .login-card input[type="password"] {
-            width: calc(100% - 30px);
-            padding: 15px;
-            border: 2px solid var(--primary-color);
-            border-radius: 12px;
-            font-size: 1.4rem;
-            text-align: center;
-            direction: ltr; /* LTR for username/password input */
-            outline: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .login-card input[type="text"]:focus,
-        .login-card input[type="password"]:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
-        }
-
-        .login-card button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 18px 30px;
-            border: none;
-            border-radius: 15px;
-            font-size: 1.6rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        .login-card button:hover {
-            background-color: var(--dark-color);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        }
-
-        .login-card #login-error {
-            color: var(--accent-color);
-            font-size: 1.2rem;
-            margin-top: 10px;
-            display: none;
-        }
-
-        /* Logout button in app header */
-        #logoutButton {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            padding: 10px 15px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-            display: none; /* Hidden by default until login */
-        }
-
-        #logoutButton:hover {
-            background-color: #c0392b;
-            transform: translateY(-50%) scale(1.05);
-        }
-
         /* Main container for app content - wider for grid layout */
         .container {
             max-width: 1200px; /* Wider to accommodate new sections */
@@ -305,7 +294,6 @@
             position: relative; /* Ensure content is above the background pseudo-element */
             z-index: 1;
             padding-bottom: 80px; /* Space for the fixed bottom navigation bar */
-            display: none; /* Hidden by default until login */
         }
         
         /* Header styling with gradient and clock/date */
@@ -325,7 +313,6 @@
             min-height: 100px; /* Ensure a minimum height for the header */
             background-size: 200% 200%; /* Make background larger for animation */
             animation: gradientShift 10s ease infinite alternate; /* New animation */
-            display: none; /* Hidden by default until login */
         }
 
         @keyframes gradientShift {
@@ -1226,7 +1213,6 @@
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             box-sizing: border-box; /* Include padding in width */
-            display: none; /* Hidden by default until login */
         }
 
         .nav-button {
@@ -1421,7 +1407,6 @@
             flex-wrap: wrap; /* Allow wrapping */
             box-sizing: border-box;
             z-index: 990;
-            display: none; /* Hidden by default until login */
         }
 
         /* Ensure nav buttons in top bar share same style as bottom nav buttons */
@@ -1433,7 +1418,7 @@
         }
         
         /* Adjust container padding-top to prevent content from being hidden behind fixed top-nav */
-        body.app-active {
+        body {
             padding-top: 70px; /* Height of top-nav + some margin */
         }
 
@@ -1696,7 +1681,8 @@
         .message-section input[type="text"],
         .message-section input[type="tel"],
         .message-section textarea,
-        .message-section select {
+        .message-section select,
+        .message-section input[type="date"] {
             width: calc(100% - 20px);
             padding: 12px;
             border: 1px solid var(--primary-color);
@@ -1711,7 +1697,8 @@
         .message-section input[type="text"]:focus,
         .message-section input[type="tel"]:focus,
         .message-section textarea:focus,
-        .message-section select:focus {
+        .message-section select:focus,
+        .message-section input[type="date"]:focus {
             border-color: var(--secondary-color);
             box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
         }
@@ -1991,179 +1978,250 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
         }
 
-        /* NEW ORDER MODAL STYLES */
+        /* Styles for Add New Order Modal */
         #newOrderModal .modal-content {
-            max-width: 600px;
-            padding: 30px;
-            gap: 15px;
+            max-width: 650px; /* Wider for the form */
+            text-align: right;
         }
-
         #newOrderModal .modal-content h2 {
             font-size: 2.2rem;
             margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
         }
-
         #newOrderModal .form-group {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end; /* Align labels to the right */
-            gap: 5px;
             margin-bottom: 15px;
         }
-
-        #newOrderModal .form-group label {
+        #newOrderModal label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
             color: var(--dark-color);
             font-size: 1.1rem;
-            text-align: right;
-            width: 100%;
         }
-
-        #newOrderModal .form-group input,
-        #newOrderModal .form-group select,
-        #newOrderModal .form-group textarea {
-            width: calc(100% - 20px);
-            padding: 12px;
+        #newOrderModal input[type="text"],
+        #newOrderModal input[type="date"],
+        #newOrderModal input[type="time"],
+        #newOrderModal select {
+            width: calc(100% - 22px); /* Adjust for padding and border */
+            padding: 10px;
             border: 1px solid var(--primary-color);
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 1rem;
             direction: rtl;
             text-align: right;
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background-color: white;
         }
-        #newOrderModal .form-group input[type="date"],
-        #newOrderModal .form-group input[type="time"] {
-            direction: ltr; /* Date and time inputs are often better LTR */
-            text-align: left;
-        }
-
-        #newOrderModal .form-group input:focus,
-        #newOrderModal .form-group select:focus,
-        #newOrderModal .form-group textarea:focus {
+        #newOrderModal input[type="text"]:focus,
+        #newOrderModal input[type="date"]:focus,
+        #newOrderModal input[type="time"]:focus,
+        #newOrderModal select:focus {
             border-color: var(--secondary-color);
-            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+            box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
+            outline: none;
         }
-
-        #newOrderModal .form-group textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        #newOrderModal .modal-actions {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        #newOrderModal .modal-actions button {
+        #newOrderModal button.submit-button {
             background-color: var(--secondary-color);
             color: white;
-            padding: 12px 25px;
+            padding: 15px 30px;
             border: none;
             border-radius: 12px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-        }
-
-        #newOrderModal .modal-actions button:hover {
-            background-color: #27ae60;
-            transform: translateY(-2px);
-        }
-        #newOrderModal .modal-actions button.cancel-button {
-            background-color: var(--accent-color);
-        }
-        #newOrderModal .modal-actions button.cancel-button:hover {
-            background-color: #c0392b;
-        }
-
-        /* NEW: Notification Popup */
-        .notification-popup {
-            position: fixed;
-            top: 20px;
-            right: 20px; /* Position top-right for RTL */
-            background-color: #4CAF50; /* Green for success */
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 2000;
-            display: none;
-            opacity: 0;
-            transform: translateX(100%);
-            animation: slideInRight 0.5s forwards, fadeOut 0.5s 4s forwards;
-            min-width: 250px;
-            text-align: right;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-
-        .notification-popup.error {
-            background-color: var(--accent-color); /* Red for error */
-        }
-
-        .notification-popup p {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; display: none; }
-        }
-
-        /* Admin/Dispatcher specific button for adding new orders */
-        #addNewOrderButton {
-            background: linear-gradient(135deg, #007bff, #0056b3); /* Blue gradient */
-            color: white;
-            padding: 15px 30px;
             font-size: 1.3rem;
             font-weight: bold;
-            border: none;
-            border-radius: 20px;
             cursor: pointer;
-            margin: 40px auto;
+            margin-top: 25px;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+        #newOrderModal button.submit-button:hover {
+            background-color: #27ae60;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Login Page Styles */
+        #loginPage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); /* Sunset gradient */
+            background-size: 400% 400%;
+            animation: gradientLogin 15s ease infinite alternate;
+            z-index: 2000; /* Ensure it's on top of everything */
+        }
+
+        @keyframes gradientLogin {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeInScale 0.7s ease-out forwards;
+        }
+
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .login-card h2 {
+            font-size: 2.5rem;
+            color: var(--dark-color);
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        .login-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+        }
+
+        .login-card input[type="text"],
+        .login-card input[type="password"] {
+            width: calc(100% - 30px); /* Adjust for padding */
+            padding: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            font-size: 1.2rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            direction: ltr; /* Force LTR for username/password */
+        }
+
+        .login-card input[type="text"]:focus,
+        .login-card input[type="password"]:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+        }
+
+        .login-card button {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 18px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-card button:hover {
+            background: linear-gradient(135deg, #2980b9, var(--primary-color));
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #loginError {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 15px;
+            background-color: rgba(231, 76, 60, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            display: none; /* Hidden by default */
+        }
+
+        /* Logout Button */
+        #logoutButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        #logoutButton:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        /* Add Order Button on Main Page */
+        #addNewOrderButton {
+            background: linear-gradient(135deg, #FF6F00, #FFA500); /* Orange gradient */
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 30px auto 20px auto;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
             width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #addNewOrderButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #FFA500, #FF6F00);
         }
 
-        #addNewOrderButton:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(135deg, #0056b3, #007bff);
-        }
 
     </style>
 </head>
 <body>
     <!-- Login Page -->
-    <div id="login-page">
+    <div id="loginPage" style="display: none;">
         <div class="login-card">
-            <h2>התחבר למערכת</h2>
-            <input type="text" id="usernameInput" placeholder="שם משתמש" onkeyup="if(event.keyCode === 13) login()">
-            <input type="password" id="passwordInputLogin" placeholder="סיסמה" onkeyup="if(event.keyCode === 13) login()">
-            <button onclick="login()">התחבר</button>
-            <p id="login-error">שם משתמש או סיסמה שגויים.</p>
+            <h2><i class="fas fa-lock"></i> כניסה למערכת</h2>
+            <p style="font-size: 1rem; color: #666;">ח. סבן חומרי בניין</p>
+            <input type="text" id="usernameInput" placeholder="שם משתמש" onkeyup="if(event.keyCode === 13) signInUser()">
+            <input type="password" id="passwordInputLogin" placeholder="סיסמה" onkeyup="if(event.keyCode === 13) signInUser()">
+            <button onclick="signInUser()">התחבר</button>
+            <p id="loginError" style="color: var(--accent-color); margin-top: 15px; display: none;"></p>
         </div>
     </div>
 
-    <!-- Main Application Content (hidden by default) -->
-    <div id="app-container" style="display: none;">
+    <!-- Main Application Container -->
+    <div id="mainAppContainer" style="display: none;">
+        <button id="logoutButton" onclick="signOutUser()">התנתק <i class="fas fa-sign-out-alt"></i></button>
+
         <!-- Top Navigation Bar -->
         <nav class="top-nav">
             <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
@@ -2190,19 +2248,18 @@
                     <div class="time" id="currentTimeDisplay"></div> 
                     <div class="date" id="currentDateDisplay"></div>
                 </div>
-                <h1>🚛 דוח בוקר - סידור הובלות</h1>
-                <button id="logoutButton" onclick="logout()">התנתק</button>
+                <h1>🚛 דוח בוקר - סידור הובלות<br>ח. סבן חומרי בניין</h1>
             </div>
         </div>
 
         <div class="container">
+            <!-- Add New Order Button (Visible to Manager/Sorter) -->
+            <button id="addNewOrderButton" onclick="showNewOrderModal()" style="display: none;">
+                <i class="fas fa-plus-circle"></i> הוסף הזמנה חדשה
+            </button>
+
             <!-- Main Page Content -->
             <div id="mainPage" class="page-content active">
-                <!-- Admin/Dispatcher: Add New Order Button -->
-                <button id="addNewOrderButton" onclick="showNewOrderModal()" style="display: none;">
-                    <i class="fas fa-plus-circle"></i> הוסף הזמנה חדשה
-                </button>
-
                 <!-- Summary Counters Section 1: Driver and Total Warehouse -->
                 <div class="summary-grid">
                     <div class="summary-card">
@@ -2313,562 +2370,334 @@
             
             <!-- WhatsApp share button -->
             <button class="share-button" onclick="showPasswordModal()">
-                <i class="fab fa-whatsapp"></i> שתף לווצאפ
+                <i class="fab fa-whatsapp"></i> שתף דוח בוקר לווצאפ
             </button>
         </div>
-    </div>
 
-    <!-- Order Details Modal: This is where the LLM button and new messaging features are located -->
-    <div id="orderDetailsModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
-            <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
-            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
-            <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
-            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
-            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
-            <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
-            
-            <!-- NEW: Status update dropdown -->
-            <div class="message-section" id="statusUpdateSection" style="display:none;">
-                <h4><i class="fas fa-sync-alt"></i> עדכון סטטוס הזמנה</h4>
-                <label for="modalStatusSelect">בחר סטטוס חדש:</label>
-                <select id="modalStatusSelect">
-                    <option value="ממתין לאישור">ממתין לאישור</option>
-                    <option value="בתכנון">בתכנון</option>
-                    <option value="בדרך">בדרך</option>
-                    <option value="נמסר">נמסר</option>
-                    <option value="נדחה">נדחה</option>
-                </select>
-                <button onclick="updateOrderStatusInFirestore()" class="llm-button" style="width: fit-content; margin-right: auto; margin-left: 0;">
-                    <i class="fas fa-save"></i> שמור סטטוס
-                </button>
-            </div>
-
-            <!-- NEW: Button to open Customer Messaging section (protected by password) -->
-            <button class="llm-button" id="openCustomerMessageButton" onclick="showCustomerMessagePasswordModal()" style="display: none;">
-                <i class="fas fa-lock"></i> פתח שליחת הודעות ללקוח
-            </button>
-
-            <!-- NEW: Wrapper for customer messaging sections, hidden by default -->
-            <div id="customerMessagingSectionWrapper" style="display: none; flex-direction: column; gap: 20px;">
-                <!-- New: Customer contact info and Order ID -->
-                <div class="message-section">
-                    <h4><i class="fas fa-address-card"></i> פרטי יצירת קשר והזמנה</h4>
-                    <label for="customerContactName">שם איש קשר:</label>
-                    <input type="text" id="customerContactName" placeholder="הכנס שם איש קשר">
-                    
-                    <label for="customerPhoneNumberInput">מספר טלפון לווצאפ:</label>
-                    <input type="tel" id="customerPhoneNumberInput" placeholder="דוגמה: 972501234567">
-
-                    <label for="orderIdInput">מספר הזמנה:</label>
-                    <input type="text" id="orderIdInput" placeholder="דוגמה: 6201547" readonly>
-                </div>
-
-                <!-- New: Waze Integration Section (now direct input with manual address/time) -->
-                <div class="message-section">
-                    <h4><i class="fas fa-map-marked-alt"></i> שילוב Waze</h4>
-                    <label for="directWazeLinkInput">קישור Waze מלא (להדבקה ישירה):</label>
-                    <input type="text" id="directWazeLinkInput" placeholder="הכנס קישור Waze כאן (מתחיל ב-https://waze.com/ul?...)">
-                    <p id="wazeLinkDisplay" style="margin-top: 10px; font-size: 0.9rem;"></p>
-                    
-                    <!-- New: Manual input for estimated arrival address and time -->
-                    <label for="estimatedArrivalAddressInput" style="margin-top: 15px;">כתובת הגעה משוערת (למילוי ידני):</label>
-                    <input type="text" id="estimatedArrivalAddressInput" placeholder="לדוגמה: הנרייטה סולד 7, רעננה">
-                    
-                    <label for="estimatedArrivalTimeInput" style="margin-top: 10px;">שעת הגעה משוערת (למילוי ידני):</label>
-                    <input type="text" id="estimatedArrivalTimeInput" placeholder="לדוגמה: 10:25">
-
-                    <!-- Waze Icon for opening the link (no AI parsing) -->
-                    <div id="wazeIconContainer" class="waze-icon-container">
-                        <i class="fab fa-waze waze-icon" id="animatedWazeIcon" onclick="showWazePopupWrapper()"></i>
-                        <span>לחץ על אייקון Waze לפתיחת הקישור.</span>
-                    </div>
-                </div>
-
-                <!-- New: Predefined Messages Section -->
-                <div class="message-section">
-                    <h4><i class="fas fa-comment-dots"></i> בחר הודעה מוכנה</h4>
-                    <select id="predefinedMessageSelect">
-                        <option value="">בחר תבנית הודעה</option>
-                        <option value="template1">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].</option>
-                        <option value="template2">ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].</option>
-                        <option value="template3">ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!</option>
-                        <option value="template4">עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.</option>
-                        <option value="template5">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [מחסן]. שעות פעילות: [שעות פעילות].</option>
-                        <option value="template6">לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.</option>
-                        <option value="template7">בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.</option>
-                        <option value="template8">נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].</option>
-                        <option value="template9">תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.</option>
-                        <option value="template10">אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת יעד משוערת] בשעה [שעת הגעה משוערת]. לחץ כאן למעקב: [קישור Waze].</option>
-                    </select>
-                    <div class="button-group">
-                        <button onclick="fillMessageFromTemplate()"><i class="fas fa-file-alt"></i> מלא מהתבנית</button>
-                    </div>
-                </div>
-
-                <!-- New: Free Text Message and AI Emoji/Styling -->
-                <div class="message-section">
-                    <h4><i class="fas fa-pencil-alt"></i> כתיבה חופשית</h4>
-                    <textarea id="freeTextMessage" placeholder="כתוב הודעה חופשית כאן..."></textarea>
-                    <div class="button-group">
-                        <button id="generateMessageButton" onclick="applyAIEmojiAndStyle()"><i class="fas fa-magic"></i> AI: עיצוב והוספת אימוג'י</button>
-                    </div>
-                </div>
+        <!-- Order Details Modal: This is where the LLM button and new messaging features are located -->
+        <div id="orderDetailsModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
+                <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
+                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
+                <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
+                <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
+                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
                 
-                <!-- LLM generated message preview area -->
-                <div id="llmResponseContainer">
-                    <div class="loader" id="llmLoader"></div>
-                    <div id="llmResponseMessage">לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.</div>
-                </div>
+                <!-- Status update dropdown (visible to roles with update permissions) -->
+                <p id="modalStatusContainer">
+                    <strong><i class="fas fa-info-circle"></i> סטטוס:</strong> 
+                    <span id="modalStatusText" style="display: none;"></span>
+                    <select id="modalStatusSelect" style="display: none;" onchange="updateOrderStatus(this.value)">
+                        <option value="ממתין לשיבוץ">ממתין לשיבוץ</option>
+                        <option value="שובץ לנהג">שובץ לנהג</option>
+                        <option value="בדרך ללקוח">בדרך ללקוח</option>
+                        <option value="נמסר">נמסר</option>
+                        <option value="בוטל">בוטל</option>
+                        <option value="נדחה">נדחה</option>
+                        <option value="טופל במחסן">טופל במחסן</option>
+                    </select>
+                </p>
 
-                <!-- New: Main Send WhatsApp Message Button for customer -->
-                <button class="share-button" id="sendCustomerMessageButton" style="width: 100%; max-width: none;">
-                    <i class="fab fa-whatsapp"></i> שלח הודעת ווצאפ ללקוח
+                <!-- NEW: Button to open Customer Messaging section (protected by password) -->
+                <button class="llm-button" id="openCustomerMessageButton" onclick="showCustomerMessagePasswordModal()" style="display: none;">
+                    <i class="fas fa-lock"></i> פתח שליחת הודעות ללקוח
                 </button>
-            </div>
 
-            <!-- New: Driver Specific Messages Section -->
-            <div class="message-section">
-                <h4><i class="fas fa-truck-loading"></i> שליחת הודעה לנהגים</h4>
-                <label for="workTypeInput">סוג עבודה/הערות:</label>
-                <input type="text" id="workTypeInput" placeholder="לדוגמה: עבודת מנוף לשעתיים / איסוף בלות">
-                <div class="button-group">
-                    <button onclick="sendOrderToDriver('hakmat')">
-                        <img src="${HAKMAT_AVATAR_URL}" alt="חכמת" class="driver-button-avatar">
-                        שלח לחכמת
-                    </button>
-                    <button onclick="sendOrderToDriver('ali')">
-                        <img src="${ALI_AVATAR_URL}" alt="עלי" class="driver-button-avatar">
-                        שלח לעלי
+                <!-- NEW: Wrapper for customer messaging sections, hidden by default -->
+                <div id="customerMessagingSectionWrapper" style="display: none; flex-direction: column; gap: 20px;">
+                    <!-- New: Customer contact info and Order ID -->
+                    <div class="message-section">
+                        <h4><i class="fas fa-address-card"></i> פרטי יצירת קשר והזמנה</h4>
+                        <label for="customerContactName">שם איש קשר:</label>
+                        <input type="text" id="customerContactName" placeholder="הכנס שם איש קשר">
+                        
+                        <label for="customerPhoneNumberInput">מספר טלפון לווצאפ:</label>
+                        <input type="tel" id="customerPhoneNumberInput" placeholder="דוגמה: 972501234567">
+
+                        <label for="orderIdInput">מספר הזמנה:</label>
+                        <input type="text" id="orderIdInput" placeholder="דוגמה: 6201547">
+                    </div>
+
+                    <!-- New: Waze Integration Section (now direct input with manual address/time) -->
+                    <div class="message-section">
+                        <h4><i class="fas fa-map-marked-alt"></i> שילוב Waze</h4>
+                        <label for="directWazeLinkInput">קישור Waze מלא (להדבקה ישירה):</label>
+                        <input type="text" id="directWazeLinkInput" placeholder="הכנס קישור Waze כאן (מתחיל ב-https://waze.com/ul?...)">
+                        <p id="wazeLinkDisplay" style="margin-top: 10px; font-size: 0.9rem;"></p>
+                        
+                        <!-- New: Manual input for estimated arrival address and time -->
+                        <label for="estimatedArrivalAddressInput" style="margin-top: 15px;">כתובת הגעה משוערת (למילוי ידני):</label>
+                        <input type="text" id="estimatedArrivalAddressInput" placeholder="לדוגמה: הנרייטה סולד 7, רעננה">
+                        
+                        <label for="estimatedArrivalTimeInput" style="margin-top: 10px;">שעת הגעה משוערת (למילוי ידני):</label>
+                        <input type="text" id="estimatedArrivalTimeInput" placeholder="לדוגמה: 10:25">
+
+                        <!-- Waze Icon for opening the link (no AI parsing) -->
+                        <div id="wazeIconContainer" class="waze-icon-container">
+                            <i class="fab fa-waze waze-icon" id="animatedWazeIcon" onclick="showWazePopupWrapper()"></i>
+                            <span>לחץ על אייקון Waze לפתיחת הקישור.</span>
+                        </div>
+                    </div>
+
+                    <!-- New: Predefined Messages Section -->
+                    <div class="message-section">
+                        <h4><i class="fas fa-comment-dots"></i> בחר הודעה מוכנה</h4>
+                        <select id="predefinedMessageSelect">
+                            <option value="">בחר תבנית הודעה</option>
+                            <option value="template1">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].</option>
+                            <option value="template2">ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].</option>
+                            <option value="template3">ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!</option>
+                            <option value="template4">עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.</option>
+                            <option value="template5">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [מחסן]. שעות פעילות: [שעות פעילות].</option>
+                            <option value="template6">לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.</option>
+                            <option value="template7">בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.</option>
+                            <option value="template8">נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].</option>
+                            <option value="template9">תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.</option>
+                            <option value="template10">אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת יעד משוערת] בשעה [שעת הגעה משוערת]. לחץ כאן למעקב: [קישור Waze].</option>
+                        </select>
+                        <div class="button-group">
+                            <button onclick="fillMessageFromTemplate()"><i class="fas fa-file-alt"></i> מלא מהתבנית</button>
+                        </div>
+                    </div>
+
+                    <!-- New: Free Text Message and AI Emoji/Styling -->
+                    <div class="message-section">
+                        <h4><i class="fas fa-pencil-alt"></i> כתיבה חופשית</h4>
+                        <textarea id="freeTextMessage" placeholder="כתוב הודעה חופשית כאן..."></textarea>
+                        <div class="button-group">
+                            <button id="generateMessageButton" onclick="applyAIEmojiAndStyle()"><i class="fas fa-magic"></i> AI: עיצוב והוספת אימוג'י</button>
+                        </div>
+                    </div>
+                    
+                    <!-- LLM generated message preview area -->
+                    <div id="llmResponseContainer">
+                        <div class="loader" id="llmLoader"></div>
+                        <div id="llmResponseMessage">לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.</div>
+                    </div>
+
+                    <!-- New: Main Send WhatsApp Message Button for customer -->
+                    <button class="share-button" id="sendCustomerMessageButton" style="width: 100%; max-width: none;">
+                        <i class="fab fa-whatsapp"></i> שלח הודעת ווצאפ ללקוח
                     </button>
                 </div>
-            </div>
 
-        </div>
-    </div>
+                <!-- New: Driver Specific Messages Section -->
+                <div class="message-section">
+                    <h4><i class="fas fa-truck-loading"></i> שליחת הודעה לנהגים</h4>
+                    <label for="workTypeInput">סוג עבודה/הערות:</label>
+                    <input type="text" id="workTypeInput" placeholder="לדוגמה: עבודת מנוף לשעתיים / איסוף בלות">
+                    <div class="button-group">
+                        <button onclick="sendOrderToDriver('hakmat')">
+                            <img src="${HAKMAT_AVATAR_URL}" alt="חכמת" class="driver-button-avatar">
+                            שלח לחכמת
+                        </button>
+                        <button onclick="sendOrderToDriver('ali')">
+                            <img src="${ALI_AVATAR_URL}" alt="עלי" class="driver-button-avatar">
+                            שלח לעלי
+                        </button>
+                    </div>
+                </div>
 
-    <!-- City Map Modal -->
-    <div id="cityMapModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
-            <h2 id="cityModalTitle">מפה של העיר</h2>
-            <div id="cityMapDisplay">
-                <!-- Map image or message will be inserted here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Password Modal for general WhatsApp share -->
-    <div id="passwordModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
-            <h2>הכנס סיסמה</h2>
-            <p style="font-size: 1rem; color: #555; margin-bottom: 15px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 10px;">
-                <i class="fas fa-info-circle"></i> סיסמה זו מיועדת לשיתוף דוח בוקר כללי.
-            </p>
-            <input type="password" id="passwordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkPassword()">
-            <button onclick="checkPassword()">אשר</button>
-            <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
-        </div>
-    </div>
-
-    <!-- NEW: Customer Message Password Modal -->
-    <div id="customerMessagePasswordModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('customerMessagePasswordModal')">&times;</button>
-            <h2>הכנס סיסמה לשליחת הודעות ללקוח</h2>
-            <p style="font-size: 1rem; color: #555; margin-bottom: 15px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 10px;">
-                <i class="fas fa-info-circle"></i> אופציה זו מיועדת למנהל המערכת בלבד ומאפשרת שליחת הודעות ישירות ללקוחות.
-            </p>
-            <input type="password" id="customerMessagePasswordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkCustomerMessagePassword()">
-            <button onclick="checkCustomerMessagePassword()">אשר</button>
-            <p id="customerMessagePasswordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
-        </div>
-    </div>
-
-    <!-- Waze Pop-up Modal -->
-    <div id="wazePopupModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('wazePopupModal')">&times;</button>
-            <!-- New: Prominent Waze details title -->
-            <h2 id="wazePopupMainTitle">פרטי הגעה Waze</h2>
-            <span class="waze-info-title">📍 כתובת: <span id="wazePopupAddress"></span></span>
-            <span class="waze-info-title">⏰ הגעה משוערת: <span id="wazePopupEta"></span></span>
-            <p id="wazePopupLink"></p>
-            <a id="wazeOpenLink" href="#" target="_blank" class="button">פתח ב-Waze</a>
-        </div>
-    </div>
-
-    <!-- New Order Modal -->
-    <div id="newOrderModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-button" onclick="closeModal('newOrderModal')">&times;</button>
-            <h2>הוסף הזמנה חדשה</h2>
-            <div class="form-group">
-                <label for="newOrderDate">תאריך:</label>
-                <input type="date" id="newOrderDate" required>
-            </div>
-            <div class="form-group">
-                <label for="newOrderTime">שעה:</label>
-                <input type="time" id="newOrderTime" required>
-            </div>
-            <div class="form-group">
-                <label for="newOrderCustomer">לקוח:</label>
-                <input type="text" id="newOrderCustomer" placeholder="שם הלקוח" required>
-            </div>
-            <div class="form-group">
-                <label for="newOrderAddress">כתובת:</label>
-                <input type="text" id="newOrderAddress" placeholder="כתובת מלאה (כולל עיר)" required>
-            </div>
-             <div class="form-group">
-                <label for="newOrderCity">עיר (אוטומטי מכתובת / ניתן לערוך):</label>
-                <input type="text" id="newOrderCity" placeholder="עיר" readonly>
-            </div>
-            <div class="form-group">
-                <label for="newOrderWarehouse">מחסן:</label>
-                <select id="newOrderWarehouse" required>
-                    <option value="">בחר מחסן</option>
-                    <option value="התלמיד">התלמיד</option>
-                    <option value="החרש">החרש</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="newOrderDriver">נהג:</label>
-                <select id="newOrderDriver" required>
-                    <option value="">בחר נהג</option>
-                    <option value="חכמת">חכמת</option>
-                    <option value="עלי">עלי</option>
-                    <option value="לא משובץ">לא משובץ</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="newOrderStatus">סטטוס:</label>
-                <select id="newOrderStatus" required>
-                    <option value="ממתין לאישור">ממתין לאישור</option>
-                    <option value="בתכנון">בתכנון</option>
-                    <option value="בדרך">בדרך</option>
-                    <option value="נמסר">נמסר</option>
-                    <option value="נדחה">נדחה</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="newOrderWazeLink">קישור Waze:</label>
-                <input type="text" id="newOrderWazeLink" placeholder="קישור Waze (אופציונלי)">
-            </div>
-            <div class="form-group">
-                <label for="newOrderEstimatedArrivalAddress">כתובת הגעה משוערת (אופציונלי):</label>
-                <input type="text" id="newOrderEstimatedArrivalAddress" placeholder="כתובת הגעה משוערת">
-            </div>
-            <div class="form-group">
-                <label for="newOrderEstimatedArrivalTime">שעת הגעה משוערת (אופציונלי):</label>
-                <input type="text" id="newOrderEstimatedArrivalTime" placeholder="שעת הגעה משוערת">
-            </div>
-            <div class="modal-actions">
-                <button onclick="saveNewOrderToFirestore()"><i class="fas fa-plus"></i> הוסף הזמנה</button>
-                <button class="cancel-button" onclick="closeModal('newOrderModal')"><i class="fas fa-times"></i> ביטול</button>
             </div>
         </div>
-    </div>
 
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="bottom-nav">
-        <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
-            <i class="fas fa-home"></i> ראשי
-        </button>
-        <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
-            <i class="fas fa-user-tie"></i> חכמת
-        </button>
-        <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
-            <i class="fas fa-user-astronaut"></i> עלי
-        </button>
-        <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
-            <i class="fas fa-boxes"></i> מחסן
-            <div class="dropdown-menu">
-                <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
-                <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
+        <!-- City Map Modal -->
+        <div id="cityMapModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
+                <h2 id="cityModalTitle">מפה של העיר</h2>
+                <div id="cityMapDisplay">
+                    <!-- Map image or message will be inserted here -->
+                </div>
             </div>
-        </button>
-    </nav>
+        </div>
 
-    <!-- Notification Popup -->
-    <div id="notificationPopup" class="notification-popup">
-        <p id="notificationMessage"></p>
-    </div>
+        <!-- Password Modal (for morning report share) -->
+        <div id="passwordModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
+                <h2>הכנס סיסמה</h2>
+                <input type="password" id="passwordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkPassword()">
+                <button onclick="checkPassword()">אשר</button>
+                <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
+            </div>
+        </div>
+
+        <!-- NEW: Customer Message Password Modal -->
+        <div id="customerMessagePasswordModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('customerMessagePasswordModal')">&times;</button>
+                <h2>הכנס סיסמה לשליחת הודעות ללקוח</h2>
+                <p style="font-size: 1rem; color: #555; margin-bottom: 15px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 10px;">
+                    <i class="fas fa-info-circle"></i> אופציה זו מיועדת למנהל המערכת בלבד ומאפשרת שליחת הודעות ישירות ללקוחות.
+                </p>
+                <input type="password" id="customerMessagePasswordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkCustomerMessagePassword()">
+                <button onclick="checkCustomerMessagePassword()">אשר</button>
+                <p id="customerMessagePasswordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
+            </div>
+        </div>
+
+        <!-- Waze Pop-up Modal -->
+        <div id="wazePopupModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('wazePopupModal')">&times;</button>
+                <!-- New: Prominent Waze details title -->
+                <h2 id="wazePopupMainTitle">פרטי הגעה Waze</h2>
+                <span class="waze-info-title">📍 כתובת: <span id="wazePopupAddress"></span></span>
+                <span class="waze-info-title">⏰ הגעה משוערת: <span id="wazePopupEta"></span></span>
+                <p id="wazePopupLink"></p>
+                <a id="wazeOpenLink" href="#" target="_blank" class="button">פתח ב-Waze</a>
+            </div>
+        </div>
+
+        <!-- NEW Order Modal -->
+        <div id="newOrderModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button" onclick="closeModal('newOrderModal')">&times;</button>
+                <h2><i class="fas fa-plus-circle"></i> יצירת הזמנה חדשה</h2>
+                <div class="form-group">
+                    <label for="newOrderDate">תאריך:</label>
+                    <input type="date" id="newOrderDate">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderTime">שעה:</label>
+                    <input type="time" id="newOrderTime">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderCustomer">לקוח:</label>
+                    <input type="text" id="newOrderCustomer" placeholder="שם הלקוח">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderAddress">כתובת:</label>
+                    <input type="text" id="newOrderAddress" placeholder="כתובת מלאה כולל עיר">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderCity">עיר:</label>
+                    <input type="text" id="newOrderCity" placeholder="עיר">
+                </div>
+                 <div class="form-group">
+                    <label for="newOrderWarehouse">מחסן:</label>
+                    <select id="newOrderWarehouse">
+                        <option value="">בחר מחסן</option>
+                        <option value="התלמיד">התלמיד</option>
+                        <option value="החרש">החרש</option>
+                        <option value="כללי">כללי</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newOrderStatus">סטטוס:</label>
+                    <select id="newOrderStatus">
+                        <option value="ממתין לשיבוץ">ממתין לשיבוץ</option>
+                        <option value="שובץ לנהג">שובץ לנהג</option>
+                        <option value="בדרך ללקוח">בדרך ללקוח</option>
+                        <option value="נמסר">נמסר</option>
+                        <option value="בוטל">בוטל</option>
+                        <option value="נדחה">נדחה</option>
+                        <option value="טופל במחסן">טופל במחסן</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="newOrderDriver">נהג (אופציונלי):</label>
+                    <select id="newOrderDriver">
+                        <option value="">לא משויך</option>
+                        <option value="עלי">עלי</option>
+                        <option value="חכמת">חכמת</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newOrderWazeLink">קישור Waze:</label>
+                    <input type="text" id="newOrderWazeLink" placeholder="קישור Waze (אופציונלי)">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderEstimatedAddress">כתובת הגעה משוערת:</label>
+                    <input type="text" id="newOrderEstimatedAddress" placeholder="כתובת הגעה משוערת (אופציונלי)">
+                </div>
+                <div class="form-group">
+                    <label for="newOrderEstimatedTime">שעת הגעה משוערת:</label>
+                    <input type="time" id="newOrderEstimatedTime" placeholder="שעת הגעה משוערת (אופציונלי)">
+                </div>
+                <button class="submit-button" onclick="addNewOrder()">הוסף הזמנה</button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+            <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
+                <i class="fas fa-home"></i> ראשי
+            </button>
+            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
+                <i class="fas fa-user-tie"></i> חכמת
+            </button>
+            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
+                <i class="fas fa-user-astronaut"></i> עלי
+            </button>
+            <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
+                <i class="fas fa-boxes"></i> מחסן
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
+                    <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
+                </div>
+            </button>
+        </nav>
+    </div> <!-- End of mainAppContainer -->
 
     <script type="module">
-        // Import necessary Firebase modules
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // Import Firestore and Auth modules (already imported above in main script tag)
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, onSnapshot, where, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration - IMPORTANT: Replace with your actual Firebase project config
-        const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY", // <-- החלף את זה במפתח ה-API שלך מ-Firebase
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID", // <-- החלף את זה ב-Project ID שלך מ-Firebase
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        // IMPORTANT: Ensure these match the ones initialized in the main script tag.
+        const db = window.firestoreDb;
+        const auth = window.firebaseAuth;
+
+        // Google Maps Static API Key
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwc8_iJXc4eMfq-EE'; // Your Google Maps Static API Key
         
-        // Initialize Firebase - this happens once on script load
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        // Global variables for Firebase and user
-        window.firebaseApp = app;
-        window.db = db;
-        window.auth = auth;
-        window.currentUser = null;
-        window.currentRole = null;
-        window.currentUserName = null;
-
-        // User authentication and roles (simulated for demo purposes, hardcoded passwords)
-        const USERS = {
-            "admin": { password: "adminpass", role: "admin", name: "מנהל מערכת" },
-            "oren": { password: "1234", role: "warehouse_carpenter", name: "אורן - מחסן החרש" },
-            "tamir": { password: "1234", role: "warehouse_student", name: "תמיר - מחסן התלמיד" },
-            "hakmat": { password: "driver_pass", role: "driver_hakmat", name: "חכמת" },
-            "ali": { password: "driver_pass", role: "driver_ali", name: "עלי" },
-            "viewer": { password: "view_pass", role: "viewer", name: "צופה" },
-            "rami": { password: "123", role: "admin", name: "ראמי - סידור" },
-            "yoav": { password: "123", role: "admin", name: "יואב - סידור" }
-        };
-
-        const USER_ROLES_PERMISSIONS = {
-            "admin": { canView: true, canAdd: true, canEditStatus: true, canEditAll: true, canNotifyCustomer: true, canNotifyDriver: true, adminWhatsappShare: true },
-            "warehouse_carpenter": { canView: true, canAdd: false, canEditStatus: true, canEditAll: false, canNotifyCustomer: false, canNotifyDriver: true, adminWhatsappShare: false },
-            "warehouse_student": { canView: true, canAdd: false, canEditStatus: true, canEditAll: false, canNotifyCustomer: false, canNotifyDriver: true, adminWhatsappShare: false },
-            "driver_hakmat": { canView: true, canAdd: false, canEditStatus: true, canEditAll: false, canNotifyCustomer: false, canNotifyDriver: false, adminWhatsappShare: false },
-            "driver_ali": { canView: true, canAdd: false, canEditStatus: true, canEditAll: false, canNotifyCustomer: false, canNotifyDriver: false, adminWhatsappShare: false },
-            "viewer": { canView: true, canAdd: false, canEditStatus: false, canEditAll: false, canNotifyCustomer: false, canNotifyDriver: false, adminWhatsappShare: false }
-        };
-
-        // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-EE'; // <-- החלף את זה במפתח ה-API שלך מ-Google Maps
-
         // Gemini API Key - NOTE: This variable is intentionally left as an empty string.
         // The Canvas environment automatically injects the Gemini API key at runtime,
         // making it unnecessary and potentially insecure to hardcode it here.
         const geminiApiKey = ""; 
 
-        // Passwords for modals (for security in a real app, these would not be hardcoded)
+        // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
-        const CUSTOMER_MESSAGE_PASSWORD = "1125"; 
+        const CUSTOMER_MESSAGE_PASSWORD = "1125"; // New password for customer messaging section
 
-        // Avatar image URLs for drivers and warehouses
+        // Avatar image URLs for drivers (replace with actual image links)
         const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
         const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
+        // New avatar URLs for warehouses
         const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
         const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
 
-        let allOrdersFromFirestore = []; // Stores all fetched orders from Firestore
-        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
 
-        // Predefined message templates (Hebrew)
-        const predefinedMessages = {
-            template1: "שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].",
-            template2: "ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].",
-            template3: "ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!",
-            template4: "עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.",
-            template5: "שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [מחסן]. שעות פעילות: [שעות פעילות].",
-            template6: "לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.",
-            template7: "בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.",
-            template8: "נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].",
-            template9: "תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.",
-            template10: "אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת יעד משוערת] בשעה [שעת הגעה משוערת]. לחץ כאן למעקב: [קישור Waze]."
+        let allOrders = []; // Stores all fetched orders from Firestore
+        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
+        let currentOrderId = null; // Stores the Firestore document ID of the current order
+
+        let studentWarehouseOrderCount = 0;
+        let carpenterWarehouseOrderCount = 0;
+        let morningOrdersCount = 0;
+
+        // Define user roles and their permissions (simplified client-side check)
+        const USER_ROLES = {
+            'manager': { canAdd: true, canEditStatus: true, canViewAll: true, canMessageCustomers: true, canMessageDrivers: true },
+            'warehouse_carpenter': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: false },
+            'warehouse_student': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: false },
+            'driver_hakmat': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: true },
+            'driver_ali': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: true },
+            'sorter': { canAdd: true, canEditStatus: true, canViewAll: true, canMessageCustomers: true, canMessageDrivers: true },
+            'viewer': { canAdd: false, canEditStatus: false, canViewAll: true, canMessageCustomers: false, canMessageDrivers: false }
         };
 
-        /**
-         * Parses a time string (e.g., "14:30") into a Date object for sorting.
-         * Handles "ביחד" by treating it as if it's within the morning delivery window if the driver typically works morning.
-         * @param {string} timeStr The time string in HH:MM format or "ביחד".
-         * @returns {Date} A Date object representing the time.
-         */
-        function parseTimeForSorting(timeStr) {
-            if (!timeStr) return new Date(0); // Return a very early date for empty times
-            if (timeStr.includes("ביחד")) {
-                // If "ביחד" is present, treat it as a morning order for sorting and counting purposes.
-                // We'll assign it a time within the 06:00-09:00 range, e.g., 07:00.
-                const date = new Date();
-                date.setHours(7, 0, 0, 0); 
-                return date;
-            }
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const date = new Date();
-            date.setHours(hours, minutes, 0, 0);
-            return date;
-        }
+        let currentUserRole = null; // Will be set by Firebase Auth listener
+        let currentUserName = null; // Will be set by Firebase Auth listener
+        let currentUserId = null;   // Will be set by Firebase Auth listener
+
 
         /**
-         * Displays a notification pop-up.
-         * @param {string} message The message to display.
-         * @param {string} type 'success' or 'error' (default 'success')
-         */
-        function showNotification(message, type = 'success') {
-            const popup = document.getElementById('notificationPopup');
-            const msgElement = document.getElementById('notificationMessage');
-            if (!popup || !msgElement) {
-                console.error("Notification elements not found.");
-                return;
-            }
-
-            msgElement.textContent = message;
-            popup.className = 'notification-popup'; // Reset classes
-            popup.classList.add(type);
-            popup.style.display = 'block';
-            popup.style.opacity = '1';
-            popup.style.transform = 'translateX(0)';
-
-            // Hide after 5 seconds
-            setTimeout(() => {
-                popup.style.opacity = '0';
-                popup.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    popup.style.display = 'none';
-                }, 500); // Match CSS transition duration
-            }, 5000);
-        }
-
-        /**
-         * Handles user login.
-         */
-        async function login() {
-            const usernameInput = document.getElementById('usernameInput');
-            const passwordInput = document.getElementById('passwordInputLogin');
-            const loginError = document.getElementById('login-error');
-
-            if (!usernameInput || !passwordInput || !loginError) {
-                console.error("Login elements not found.");
-                return;
-            }
-
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            const user = USERS[username];
-
-            if (user && user.password === password) {
-                // Simulated successful login
-                window.currentUser = username;
-                window.currentRole = user.role;
-                window.currentUserName = user.name;
-
-                // Store in session storage to persist across refresh (within same session)
-                sessionStorage.setItem('loggedInUser', username);
-                sessionStorage.setItem('loggedInRole', user.role);
-                sessionStorage.setItem('loggedInUserName', user.name);
-                
-                loginError.style.display = 'none';
-                console.log(`User '${username}' logged in successfully with role '${user.role}'.`);
-                showAppContent();
-                initializeAppListeners(); // Initialize Firestore listeners after login
-                requestNotificationPermission(); // Request permission for web notifications
-            } else {
-                loginError.style.display = 'block';
-                showNotification('שם משתמש או סיסמה שגויים.', 'error');
-            }
-        }
-
-        /**
-         * Handles user logout.
-         */
-        async function logout() {
-            try {
-                // In a real Firebase Auth app, you'd call signOut(auth);
-                // For simulated login, we just clear session storage.
-                sessionStorage.removeItem('loggedInUser');
-                sessionStorage.removeItem('loggedInRole');
-                sessionStorage.removeItem('loggedInUserName');
-                window.currentUser = null;
-                window.currentRole = null;
-                window.currentUserName = null;
-                
-                showLoginScreen();
-                showNotification('התנתקת בהצלחה.', 'success');
-            } catch (error) {
-                console.error("Error during logout:", error);
-                showNotification('שגיאה בהתנתקות.', 'error');
-            }
-        }
-
-        /**
-         * Shows the main application content and hides the login page.
-         */
-        function showAppContent() {
-            document.getElementById('login-page').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            document.querySelector('.header').style.display = 'flex';
-            document.querySelector('.top-nav').style.display = 'flex';
-            document.querySelector('.bottom-nav').style.display = 'flex';
-            document.getElementById('logoutButton').style.display = 'block';
-            document.body.classList.add('app-active'); // Adjust padding for fixed header
-
-            // Show/hide "Add New Order" button based on role
-            const addNewOrderButton = document.getElementById('addNewOrderButton');
-            if (addNewOrderButton) {
-                const permissions = USER_ROLES_PERMISSIONS[window.currentRole];
-                if (permissions && permissions.canAdd) {
-                    addNewOrderButton.style.display = 'flex'; // Use flex for centering with icon
-                } else {
-                    addNewOrderButton.style.display = 'none';
-                }
-            }
-
-            // Show/hide general WhatsApp share button
-            const whatsappShareButton = document.querySelector('.share-button');
-            if (whatsappShareButton) {
-                const permissions = USER_ROLES_PERMISSIONS[window.currentRole];
-                if (permissions && permissions.adminWhatsappShare) {
-                    whatsappShareButton.style.display = 'flex';
-                } else {
-                    whatsappShareButton.style.display = 'none';
-                }
-            }
-
-            // Activate initial page based on role or default to mainPage
-            const initialPageId = USERS[window.currentUser].role.homePage || 'mainPage';
-            const initialNavId = `${initialPageId}-nav-button`;
-            activatePageAndNav(initialPageId, initialNavId);
-        }
-
-        /**
-         * Shows the login page and hides the main application content.
-         */
-        function showLoginScreen() {
-            document.getElementById('login-page').style.display = 'flex';
-            document.getElementById('app-container').style.display = 'none';
-            document.querySelector('.header').style.display = 'none';
-            document.querySelector('.top-nav').style.display = 'none';
-            document.querySelector('.bottom-nav').style.display = 'none';
-            document.getElementById('logoutButton').style.display = 'none';
-            document.body.classList.remove('app-active');
-            // Clear inputs
-            const usernameInput = document.getElementById('usernameInput');
-            const passwordInput = document.getElementById('passwordInputLogin');
-            if (usernameInput) usernameInput.value = '';
-            if (passwordInput) passwordInput.value = '';
-        }
-
-        /**
-         * Requests permission for Web Notifications.
-         */
-        function requestNotificationPermission() {
-            if ("Notification" in window) {
-                if (Notification.permission === "default") {
-                    Notification.requestPermission().then(permission => {
-                        console.log("Notification permission:", permission);
-                    });
-                }
-            }
-        }
-
-        /**
-         * Function to update the current time and date.
+         * Function to update the current time and date
          */
         function updateDateTime() {
             const now = new Date();
@@ -2884,128 +2713,147 @@
         setInterval(updateDateTime, 1000);
         updateDateTime(); 
 
+
         /**
-         * Initializes Firebase listeners after successful login.
-         * This sets up the real-time data synchronization.
+         * Initializes the application content after a user logs in.
+         * Sets up Firestore listeners and UI based on user role.
          */
-        function initializeAppListeners() {
-            if (!window.db) {
-                console.error("Firestore is not initialized.");
+        window.initializeAppContent = () => {
+            currentUserRole = window.currentUserRole;
+            currentUserName = window.currentUserName;
+            currentUserId = window.currentUserId;
+
+            console.log("Initializing app content for role:", currentUserRole);
+
+            // Update UI based on role
+            updateUIVisibilityBasedOnRole();
+
+            // Set avatar image sources
+            const aliAvatar = document.getElementById('aliAvatar');
+            if (aliAvatar) aliAvatar.src = ALI_AVATAR_URL;
+            const hakmatAvatar = document.getElementById('hakmatAvatar');
+            if (hakmatAvatar) hakmatAvatar.src = HAKMAT_AVATAR_URL;
+
+            // Start Firestore listeners
+            listenForOrders();
+            
+            // Ensure main page is active on login
+            activatePageAndNav('mainPage', 'main-nav-button'); 
+        };
+
+        /**
+         * Updates visibility of UI elements based on the current user's role.
+         */
+        function updateUIVisibilityBasedOnRole() {
+            const role = currentUserRole;
+            const canAdd = USER_ROLES[role]?.canAdd || false;
+            const canEditStatus = USER_ROLES[role]?.canEditStatus || false;
+            const canMessageCustomers = USER_ROLES[role]?.canMessageCustomers || false;
+
+            // Add New Order Button
+            const addNewOrderButton = document.getElementById('addNewOrderButton');
+            if (addNewOrderButton) addNewOrderButton.style.display = canAdd ? 'flex' : 'none';
+
+            // Customer Messaging Section Wrapper
+            const openCustomerMessageButton = document.getElementById('openCustomerMessageButton');
+            if (openCustomerMessageButton) openCustomerMessageButton.style.display = canMessageCustomers ? 'block' : 'none';
+
+            // Status Update Dropdown in Order Details Modal
+            const modalStatusText = document.getElementById('modalStatusText');
+            const modalStatusSelect = document.getElementById('modalStatusSelect');
+            if (modalStatusText && modalStatusSelect) {
+                // Initial state: hide dropdown, show text. Visibility changes in showOrderDetails
+                modalStatusSelect.style.display = 'none'; 
+                modalStatusText.style.display = 'inline'; 
+            }
+        }
+
+
+        /**
+         * Sets up real-time listener for 'orders' collection in Firestore.
+         */
+        function listenForOrders() {
+            if (!db) {
+                console.error("Firestore DB not initialized.");
                 return;
             }
 
-            const ordersCollectionRef = collection(window.db, "orders");
-            
-            // Listen for real-time updates to the 'orders' collection
-            onSnapshot(ordersCollectionRef, (snapshot) => {
-                const updatedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const ordersCollectionRef = collection(db, "orders");
+            const q = query(ordersCollectionRef); // You can add orderBy here if needed, e.g., orderBy("createdAt", "desc")
+
+            onSnapshot(q, (snapshot) => {
+                allOrders = [];
+                snapshot.forEach((doc) => {
+                    allOrders.push({ id: doc.id, ...doc.data() });
+                });
                 
-                // Filter orders based on the current user's role
-                filterAndSetOrders(updatedOrders);
-                
+                // Sort orders consistently (e.g., by date and then time)
+                allOrders.sort((a, b) => {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateA.getTime() - dateB.getTime();
+                    }
+                    return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
+                });
+
+                console.log("Orders updated:", allOrders);
+                renderAllTimelines(); // Re-render all sections of the app
                 updateSummaryCounts();
                 renderCharts();
-
-                // Check for changes and trigger notifications (excluding changes made by current user)
-                snapshot.docChanges().forEach(change => {
-                    const changedOrder = { id: change.doc.id, ...change.doc.data() };
-                    if (change.type === "modified" && changedOrder.lastUpdatedBy !== window.currentUserName) {
-                        handleOrderChangeNotification(changedOrder);
-                    }
-                });
             }, (error) => {
-                console.error("Error listening to Firestore updates:", error);
-                showNotification("שגיאה בטעינת נתונים בזמן אמת. נסה לרענן את הדף.", "error");
+                console.error("Error listening to orders:", error);
+                alert("שגיאה בטעינת ההזמנות בזמן אמת. אנא רענן את הדף.");
             });
         }
 
         /**
-         * Filters the allOrdersFromFirestore array based on the current user's role
-         * and populates aliOrders and hakmatOrders arrays.
-         * @param {Array<Object>} orders The raw array of orders fetched from Firestore.
+         * Rerenders all main timelines based on the updated allOrders array.
          */
-        function filterAndSetOrders(orders) {
-            // Sort all orders by time first for consistent display across all views
-            allOrdersFromFirestore = orders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+        function renderAllTimelines() {
+            // Filter orders for Ali and Hakmat
+            const aliOrders = allOrders.filter(order => order.driver === "עלי");
+            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
 
-            let aliFiltered = [];
-            let hakmatFiltered = [];
+            // Render orders on the main page
+            renderOrders(aliOrders, "aliTimeline", "עלי");
+            renderOrders(hakmatOrders, "hakmatTimeline", "חכמת");
 
-            if (window.currentRole === "driver_ali") {
-                aliFiltered = allOrdersFromFirestore.filter(order => order.driver === "עלי");
-            } else if (window.currentRole === "driver_hakmat") {
-                hakmatFiltered = allOrdersFromFirestore.filter(order => order.driver === "חכמת");
-            } else if (window.currentRole === "warehouse_student") {
-                // Show only orders for "התלמיד" warehouse
-                aliFiltered = allOrdersFromFirestore.filter(order => order.warehouse === "התלמיד" && order.driver === "עלי");
-                hakmatFiltered = allOrdersFromFirestore.filter(order => order.warehouse === "התלמיד" && order.driver === "חכמת");
-            } else if (window.currentRole === "warehouse_carpenter") {
-                // Show only orders for "החרש" warehouse
-                aliFiltered = allOrdersFromFirestore.filter(order => order.warehouse === "החרש" && order.driver === "עלי");
-                hakmatFiltered = allOrdersFromFirestore.filter(order => order.warehouse === "החרש" && order.driver === "חכמת");
-            } else { // Admin, Viewer, Dispatchers (rami, yoav) - see all relevant orders
-                aliFiltered = allOrdersFromFirestore.filter(order => order.driver === "עלי");
-                hakmatFiltered = allOrdersFromFirestore.filter(order => order.driver === "חכמת");
+            // If on a specific driver's page, re-render that too
+            if (document.getElementById('hakmatPage').classList.contains('active')) {
+                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
             }
-
-            // Now, update the displayed timelines based on the filtered data
-            renderOrders(aliFiltered, "aliTimeline", "עלי");
-            renderOrders(hakmatFiltered, "hakmatTimeline", "חכמת");
-            renderOrders(aliFiltered, "aliOnlyTimeline", "עלי"); // For Ali's dedicated page
-            renderOrders(hakmatFiltered, "hakmatOnlyTimeline", "חכמת"); // For Hakmat's dedicated page
-
-            // Re-render the currently active page (important for dynamic updates)
-            const activePageElement = document.querySelector('.page-content.active');
-            if (activePageElement) {
-                const activePageId = activePageElement.id;
-                const activeNavButton = document.querySelector(`.nav-button.active`);
-                const activeNavId = activeNavButton ? activeNavButton.dataset.navId : 'main-nav-button';
-                activatePageAndNav(activePageId, activeNavId, false); // Pass false to prevent re-filtering within activatePageAndNav
+            if (document.getElementById('aliPage').classList.contains('active')) {
+                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
+            }
+            // Re-render warehouse if active (will need to know which type was selected last)
+            const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
+            if (document.getElementById('warehousePage').classList.contains('active') && warehouseDisplayContainer && warehouseDisplayContainer.querySelector('.driver-section-title')) {
+                const selectedWarehouseType = warehouseDisplayContainer.querySelector('.driver-section-title').textContent.replace('מחסן: ', '').trim();
+                if (selectedWarehouseType) {
+                    showWarehouseOrders(selectedWarehouseType); // Re-run the filter/render
+                }
             }
         }
 
 
         /**
-         * Handles triggering notifications for relevant order changes.
-         * @param {Object} order The order object that was modified.
+         * Parses a time string (e.g., "14:30") into a Date object for sorting.
+         * Handles "ביחד" by treating it as if it's within the morning delivery window if the driver typically works morning.
+         * @param {string} timeStr The time string in HH:MM format or "ביחד".
+         * @returns {Date} A Date object representing the time.
          */
-        function handleOrderChangeNotification(order) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                let notify = false;
-                let message = "";
-                
-                // Admin gets notifications for all status changes
-                if (window.currentRole === "admin") {
-                    notify = true;
-                    message = `סטטוס הזמנה מספר ${order.orderId || 'לא ידוע'} ללקוח ${order.customer || 'לא ידוע'} השתנה ל: ${order.status || 'לא ידוע'} (עודכן ע"י ${order.lastUpdatedBy || 'מערכת'})`;
-                } 
-                // Driver gets notifications if status of their order changes
-                else if (window.currentRole === "driver_ali" && order.driver === "עלי") {
-                    notify = true;
-                    message = `סטטוס הזמנה שלך ללקוח ${order.customer || 'לא ידוע'} השתנה ל: ${order.status || 'לא ידוע'} (עודכן ע"י ${order.lastUpdatedBy || 'מערכת'})`;
-                } 
-                else if (window.currentRole === "driver_hakmat" && order.driver === "חכמת") {
-                    notify = true;
-                    message = `סטטוס הזמנה שלך ללקוח ${order.customer || 'לא ידוע'} השתנה ל: ${order.status || 'לא ידוע'} (עודכן ע"י ${order.lastUpdatedBy || 'מערכת'})`;
-                } 
-                // Warehouse manager gets notifications if status of order from their warehouse changes
-                else if (window.currentRole === "warehouse_student" && order.warehouse === "התלמיד") {
-                    notify = true;
-                    message = `סטטוס הזמנה ממחסן התלמיד ללקוח ${order.customer || 'לא ידוע'} השתנה ל: ${order.status || 'לא ידוע'} (עודכן ע"י ${order.lastUpdatedBy || 'מערכת'})`;
-                }
-                else if (window.currentRole === "warehouse_carpenter" && order.warehouse === "החרש") {
-                    notify = true;
-                    message = `סטטוס הזמנה ממחסן החרש ללקוח ${order.customer || 'לא ידוע'} השתנה ל: ${order.status || 'לא ידוע'} (עודכן ע"י ${order.lastUpdatedBy || 'מערכת'})`;
-                }
-
-                if (notify) {
-                    new Notification("עדכון סטטוס הזמנה", {
-                        body: message,
-                        icon: "https://i.postimg.cc/mD83W4vC/H-Saban-Logo.png" // Replace with a relevant icon URL
-                    });
-                    showNotification(message, 'success'); // Also show as in-app popup
-                }
+        function parseTimeForSorting(timeStr) {
+            if (!timeStr) return new Date(0); 
+            if (timeStr.includes("ביחד")) {
+                const date = new Date();
+                date.setHours(7, 0, 0, 0); 
+                return date;
             }
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
         }
 
         /**
@@ -3023,23 +2871,41 @@
             timelineContainer.innerHTML = ""; // Clear existing content
 
             if (orders && orders.length > 0) {
-                orders.forEach((order) => {
+                // Filter orders relevant to the current user's role if they are a driver/warehouse manager
+                const filteredOrdersForRole = orders.filter(order => {
+                    if (currentUserRole === 'driver_ali' && order.driver !== 'עלי') return false;
+                    if (currentUserRole === 'driver_hakmat' && order.driver !== 'חכמת') return false;
+                    if (currentUserRole === 'warehouse_student' && order.warehouse !== 'התלמיד') return false;
+                    if (currentUserRole === 'warehouse_carpenter' && order.warehouse !== 'החרש') return false;
+                    // Managers, sorters, and viewers see all applicable orders for the timeline they are on.
+                    return true;
+                });
+
+                if (filteredOrdersForRole.length === 0) {
+                     const noOrdersMessage = document.createElement("p");
+                    noOrdersMessage.textContent = "אין הזמנות זמינות עבור תפקיד זה/נהג זה/מחסן זה.";
+                    noOrdersMessage.style.textAlign = "center";
+                    noOrdersMessage.style.marginTop = "30px";
+                    noOrdersMessage.style.fontSize = "1.2rem";
+                    noOrdersMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--dark-color'); 
+                    timelineContainer.appendChild(noOrdersMessage);
+                    return;
+                }
+
+
+                filteredOrdersForRole.forEach((order) => {
                     const orderCard = document.createElement("div");
                     orderCard.classList.add("order-card");
                     
-                    // Add driver specific class for styling
-                    if (order.driver === "עלי") { // Use order.driver directly
+                    if (driverName === "עלי" || order.driver === "עלי") { // Use order.driver for main view
                         orderCard.classList.add("ali");
-                    } else if (order.driver === "חכמת") { // Use order.driver directly
+                    } else if (driverName === "חכמת" || order.driver === "חכמת") { // Use order.driver for main view
                         orderCard.classList.add("hakmat");
                     }
 
-                    // Store full order data as a JSON string for easy retrieval in modal
                     orderCard.dataset.order = JSON.stringify(order);
+                    orderCard.addEventListener('click', () => showOrderDetails(orderCard.dataset.order, order.id)); // Pass order ID
                     
-                    // Add click listener to open full details modal
-                    orderCard.addEventListener('click', () => showOrderDetails(orderCard.dataset.order));
-
                     const timeDisplay = order.time && order.time.includes("ביחד") ? 
                         `${order.time} <span class="biachad-indicator">ביחד</span>` : 
                         (order.time || "לא ידוע");
@@ -3055,27 +2921,24 @@
                             <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${wazeIconHtml} <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
                             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || "לא ידוע"}</p>
+                            <p><strong><i class="fas fa-truck"></i> נהג:</strong> ${order.driver || "לא משויך"}</p>
                             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${order.status || "לא ידוע"}</p>
-                            <p><strong><i class="fas fa-id-badge"></i> נהג:</strong> ${order.driver || "לא משובץ"}</p>
-                            ${order.orderId ? `<p><strong><i class="fas fa-hashtag"></i> מזהה הזמנה:</strong> ${order.orderId}</p>` : ''}
-                            ${order.lastUpdatedAt ? `<p style="font-size:0.85rem; color:#666;"><strong><i class="fas fa-history"></i> עודכן לאחרונה:</strong> ${new Date(order.lastUpdatedAt).toLocaleString('he-IL')} ע"י ${order.lastUpdatedBy || 'מערכת'}</p>` : ''}
                         </div>
                         <div class="order-arrow"></div>
                     `;
                     timelineContainer.appendChild(orderCard);
                 });
 
-                // Add event listeners for city links after all cards are rendered
                 timelineContainer.querySelectorAll('.city-link').forEach(link => {
                     link.onclick = (event) => {
-                        event.stopPropagation(); // Prevent order card click when city link is clicked
+                        event.stopPropagation();
                         showCityMap(link.dataset.city);
                     };
                 });
 
             } else {
                 const noOrdersMessage = document.createElement("p");
-                noOrdersMessage.textContent = "אין הזמנות זמינות עבור בחירה זו.";
+                noOrdersMessage.textContent = "אין הזמנות זמינות עבור נהג זה/מחסן זה.";
                 noOrdersMessage.style.textAlign = "center";
                 noOrdersMessage.style.marginTop = "30px";
                 noOrdersMessage.style.fontSize = "1.2rem";
@@ -3088,24 +2951,23 @@
          * Updates the summary count displays based on fetched orders.
          */
         function updateSummaryCounts() {
-            // Re-filter the global allOrdersFromFirestore for each calculation
-            const aliOrdersFiltered = allOrdersFromFirestore.filter(order => order.driver === "עלי");
-            const hakmatOrdersFiltered = allOrdersFromFirestore.filter(order => order.driver === "חכמת");
+            const aliOrders = allOrders.filter(order => order.driver === "עלי");
+            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
 
-            document.getElementById('aliOrderCount').textContent = aliOrdersFiltered.length;
-            document.getElementById('hakmatOrderCount').textContent = hakmatOrdersFiltered.length;
+            document.getElementById('aliOrderCount').textContent = aliOrders.length;
+            document.getElementById('hakmatOrderCount').textContent = hakmatOrders.length;
             
-            let studentWarehouseOrderCount = 0; 
-            let carpenterWarehouseOrderCount = 0; 
-            let morningOrdersCount = 0; 
+            studentWarehouseOrderCount = 0; 
+            carpenterWarehouseOrderCount = 0; 
+            morningOrdersCount = 0; 
 
             const sixAM = new Date();
             sixAM.setHours(6, 0, 0, 0);
             const nineAM = new Date();
             nineAM.setHours(9, 0, 0, 0);
 
-            allOrdersFromFirestore.forEach(order => {
-                const orderTime = parseTimeForSorting(order.time);
+            allOrders.forEach(order => {
+                const orderTime = parseTimeForSorting(order.time); 
                 if ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))) {
                     morningOrdersCount++;
                 }
@@ -3123,7 +2985,7 @@
             document.getElementById('carpenterWarehouseCount').textContent = carpenterWarehouseOrderCount;
             document.getElementById('morningOrdersCount').textContent = morningOrdersCount;
 
-            const totalWarehouseOrders = allOrdersFromFirestore.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
+            const totalWarehouseOrders = allOrders.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
             document.getElementById('totalWarehouseOrderCount').textContent = totalWarehouseOrders;
         }
 
@@ -3139,17 +3001,14 @@
             const nineAM = new Date();
             nineAM.setHours(9, 0, 0, 0);
 
-            const aliOrdersInTimeRange = allOrdersFromFirestore.filter(order => {
-                const orderTime = parseTimeForSorting(order.time);
-                return (order.driver === "עלי") && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד")));
-            });
+            const aliOrdersInTimeRange = allOrders.filter(order => 
+                (order.driver === "עלי") && ((parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד")))
+            );
 
-            const hakmatOrdersInTimeRange = allOrdersFromFirestore.filter(order => {
-                const orderTime = parseTimeForSorting(order.time);
-                return (order.driver === "חכמת") && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד")));
-            });
+            const hakmatOrdersInTimeRange = allOrders.filter(order => 
+                (order.driver === "חכמת") && ((parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד")))
+            );
 
-            // Update customer lists next to charts
             const aliCustomersList = document.getElementById('aliMorningCustomers');
             if (aliCustomersList) {
                 aliCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
@@ -3178,7 +3037,6 @@
                 }
             }
 
-            // Update the in-chart count overlays
             const aliChartCountOverlay = document.getElementById('aliChartCountOverlay');
             if (aliChartCountOverlay) aliChartCountOverlay.textContent = aliOrdersInTimeRange.length;
             
@@ -3301,27 +3159,30 @@
             }
         }
 
+
         /**
          * Displays the full order details in a modal.
          * @param {string} orderJson The JSON string of the order data.
+         * @param {string} orderId The Firestore document ID of the order.
          */
-        function showOrderDetails(orderJson) {
+        function showOrderDetails(orderJson, orderId) {
             const order = JSON.parse(orderJson);
-            currentOrderDetails = order; // Store the current order details globally
-            
+            currentOrderDetails = order; 
+            currentOrderId = orderId;
+
             // Get all modal elements
             const modalDate = document.getElementById('modalDate');
             const modalTime = document.getElementById('modalTime');
             const modalCustomer = document.getElementById('modalCustomer');
             const modalAddress = document.getElementById('modalAddress');
             const modalWarehouse = document.getElementById('modalWarehouse');
-            const modalStatus = document.getElementById('modalStatus');
-            const modalDriver = document.getElementById('modalDriver'); // New driver display
-            const orderIdDisplay = document.getElementById('orderIdInput'); // Order ID in customer section
-
-            // Get editable fields for messaging
+            const modalStatusText = document.getElementById('modalStatusText');
+            const modalStatusSelect = document.getElementById('modalStatusSelect');
+            
             const customerContactNameInput = document.getElementById('customerContactName');
             const customerPhoneNumberInput = document.getElementById('customerPhoneNumberInput');
+            const orderIdInput = document.getElementById('orderIdInput');
+            
             const directWazeLinkInput = document.getElementById('directWazeLinkInput');
             const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
             const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
@@ -3339,9 +3200,6 @@
             const sendCustomerMessageButton = document.getElementById('sendCustomerMessageButton');
             const workTypeInput = document.getElementById('workTypeInput'); 
             const customerMessagingSectionWrapper = document.getElementById('customerMessagingSectionWrapper'); 
-            const statusUpdateSection = document.getElementById('statusUpdateSection'); // New status update section
-            const modalStatusSelect = document.getElementById('modalStatusSelect'); // New status dropdown
-            const openCustomerMessageButton = document.getElementById('openCustomerMessageButton'); // Button to unlock customer messaging
 
             // Populate basic order details
             if (modalDate) modalDate.textContent = order.date || 'אין נתונים';
@@ -3349,25 +3207,41 @@
             if (modalCustomer) modalCustomer.textContent = order.customer || 'אין נתונים';
             if (modalAddress) modalAddress.textContent = order.address || 'אין נתונים';
             if (modalWarehouse) modalWarehouse.textContent = order.warehouse || 'אין נתונים';
-            if (modalStatus) modalStatus.textContent = order.status || 'אין נתונים';
-            if (modalDriver) modalDriver.textContent = order.driver || 'אין נתונים'; // Display driver
+            
+            // Status field: show dropdown if editable, otherwise just text
+            if (modalStatusText && modalStatusSelect) {
+                const canEditStatus = USER_ROLES[currentUserRole]?.canEditStatus && 
+                                      (currentUserRole === 'manager' || currentUserRole === 'sorter' ||
+                                       (currentUserRole === 'driver_ali' && order.driver === 'עלי') ||
+                                       (currentUserRole === 'driver_hakmat' && order.driver === 'חכמת') ||
+                                       (currentUserRole === 'warehouse_student' && order.warehouse === 'התלמיד') ||
+                                       (currentUserRole === 'warehouse_carpenter' && order.warehouse === 'החרש'));
 
-            // Populate status select dropdown
-            if (modalStatusSelect) {
-                modalStatusSelect.value = order.status || '';
+                if (canEditStatus) {
+                    modalStatusSelect.value = order.status || 'ממתין לשיבוץ';
+                    modalStatusSelect.style.display = 'inline-block';
+                    modalStatusText.style.display = 'none';
+                } else {
+                    modalStatusText.textContent = order.status || 'אין נתונים';
+                    modalStatusText.style.display = 'inline';
+                    modalStatusSelect.style.display = 'none';
+                }
             }
 
-            // Auto-fill customer contact name and order ID for messaging
+
+            // Auto-fill customer contact name and order ID
             if (customerContactNameInput) customerContactNameInput.value = order.customer || '';
-            if (orderIdDisplay) orderIdDisplay.value = order.orderId || ''; // This is now the orderId from Firestore
-            if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; // Phone number is not stored in order currently
+            if (orderIdInput) orderIdInput.value = order.orderId || ''; 
+            if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; 
 
             // Clear free text message area and work type
             if (freeTextMessage) freeTextMessage.value = '';
             if (workTypeInput) workTypeInput.value = '';
 
             // Waze elements logic
-            if (directWazeLinkInput) directWazeLinkInput.value = order.wazeLink || '';
+            if (directWazeLinkInput) directWazeLinkInput.value = order.wazeLink || ''; 
+            
+            // Populate NEW estimated arrival fields with original order data as default
             if (estimatedArrivalAddressInput) estimatedArrivalAddressInput.value = order.estimatedArrivalAddress || order.address || '';
             if (estimatedArrivalTimeInput) estimatedArrivalTimeInput.value = order.estimatedArrivalTime || order.time || '';
 
@@ -3396,38 +3270,18 @@
                 sendCustomerMessageButton.onclick = () => sendWhatsAppCustomerMessage();
             }
 
-            // UI Permissions
-            const permissions = USER_ROLES_PERMISSIONS[window.currentRole];
-
-            // Status Update Section visibility and editability
-            if (statusUpdateSection) {
-                if (permissions && permissions.canEditStatus) {
-                    statusUpdateSection.style.display = 'flex';
-                    if (modalStatusSelect) modalStatusSelect.disabled = false;
-                } else {
-                    statusUpdateSection.style.display = 'none';
-                    if (modalStatusSelect) modalStatusSelect.disabled = true; // Make it non-editable for viewers
-                }
-            }
-
-            // Customer Messaging Section visibility (initially hidden, relies on password)
+            // Hide customer messaging section by default and clear password input
             if (customerMessagingSectionWrapper) {
                 customerMessagingSectionWrapper.style.display = 'none'; 
             }
-            if (openCustomerMessageButton) {
-                if (permissions && permissions.canNotifyCustomer) {
-                    openCustomerMessageButton.style.display = 'flex';
-                } else {
-                    openCustomerMessageButton.style.display = 'none';
-                }
-            }
-
-            // Hide password error messages
             const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
-            if (customerMessagePasswordError) customerMessagePasswordError.style.display = 'none';
+            if (customerMessagePasswordError) {
+                customerMessagePasswordError.style.display = 'none';
+            }
             const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
-            if (customerMessagePasswordInput) customerMessagePasswordInput.value = '';
-
+            if (customerMessagePasswordInput) {
+                customerMessagePasswordInput.value = '';
+            }
 
             // Finally, show the modal
             const orderDetailsModal = document.getElementById('orderDetailsModal');
@@ -3437,43 +3291,57 @@
 
         /**
          * Updates the status of the current order in Firestore.
+         * @param {string} newStatus The new status to set.
          */
-        async function updateOrderStatusInFirestore() {
-            if (!currentOrderDetails || !window.db) {
-                showNotification("אין פרטי הזמנה לעדכון או ש-Firestore לא מאותחל.", "error");
+        async function updateOrderStatus(newStatus) {
+            if (!currentOrderId || !db) {
+                console.error("No current order ID or Firestore not initialized.");
                 return;
             }
 
-            const newStatus = document.getElementById('modalStatusSelect').value;
-            if (!newStatus) {
-                showNotification("אנא בחר סטטוס חדש.", "error");
+            // Check permissions before updating
+            const role = currentUserRole;
+            const canEditStatus = USER_ROLES[role]?.canEditStatus || false;
+            
+            if (!canEditStatus) {
+                alert("אין לך הרשאה לעדכן סטטוסים.");
                 return;
             }
 
-            const orderRef = doc(window.db, "orders", currentOrderDetails.id);
-            const oldStatus = currentOrderDetails.status;
+            // Additional check for drivers/warehouse managers to only update their assigned orders
+            if ((role === 'driver_ali' && currentOrderDetails.driver !== 'עלי') ||
+                (role === 'driver_hakmat' && currentOrderDetails.driver !== 'חכמת') ||
+                (role === 'warehouse_student' && currentOrderDetails.warehouse !== 'התלמיד') ||
+                (role === 'warehouse_carpenter' && currentOrderDetails.warehouse !== 'החרש')) {
+                alert("אין לך הרשאה לעדכן סטטוס של הזמנה שאינה משויכת אליך.");
+                // Revert dropdown to original status
+                document.getElementById('modalStatusSelect').value = currentOrderDetails.status;
+                return;
+            }
 
+
+            const orderDocRef = doc(db, "orders", currentOrderId);
             try {
-                await updateDoc(orderRef, {
+                await updateDoc(orderDocRef, { 
                     status: newStatus,
-                    lastUpdatedAt: new Date().toISOString(),
-                    lastUpdatedBy: window.currentUserName || "מנהל/מערכת" // Store who updated it
+                    lastUpdatedBy: currentUserName || 'Unknown', // Track who made the last change
+                    updatedAt: new Date()
                 });
-                showNotification(`סטטוס הזמנה ${currentOrderDetails.orderId || currentOrderDetails.customer} עודכן בהצלחה ל: ${newStatus}`, 'success');
-                closeModal('orderDetailsModal');
+                console.log("Order status updated successfully to:", newStatus);
+                // The onSnapshot listener will automatically re-render the UI
+                alert(`הסטטוס של הזמנה ${currentOrderId} עודכן ל: ${newStatus}`);
 
-                // Optionally, prompt to send WhatsApp notification about status change
-                if (newStatus !== oldStatus) {
-                    // This could be integrated to ask "Do you want to send a WhatsApp notification?"
-                    // For now, it's automatic for the customer message path
-                    console.log("Status changed. Consider sending WhatsApp notification.");
-                }
+                // Option to send WhatsApp notification on status change (manual trigger)
+                // You might want to prompt the user here: "Would you like to notify the customer about this status change?"
+                // For simplicity, we'll just log it.
+                // console.log(`Consider sending a WhatsApp notification to customer about status change to ${newStatus}.`);
 
             } catch (error) {
                 console.error("Error updating order status:", error);
-                showNotification(`שגיאה בעדכון סטטוס: ${error.message}`, 'error');
+                alert("שגיאה בעדכון הסטטוס. אנא נסה שוב.");
             }
         }
+
 
         /**
          * Displays a map view for a given city in a modal, using Google Static Maps API.
@@ -3490,10 +3358,10 @@
             }
             
             if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
-                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
                 mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Invalid+API+Key+or+Network+Issue';" />`;
-                mapDisplay.style.backgroundImage = 'none'; 
+                mapDisplay.style.backgroundImage = 'none';
                 mapDisplay.style.backgroundColor = 'transparent';
             } else {
                 mapDisplay.innerHTML = `<p id="cityMapName">⚠ יש להזין מפתח Google Maps Static API תקף כדי להציג מפה.<br>אנא עדכן את הקוד עם המפתח שלך.</p>`;
@@ -3513,6 +3381,7 @@
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('visible');
+            else console.warn(`Warning: Attempted to close modal with ID '${modalId}' but it was not found.`);
         }
         
         /**
@@ -3520,13 +3389,14 @@
          */
         function showPasswordModal() {
             const passwordInput = document.getElementById('passwordInput');
-            if (passwordInput) passwordInput.value = ''; 
+            if (passwordInput) passwordInput.value = '';
             
             const passwordError = document.getElementById('passwordError');
-            if (passwordError) passwordError.style.display = 'none'; 
+            if (passwordError) passwordError.style.display = 'none';
             
             const passwordModal = document.getElementById('passwordModal');
             if (passwordModal) passwordModal.classList.add('visible');
+            else console.error("Error: Element with ID 'passwordModal' not found.");
         }
 
         /**
@@ -3551,9 +3421,9 @@
         }
 
         /**
-         * Formats the data for a driver's morning report into a WhatsApp message string.
-         * @param {Array<Object>} ordersData Array of order objects for the driver.
-         * @param {string} driverName The name of the driver.
+         * Formats the data from Firestore orders into a WhatsApp message string.
+         * @param {Array<Object>} ordersData Array of order objects.
+         * @param {string} driverName The name of the driver for WhatsApp formatting.
          * @returns {string} The formatted message string.
          */
         function formatDriverWhatsAppData(ordersData, driverName) {
@@ -3562,25 +3432,499 @@
             }
 
             const sortedData = ordersData.sort((a, b) => {
-                const timeA = parseTimeForSorting(a.time);
-                const timeB = parseTimeForSorting(b.time);
-                return timeA - timeB;
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateA.getTime() - dateB.getTime();
+                }
+                return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
             });
 
             let message = `📝 *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
                 message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
-                if (order.orderId) {
-                    message += `🔢 הזמנה: ${order.orderId}\n`;
-                }
                 message += `-----\n`; 
             });
             return message.trim();
         }
 
         /**
-         * Shares the formatted driver reports summary to WhatsApp (after password confirmation).
+         * Shares the formatted driver reports to WhatsApp (after password confirmation).
          */
         async function shareToWhatsAppConfirmed() {
-            //
+            const aliOrders = allOrders.filter(order => order.driver === "עלי");
+            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
+
+            const aliDataFormatted = formatDriverWhatsAppData(aliOrders, "עלי");
+            const hakmatDataFormatted = formatDriverWhatsAppData(hakmatOrders, "חכמת");
+            const link = "🔗 https://did.li/berOf"; 
+
+            const aliCount = allOrders.filter(order => order.driver === 'עלי').length;
+            const hakmatCount = allOrders.filter(order => order.driver === 'חכמת').length;
+            
+            const totalWarehouseOrders = allOrders.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
+            const studentWarehouseCountDisplay = allOrders.filter(order => order.warehouse === 'התלמיד').length;
+            const carpenterWarehouseCountDisplay = allOrders.filter(order => order.warehouse === 'החרש').length;
+
+            const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+            const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+            const morningOrdersCountDisplay = allOrders.filter(order => 
+                (parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד"))
+            ).length;
+
+
+            let fullMessage = `*סיכום הזמנות - ח. סבן חומרי בניין*\n`;
+            fullMessage += `🚚 עלי: ${aliCount} הזמנות\n`;
+            fullMessage += `🚛 חכמת: ${hakmatCount} הזמנות\n`;
+            fullMessage += `📦 סה"כ מחסן: ${totalWarehouseOrders} הזמנות\n`; 
+            fullMessage += `🏫 מחסן התלמיד: ${studentWarehouseCountDisplay} הזמנות\n`;
+            fullMessage += `🔨 מחסן החרש: ${carpenterWarehouseCountDisplay} הזמנות\n`;
+            fullMessage += `☀️ הזמנות 06:00-09:00: ${morningOrdersCountDisplay} הזמנות\n\n`;
+            fullMessage += `*--------------------*\n`;
+            fullMessage += `*דוחות בוקר מפורטים*\n\n`;
+            fullMessage += `${aliDataFormatted}\n\n`;
+            fullMessage += `${hakmatDataFormatted}\n\n`;
+            fullMessage += `${link}`;
+
+            const phoneNumber = "972508860896"; 
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
+
+            window.open(url, "_blank");
+        }
+
+        /**
+         * Central function to manage active page and highlighted navigation button.
+         * Also controls the background for the warehouse page.
+         * @param {string} pageId The ID of the HTML element for the page to activate.
+         * @param {string} navButtonId The data-nav-id of the corresponding navigation button to highlight.
+         */
+        function activatePageAndNav(pageId, navButtonId) {
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+                setTimeout(() => {
+                    if (!page.classList.contains('active')) { 
+                        page.style.display = 'none';
+                    }
+                }, 500); 
+            });
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            const currentPage = document.getElementById(pageId);
+            if (currentPage) {
+                currentPage.style.display = 'block'; 
+                setTimeout(() => { 
+                    currentPage.classList.add('active');
+                }, 10); 
+            } else {
+                console.error(`Error: Page content with ID '${pageId}' not found.`);
+                return;
+            }
+
+            document.querySelectorAll(`[data-nav-id="${navButtonId}"]`).forEach(button => {
+                button.classList.add('active');
+            });
+
+            const warehousePage = document.getElementById('warehousePage');
+            if (warehousePage) {
+                if (pageId === 'warehousePage') {
+                    const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
+                    if (warehouseOrdersDisplay) {
+                        warehouseOrdersDisplay.innerHTML = `
+                            <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                                <i class="fas fa-hand-point-up"></i> בחר מחסן מהתפריט הנפתח
+                            </p>
+                        `;
+                    }
+                    
+                    warehousePage.style.backgroundImage = `url(${STUDENT_WAREHOUSE_AVATAR_URL})`; 
+                    warehousePage.style.backgroundSize = 'cover';
+                    warehousePage.style.backgroundPosition = 'center';
+                    warehousePage.style.backgroundAttachment = 'fixed';
+                    warehousePage.style.opacity = '0.5'; 
+
+                    document.body.classList.add('warehouse-page-active');
+                } else {
+                    warehousePage.style.backgroundImage = 'none';
+                    warehousePage.style.opacity = '1'; 
+                    document.body.classList.remove('warehouse-page-active');
+                }
+            } else {
+                console.warn("Warning: Element with ID 'warehousePage' not found.");
+            }
+
+            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
+
+
+            // Specific rendering based on page and user role
+            if (pageId === 'hakmatPage') {
+                const hakmatOrders = allOrders.filter(order => order.driver === 'חכמת');
+                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
+            } else if (pageId === 'aliPage') {
+                const aliOrders = allOrders.filter(order => order.driver === 'עלי');
+                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
+            }
+            // Main page is rendered by listenForOrders callback
+        }
+
+
+        // Event listener for top/bottom nav buttons (excluding warehouse button initially)
+        document.querySelectorAll('.nav-button:not(.warehouse-button)').forEach(button => {
+            button.onclick = () => {
+                const pageId = button.dataset.pageId;
+                const navId = button.dataset.navId;
+                activatePageAndNav(pageId, navId);
+            };
+        });
+
+        // Event listener for the warehouse button
+        document.querySelectorAll('.nav-button.warehouse-button').forEach(button => {
+            button.onclick = (event) => {
+                event.stopPropagation(); 
+                activatePageAndNav('warehousePage', 'warehouse-nav-button');
+            };
+        });
+
+        // Event listener for dropdown items (Student Warehouse, Carpenter Warehouse)
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.onclick = (event) => {
+                event.stopPropagation(); 
+                const warehouseType = item.dataset.warehouseType;
+                showWarehouseOrders(warehouseType);
+            };
+        });
+
+
+        /**
+         * Displays orders filtered by warehouse type.
+         * This function is called when a specific warehouse type is selected from the dropdown.
+         * @param {string} warehouseType The type of warehouse to filter by (e.g., 'התלמיד', 'החרש').
+         */
+        function showWarehouseOrders(warehouseType) {
+            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
+            activatePageAndNav('warehousePage', 'warehouse-nav-button');
+
+            const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
+            if (!warehouseDisplayContainer) {
+                console.error("Error: Warehouse orders display container not found.");
+                return;
+            }
+
+            let avatarUrl = '';
+            if (warehouseType === 'התלמיד') {
+                avatarUrl = STUDENT_WAREHOUSE_AVATAR_URL;
+            }
+            else if (warehouseType === 'החרש') {
+                avatarUrl = CARPENTER_WAREHOUSE_AVATAR_URL;
+            }
+
+            warehouseDisplayContainer.innerHTML = `
+                <div class="driver-section-title">
+                    <img src="${avatarUrl}" alt="Avatar for ${warehouseType}" class="driver-avatar">
+                    מחסן: ${warehouseType}
+                </div>
+                <div id="filteredWarehouseTimeline" class="timeline-grid"></div>
+            `;
+
+            const warehousePage = document.getElementById('warehousePage');
+            if (warehousePage) {
+                warehousePage.style.backgroundImage = `url(${avatarUrl})`; 
+                warehousePage.style.backgroundSize = 'cover';
+                warehousePage.style.backgroundPosition = 'center';
+                warehousePage.style.backgroundAttachment = 'fixed';
+                warehousePage.style.opacity = '0.5'; 
+                warehousePage.style.transition = 'opacity 0.5s ease-in-out, background-image 0.5s ease-in-out';
+            } else {
+                console.warn("Warning: Element with ID 'warehousePage' not found when trying to set background.");
+            }
+
+            document.body.classList.add('warehouse-page-active');
+
+            const filteredOrders = allOrders.filter(order => {
+                const isWarehouseMatch = order.warehouse && order.warehouse.includes(warehouseType);
+                // Filter by role if it's a warehouse manager
+                if (currentUserRole === 'warehouse_student' && warehouseType === 'התלמיד') {
+                    return isWarehouseMatch;
+                }
+                if (currentUserRole === 'warehouse_carpenter' && warehouseType === 'החרש') {
+                    return isWarehouseMatch;
+                }
+                // Managers, sorters, viewers see all for the selected warehouse type
+                return (currentUserRole === 'manager' || currentUserRole === 'sorter' || currentUserRole === 'viewer') && isWarehouseMatch;
+            });
+            
+            filteredOrders.sort((a, b) => {
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateA.getTime() - dateB.getTime();
+                }
+                return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
+            });
+
+            renderOrders(filteredOrders, "filteredWarehouseTimeline", null);
+        }
+
+        /**
+         * Fills the free text message area with a selected predefined template, replacing placeholders.
+         */
+        function fillMessageFromTemplate() {
+            const selectElement = document.getElementById('predefinedMessageSelect');
+            const freeTextMessageArea = document.getElementById('freeTextMessage');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const llmResponseContainer = document.getElementById('llmResponseContainer');
+            const llmLoader = document.getElementById('llmLoader');
+            const customerContactNameInput = document.getElementById('customerContactName');
+            const orderIdInput = document.getElementById('orderIdInput');
+            const directWazeLinkInput = document.getElementById('directWazeLinkInput');
+            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
+            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
+
+            if (!selectElement || !freeTextMessageArea || !llmResponseMessage || !llmResponseContainer || !llmLoader || !customerContactNameInput || !orderIdInput || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput) {
+                console.error("Error: One or more required elements for fillMessageFromTemplate not found.");
+                return;
+            }
+
+            const selectedTemplateKey = selectElement.value;
+
+            if (selectedTemplateKey && predefinedMessages[selectedTemplateKey]) {
+                let message = predefinedMessages[selectedTemplateKey];
+
+                if (currentOrderDetails) {
+                    message = message.replace(/\[שם לקוח\]/g, customerContactNameInput.value || currentOrderDetails.customer || 'לקוח יקר');
+                    message = message.replace(/\[מספר הזמנה\]/g, orderIdInput.value || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע')); // Use Firestore ID
+                    message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
+                    message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driver || 'הנהג'); 
+                    message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
+                    message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן'); 
+                    message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
+                    message = message.replace(/\[מספר הזמנה1\]/g, orderIdInput.value || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'הזמנה זו'));
+                    message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
+                    message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
+                    message = message.replace(/\[זמן משוער\]/g, estimatedArrivalTimeInput.value ? estimatedArrivalTimeInput.value.split(':')[1] ? `${parseInt(estimatedArrivalTimeInput.value.split(':')[1])} דקות` : 'זמן קצר' : 'זמן קצר');
+                    message = message.replace(/\[קישור Waze\]/g, directWazeLinkInput.value || 'קישור למפה'); 
+
+                    message = message.replace(/\[כתובת יעד משוערת\]/g, estimatedArrivalAddressInput.value || (currentOrderDetails.address || 'הכתובת'));
+                    message = message.replace(/\[שעת הגעה משוערת\]/g, estimatedArrivalTimeInput.value || (currentOrderDetails.time || 'בקרוב'));
+                }
+
+                freeTextMessageArea.value = message;
+                llmResponseMessage.textContent = message; 
+                llmResponseContainer.classList.remove('loading');
+                llmLoader.classList.remove('visible');
+            } else {
+                freeTextMessageArea.value = '';
+                llmResponseMessage.textContent = 'בחר תבנית הודעה מהרשימה.';
+            }
+        }
+
+
+        /**
+         * Generates a customer message using Gemini API, applying emoji and styling.
+         * The message can come from a template or free text.
+         */
+        async function applyAIEmojiAndStyle() { 
+            const llmLoader = document.getElementById('llmLoader');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const llmResponseContainer = document.getElementById('llmResponseContainer');
+            const freeTextMessageElement = document.getElementById('freeTextMessage');
+
+            if (!llmLoader || !llmResponseMessage || !llmResponseContainer || !freeTextMessageElement) {
+                console.error("Error: One or more required LLM elements not found.");
+                return;
+            }
+
+            const freeTextMessage = freeTextMessageElement.value;
+            
+            if (!freeTextMessage) {
+                llmResponseMessage.textContent = 'יש לכתוב הודעה בכתיבה חופשית כדי לעצב אותה.';
+                return;
+            }
+
+            llmResponseMessage.textContent = ''; 
+            llmLoader.classList.add('visible'); 
+            llmResponseContainer.classList.add('loading'); 
+
+            try {
+                let prompt = `אנא עצב מחדש את ההודעה הבאה בעברית, הוסף אימוג'י רלוונטיים כדי להפוך אותה לידידותית וברורה יותר, ושמור על הנימה המקצועית. `;
+                prompt += `ההודעה: "${freeTextMessage}".`;
+                prompt += `\n\nדוגמה רצויה: שלום [שם], ההזמנה שלך 📦 בדרך אליך! נהג יגיע 🚚 בערך ב-14:30. תודה 🙏!`;
+
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    llmResponseMessage.textContent = text;
+                    freeTextMessageElement.value = text; 
+                } else {
+                    llmResponseMessage.textContent = 'שגיאה: לא התקבלה תגובה מה-LLM. נסה שוב.';
+                    console.error("Unexpected LLM response structure:", result);
+                }
+            } catch (error) {
+                llmResponseMessage.textContent = 'שגיאה: אירעה תקלה ביצירת ההודעה. אנא נסה שוב מאוחר יותר.';
+                console.error("Error calling Gemini API:", error);
+            } finally {
+                llmLoader.classList.remove('visible'); 
+                llmResponseContainer.classList.remove('loading'); 
+            }
+        }
+
+        /**
+         * Displays the Waze link in a popup modal.
+         */
+        function showWazePopupWrapper() {
+            const wazePopupLink = document.getElementById('wazePopupLink');
+            const wazeOpenLink = document.getElementById('wazeOpenLink');
+            const wazePopupModal = document.getElementById('wazePopupModal');
+            const wazePopupAddress = document.getElementById('wazePopupAddress'); 
+            const wazePopupEta = document.getElementById('wazePopupEta'); 
+            const directWazeLinkInput = document.getElementById('directWazeLinkInput'); 
+            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
+            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
+
+
+            if (!wazePopupLink || !wazeOpenLink || !wazePopupModal || !wazePopupAddress || !wazePopupEta || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput) {
+                console.error("Error: One or more Waze popup elements not found.");
+                return;
+            }
+
+            const wazeLinkToUse = directWazeLinkInput.value; 
+
+            if (wazeLinkToUse) {
+                wazePopupLink.textContent = wazeLinkToUse;
+                wazeOpenLink.href = wazeLinkToUse;
+                wazePopupAddress.textContent = estimatedArrivalAddressInput.value || 'לא נמצא';
+                wazePopupEta.textContent = estimatedArrivalTimeInput.value || 'לא נמצא';
+                wazePopupModal.classList.add('visible');
+            } else {
+                alert("אין קישור Waze זמין עבור הזמנה זו.");
+            }
+        }
+
+        /**
+         * Sends a WhatsApp message to the customer using the input fields in the modal.
+         */
+        function sendWhatsAppCustomerMessage() {
+            const customerPhoneNumberInput = document.getElementById('customerPhoneNumberInput');
+            const llmResponseMessage = document.getElementById('llmResponseMessage');
+            const directWazeLinkInput = document.getElementById('directWazeLinkInput'); 
+            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
+            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
+            const customerContactNameInput = document.getElementById('customerContactName');
+            const orderIdInput = document.getElementById('orderIdInput');
+
+            if (!customerPhoneNumberInput || !llmResponseMessage || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput || !customerContactNameInput || !orderIdInput) {
+                console.error("Error: One or more required elements for sending customer message not found.");
+                return;
+            }
+
+            const phoneNumber = customerPhoneNumberInput.value;
+            let message = llmResponseMessage.textContent; 
+            const wazeLink = directWazeLinkInput.value;
+            const estimatedAddress = estimatedArrivalAddressInput.value;
+            const estimatedTime = estimatedArrivalTimeInput.value;
+            const customerName = customerContactNameInput.value;
+            const orderId = orderIdInput.value;
+
+            if (!phoneNumber) {
+                alert('אנא הזן מספר טלפון של הלקוח.');
+                return;
+            }
+            if (!message || message === 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.') {
+                alert('אנא צור/בחר הודעה לפני השליחה.');
+                return;
+            }
+
+            // Dynamically replace placeholders in the message before sending
+            message = message.replace(/\[שם לקוח\]/g, customerName || 'לקוח יקר');
+            message = message.replace(/\[מספר הזמנה\]/g, orderId || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע')); 
+            message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
+            message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driver || 'הנהג'); 
+            message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
+            message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
+            message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
+            message = message.replace(/\[מספר הזמנה1\]/g, orderId || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'הזמנה זו'));
+            message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
+            message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
+            message = message.replace(/\[זמן משוער\]/g, estimatedTime.split(':')[1] ? `${parseInt(estimatedTime.split(':')[1])} דקות` : 'זמן קצר'); 
+            message = message.replace(/\[קישור Waze\]/g, wazeLink || 'קישור למפה');
+            message = message.replace(/\[כתובת יעד משוערת\]/g, estimatedAddress || 'הכתובת');
+            message = message.replace(/\[שעת הגעה משוערת\]/g, estimatedTime || 'בקרוב');
+
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, "_blank");
+        }
+
+
+        /**
+         * Sends a WhatsApp message for the current order to a specific driver.
+         * @param {string} driverType 'hakmat' or 'ali'
+         */
+        function sendOrderToDriver(driverType) {
+            let driverPhoneNumber;
+            let driverName;
+
+            if (driverType === 'hakmat') {
+                driverPhoneNumber = '972532316985'; // Placeholder
+                driverName = 'חכמת';
+            } else if (driverType === 'ali') {
+                driverPhoneNumber = '9725475188'; // Placeholder
+                driverName = 'עלי';
+            } else {
+                alert('נהג לא חוקי.');
+                return;
+            }
+
+            if (!currentOrderDetails) {
+                alert('אנא בחר הזמנה לשליחה.');
+                return;
+            }
+            const orderIdInput = document.getElementById('orderIdInput');
+            const customerContactNameInput = document.getElementById('customerContactName');
+            const freeTextMessageElement = document.getElementById('freeTextMessage');
+            const workTypeInput = document.getElementById('workTypeInput'); 
+            const directWazeLinkInput = document.getElementById('directWazeLinkInput');
+            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
+            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
+
+            const orderId = orderIdInput ? orderIdInput.value : (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע');
+            const customerName = customerContactNameInput ? customerContactNameInput.value : (currentOrderDetails.customer || 'לקוח יקר');
+            const messageText = freeTextMessageElement ? freeTextMessageElement.value : ''; 
+            const workType = workTypeInput ? workTypeInput.value : ''; 
+            const wazeLinkForDriver = directWazeLinkInput.value; 
+            const estimatedAddressForDriver = estimatedArrivalAddressInput.value; 
+            const estimatedTimeForDriver = estimatedArrivalTimeInput.value;     
+
+            let message = `*הודעת הזמנה לנהג ${driverName}*\n`;
+            message += `מספר הזמנה: ${orderId}\n`;
+            message += `לקוח: ${customerName}\n`;
+            message += `כתובת מקורית: ${currentOrderDetails.address || 'לא ידוע'}\n`;
+            if (estimatedAddressForDriver && estimatedAddressForDriver !== (currentOrderDetails.address || '')) {
+                message += `כתובת הגעה משוערת: ${estimatedAddressForDriver}\n`;
+            }
+            message += `שעה מקורית: ${currentOrderDetails.time || 'לא ידוע'}\n`;
+            if (estimatedTimeForDriver && estimatedTimeForDriver !== (currentOrderDetails.time || '')) {
+                message += `שעת הגעה משוערת: ${estimatedTimeForDriver}\n`;
+            }
+            message += `סטטוס: ${currentOrderDetails.status || 'לא ידוע'}\n`;
+            message += `מחסן: ${currentOrderDetails.warehouse || 'לא ידוע'}\n`;
+            if (wazeLinkForDriver) {
+                message += `קישור Waze: ${wazeLinkForDriver}\n`;
+            }
+            if (workType) { 
+                message += `*סוג עבודה/
