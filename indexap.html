@@ -2640,40 +2640,20 @@
          * In a real app, this would involve Firebase `signInWithEmailAndPassword`.
          */
         async function loginUser() {
-            const usernameInput = document.getElementById('usernameInput').value;
-            const passwordInput = document.getElementById('passwordLoginInput').value;
-            const loginError = document.getElementById('loginError');
+        // ... קוד קיים ...
+        if (USERS[usernameInput] && USERS[usernameInput].password === passwordInput) {
+            // ... הגדרת משתני משתמש גלובליים ...
 
-            loginError.style.display = 'none'; // Hide previous errors
-
-            if (USERS[usernameInput] && USERS[usernameInput].password === passwordInput) {
-                currentUserRole = USERS[usernameInput].role;
-                currentUsername = usernameInput;
-                currentUserManagedWarehouse = USERS[usernameInput].managedWarehouse || null;
-                currentAssignedDriver = USERS[usernameInput].assignedDriver || null;
-                
-                // Set currentUserId based on Firebase UID. This assumes Firebase is already auth'd (anonymously or by token).
-                // In a true system, you'd use Firebase Auth to sign in the specific user here.
-                if (window.auth && window.auth.currentUser) {
-                    currentUserId = window.auth.currentUser.uid;
-                    await window.ensureUserRoleInFirestore(currentUserId); // Sync role to Firestore
-                } else {
-                    console.error("Firebase Auth user not available. Please ensure Firebase is initialized.");
-                    showToast("שגיאת התחברות: שירותי אימות לא זמינים.", "error");
-                    return;
-                }
-
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'flex';
-                updateUserInfoDisplay();
-                applyRolePermissions();
-                initializeApp(); // Re-initialize app to fetch data and apply permissions
-                showToast(`ברוך הבא, ${currentUsername}!`, 'success');
-            } else {
-                loginError.textContent = 'שם משתמש או סיסמה שגויים.';
-                loginError.style.display = 'block';
-            }
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'flex';
+            updateUserInfoDisplay();
+            applyRolePermissions();
+            // REMOVED: initializeApp(); // <--- שורה זו הוסרה!
+            showToast(`ברוך הבא, ${currentUsername}!`, 'success');
+        } else {
+            // ... טיפול בשגיאת התחברות ...
         }
+    }
 
         /**
          * Logs out the current user and returns to the login page.
