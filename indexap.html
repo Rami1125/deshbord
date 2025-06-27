@@ -12,8 +12,8 @@
     <!-- Firebase SDK (Version 11.6.1 is used as per common practice in Canvas) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, onSnapshot, addDoc, updateDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables for Firebase instances
         window.firebaseApp = null;
@@ -38,11 +38,13 @@
                     window.currentFirebaseUser = user;
                     console.log("Firebase Authenticated UID:", user.uid);
                     // After Firebase auth, attempt to store/retrieve user role from Firestore
+                    // This is crucial for role-based access to app features.
                     await window.ensureUserRoleInFirestore(user.uid);
                 } else {
                     window.currentFirebaseUser = null;
                     console.log("Firebase: No user signed in.");
-                    // Attempt anonymous sign-in if no user and no custom token
+                    // Attempt anonymous sign-in if no user and no custom token,
+                    // primarily to allow Firestore listeners to work for public data.
                     if (!initialAuthToken) {
                         try {
                             await signInAnonymously(window.auth);
@@ -86,7 +88,10 @@
         window.updateDoc = updateDoc;
         window.doc = doc;
         window.setDoc = setDoc;
+        window.getDoc = getDoc; // Also expose getDoc for user profile retrieval
         window.appId = appId; // Expose appId globally
+        window.auth = auth; // Expose auth for logout and user checks
+        window.signOut = signOut; // Expose signOut function
     </script>
 
 
@@ -1615,7 +1620,8 @@
         .message-section input[type="tel"],
         .message-section textarea,
         .message-section select,
-        .message-section input[type="date"] {
+        .message-section input[type="date"],
+        .message-section input[type="time"] { /* Added time input */
             width: calc(100% - 20px);
             padding: 12px;
             border: 1px solid var(--primary-color);
@@ -1631,7 +1637,8 @@
         .message-section input[type="tel"]:focus,
         .message-section textarea:focus,
         .message-section select:focus,
-        .message-section input[type="date"]:focus {
+        .message-section input[type="date"]:focus,
+        .message-section input[type="time"]:focus { /* Added time input */
             border-color: var(--secondary-color);
             box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
         }
@@ -2543,8 +2550,8 @@
         // This is for demonstration purposes within the Canvas environment.
         const USERS = {
             "admin": { password: "1125", role: "admin" },
-            "oren": { password: "1234", role: "warehouse_manager", managedWarehouse: "החרש" },
-            "tamir": { password: "tamiropen", role: "warehouse_manager", managedWarehouse: "התלמיד" },
+            "oren": { password: "1234", role: "warehouse_manager", managedWarehouse: "מחסן החרש" },
+            "tamir": { password: "tamiropen", role: "warehouse_manager", managedWarehouse: "מחסן התלמיד" },
             "rami": { password: "ramipass", role: "dispatcher" },
             "yoav": { password: "yoavpass", role: "dispatcher" },
             "hakmatdriver": { password: "hakmatpass", role: "driver", assignedDriver: "חכמת" },
@@ -2567,21 +2574,21 @@
         updateDateTime(); 
         
         // Google Maps Static API Key 
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwc8_iJXc4eMfq-EE'; 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-EE'; // Replace with your actual Google Maps Static API Key
         
         // Gemini API Key - This variable is intentionally left as an empty string.
         // The Canvas environment automatically injects the Gemini API key at runtime.
-        const geminiApiKey = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
+        const geminiApiKey = ""; // No need to hardcode a key here, Canvas provides it.
 
-        // Password for WhatsApp share button
+        // Password for WhatsApp share button (admin level)
         const WHATSAPP_PASSWORD = "1125";
-        const CUSTOMER_MESSAGE_PASSWORD = "1125"; 
+        const CUSTOMER_MESSAGE_PASSWORD = "1125"; // New password for customer messaging section
 
         // Avatar image URLs for drivers and warehouses
         const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
         const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
-        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
-        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png"; // Placeholder
+        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png"; // Placeholder
 
         let allOrders = []; // Stores all fetched orders from Firestore
         let currentOrderDetails = null; // Stores the order data currently displayed in the modal
@@ -2595,17 +2602,17 @@
         // Function to ensure user role is stored in Firestore
         // This function maps the simulated login user to a Firebase UID
         window.ensureUserRoleInFirestore = async (uid) => {
-            if (!db || !uid || !currentUserRole) {
+            if (!window.db || !uid || !currentUserRole) {
                 console.warn("Firestore not ready or user role/UID not set for Firestore sync.");
                 return;
             }
 
-            const userProfileRef = doc(db, 'artifacts', appId, 'users', uid, 'user_profiles', uid);
+            const userProfileRef = window.doc(window.db, 'artifacts', window.appId, 'users', uid, 'user_profiles', uid);
             try {
-                const userProfileSnap = await getDoc(userProfileRef);
+                const userProfileSnap = await window.getDoc(userProfileRef);
                 if (!userProfileSnap.exists()) {
                     // Create user profile if it doesn't exist
-                    await setDoc(userProfileRef, {
+                    await window.setDoc(userProfileRef, {
                         username: currentUsername,
                         role: currentUserRole,
                         managedWarehouse: currentUserManagedWarehouse || null,
@@ -2616,6 +2623,12 @@
                 } else {
                     // Optionally update if role/username changed (though for this demo, they are static)
                     console.log("User profile already exists for:", currentUsername);
+                    // Also, update current user role based on Firestore in case it was changed externally
+                    currentUserRole = userProfileSnap.data().role;
+                    currentUserManagedWarehouse = userProfileSnap.data().managedWarehouse || null;
+                    currentAssignedDriver = userProfileSnap.data().assignedDriver || null;
+                    updateUserInfoDisplay();
+                    applyRolePermissions();
                 }
             } catch (error) {
                 console.error("Error ensuring user role in Firestore:", error);
@@ -2624,6 +2637,7 @@
 
         /**
          * Simulates user login and sets global user state.
+         * In a real app, this would involve Firebase `signInWithEmailAndPassword`.
          */
         async function loginUser() {
             const usernameInput = document.getElementById('usernameInput').value;
@@ -2638,14 +2652,15 @@
                 currentUserManagedWarehouse = USERS[usernameInput].managedWarehouse || null;
                 currentAssignedDriver = USERS[usernameInput].assignedDriver || null;
                 
-                // Set currentUserId based on Firebase UID, which should be available
+                // Set currentUserId based on Firebase UID. This assumes Firebase is already auth'd (anonymously or by token).
+                // In a true system, you'd use Firebase Auth to sign in the specific user here.
                 if (window.auth && window.auth.currentUser) {
                     currentUserId = window.auth.currentUser.uid;
                     await window.ensureUserRoleInFirestore(currentUserId); // Sync role to Firestore
                 } else {
-                    console.warn("Firebase Auth user not available yet. User role will be set after Firebase initializes.");
-                    // In a real app, you'd wait for onAuthStateChanged here or handle pending state.
-                    // For this simulation, we proceed but log the warning.
+                    console.error("Firebase Auth user not available. Please ensure Firebase is initialized.");
+                    showToast("שגיאת התחברות: שירותי אימות לא זמינים.", "error");
+                    return;
                 }
 
                 document.getElementById('loginPage').style.display = 'none';
@@ -2653,6 +2668,7 @@
                 updateUserInfoDisplay();
                 applyRolePermissions();
                 initializeApp(); // Re-initialize app to fetch data and apply permissions
+                showToast(`ברוך הבא, ${currentUsername}!`, 'success');
             } else {
                 loginError.textContent = 'שם משתמש או סיסמה שגויים.';
                 loginError.style.display = 'block';
@@ -2673,9 +2689,9 @@
             document.getElementById('usernameInput').value = '';
             document.getElementById('passwordLoginInput').value = '';
             showToast('התנתקת בהצלחה.', 'success');
-            // Optionally, sign out from Firebase Auth if desired, though anonymous session might remain
+            // Sign out from Firebase Auth. This will typically result in a new anonymous session.
             if (window.auth) {
-                window.auth.signOut().then(() => {
+                window.signOut(window.auth).then(() => {
                     console.log("Firebase signed out.");
                 }).catch((error) => {
                     console.error("Error signing out from Firebase:", error);
@@ -2725,13 +2741,14 @@
             if (currentUserRole === 'admin' || currentUserRole === 'dispatcher') {
                 addNewOrderButton.style.display = 'flex';
                 addNewOrderButtonBottom.style.display = 'flex';
+                if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'block'; // Or flex/block depending on element
             }
             if (currentUserRole === 'admin' || currentUserRole === 'dispatcher' || currentUserRole === 'warehouse_manager') {
                  whatsappShareButton.style.display = 'flex'; // Share button visible to these roles
-                 if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'block'; // Or flex/block depending on element
             }
 
-            // Status dropdown and driver buttons permissions will be handled dynamically in showOrderDetails and renderOrders
+            // The status dropdown and driver message buttons are handled dynamically within showOrderDetails.
+            // They are disabled/hidden if the user does not have permission for that specific order.
         }
 
         /**
@@ -2757,7 +2774,7 @@
          * Generic function to render orders into a specified timeline container.
          * @param {Array<Object>} orders The array of order objects to render.
          * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
-         * @param {string} displayDriverName The name of the driver for display purposes (e.g., "עלי").
+         * @param {string} displayDriverName The name of the driver for display purposes (e.g., "עלי"). Optional.
          */
         function renderOrders(orders, timelineId, displayDriverName = null) {
             const timelineContainer = document.getElementById(timelineId);
@@ -2767,13 +2784,13 @@
             }
             timelineContainer.innerHTML = ""; // Clear existing content
 
-            if (orders && orders.length > 0) {
-                orders.forEach((order) => {
-                    // Filter orders by assigned driver if timeline is specific to a driver
-                    if (displayDriverName && order.assignedDriver !== displayDriverName) {
-                        return; // Skip rendering if not assigned to this driver
-                    }
+            let filteredOrdersForDisplay = orders;
+            if (displayDriverName) {
+                filteredOrdersForDisplay = orders.filter(order => order.assignedDriver === displayDriverName);
+            }
 
+            if (filteredOrdersForDisplay && filteredOrdersForDisplay.length > 0) {
+                filteredOrdersForDisplay.forEach((order) => {
                     const orderCard = document.createElement("div");
                     orderCard.classList.add("order-card");
                     
@@ -2837,13 +2854,13 @@
          * @returns {Promise<Array<Object>>} A promise that resolves to an array of parsed order objects.
          */
         async function fetchOrdersData() {
-            if (!db) {
+            if (!window.db) {
                 console.error("Firestore is not initialized.");
                 return [];
             }
             try {
-                const ordersCol = collection(db, 'artifacts', appId, 'public', 'orders');
-                const orderSnapshot = await getDocs(ordersCol);
+                const ordersCol = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
+                const orderSnapshot = await window.getDocs(ordersCol);
                 const ordersList = orderSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // Sort by time
@@ -2859,13 +2876,13 @@
          * Adds a new order to Firestore.
          */
         async function addNewOrder(orderData) {
-            if (!db) {
+            if (!window.db) {
                 showToast("שגיאה: Firestore אינו מאותחל. לא ניתן להוסיף הזמנה.", "error");
                 return;
             }
             try {
-                const ordersCol = collection(db, 'artifacts', appId, 'public', 'orders');
-                await addDoc(ordersCol, orderData);
+                const ordersCol = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
+                await window.addDoc(ordersCol, orderData);
                 showToast("הזמנה חדשה נוספה בהצלחה!", "success");
                 closeModal('newOrderModal');
             } catch (error) {
@@ -2880,22 +2897,22 @@
          * @param {string} newStatus The new status.
          */
         async function updateOrderStatusInFirestore(orderId, newStatus) {
-            if (!db || !currentUserId) {
+            if (!window.db || !currentUserId) {
                 showToast("שגיאה: אינך מורשה לשנות סטטוס.", "error");
                 return;
             }
 
             // Check permissions before updating
-            const orderRef = doc(db, 'artifacts', appId, 'public', 'orders', orderId);
+            const orderRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'orders', orderId);
             try {
-                const orderSnap = await getDoc(orderRef);
+                const orderSnap = await window.getDoc(orderRef);
                 if (!orderSnap.exists()) {
                     showToast("שגיאה: הזמנה לא נמצאה.", "error");
                     return;
                 }
                 const orderData = orderSnap.data();
 
-                // Role-based permission check
+                // Role-based permission check (client-side enforcement, relies on Firestore Security Rules for server-side)
                 let hasPermission = false;
                 switch (currentUserRole) {
                     case 'admin':
@@ -2927,7 +2944,7 @@
                 }
 
                 if (hasPermission) {
-                    await updateDoc(orderRef, { status: newStatus });
+                    await window.updateDoc(orderRef, { status: newStatus });
                     showToast(`סטטוס הזמנה ${orderData.customer} (${orderData.orderId || orderData.customer}) עודכן ל: ${newStatus}`, "success");
                     // No need to re-fetch all orders, onSnapshot will handle UI update
                 }
@@ -2943,7 +2960,7 @@
          * Sets up Firestore snapshot listener for real-time updates.
          */
         async function initializeApp() {
-            if (!db) {
+            if (!window.db) {
                 console.warn("Firebase (db) not ready, waiting for initialization...");
                 setTimeout(initializeApp, 500); // Retry after a short delay
                 return;
@@ -2957,9 +2974,10 @@
             if (hakmatAvatar) hakmatAvatar.src = HAKMAT_AVATAR_URL;
 
             // Setup real-time listener for orders
-            const ordersColRef = collection(db, 'artifacts', appId, 'public', 'orders');
-            onSnapshot(ordersColRef, (snapshot) => {
+            const ordersColRef = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
+            window.onSnapshot(ordersColRef, (snapshot) => {
                 const changes = snapshot.docChanges();
+                let statusChanged = false; // Flag to track if any status changed
                 changes.forEach((change) => {
                     const orderData = { id: change.doc.id, ...change.doc.data() };
                     if (change.type === "added") {
@@ -2968,9 +2986,11 @@
                     }
                     if (change.type === "modified") {
                         console.log("Modified order:", orderData);
-                        // Trigger popup only if status changed
-                        if (currentOrderDetails && currentOrderDetails.id === orderData.id && currentOrderDetails.status !== orderData.status) {
+                        // Find the old order in allOrders to compare status
+                        const oldOrder = allOrders.find(o => o.id === orderData.id);
+                        if (oldOrder && oldOrder.status !== orderData.status) {
                              showToast(`סטטוס הזמנה ${orderData.customer} השתנה ל: ${orderData.status}`, "success");
+                             statusChanged = true; // Mark that a status has changed
                         }
                     }
                     if (change.type === "removed") {
@@ -2979,6 +2999,7 @@
                     }
                 });
                 // After any change, re-fetch and re-render everything to ensure consistency
+                // This ensures all counters and displays are updated with the latest data.
                 fetchAndRenderAllOrders();
             }, (error) => {
                 console.error("Error listening to Firestore orders:", error);
@@ -3030,9 +3051,9 @@
             document.getElementById('aliOrderCount').textContent = aliOrders.length;
             document.getElementById('hakmatOrderCount').textContent = hakmatOrders.length;
             
-            studentWarehouseOrderCount = 0; 
-            carpenterWarehouseOrderCount = 0; 
-            morningOrdersCount = 0; 
+            let studentWarehouseOrderCount = 0; 
+            let carpenterWarehouseOrderCount = 0; 
+            let morningOrdersCount = 0; 
 
             const sixAM = new Date();
             sixAM.setHours(6, 0, 0, 0);
@@ -3045,10 +3066,10 @@
                     morningOrdersCount++;
                 }
                 if (order.warehouse) {
-                    if (order.warehouse.includes("התלמיד")) {
+                    if (order.warehouse.includes("מחסן התלמיד")) { // Use full warehouse name
                         studentWarehouseOrderCount++;
                     }
-                    if (order.warehouse.includes("החרש")) {
+                    if (order.warehouse.includes("מחסן החרש")) { // Use full warehouse name
                         carpenterWarehouseOrderCount++;
                     }
                 }
@@ -3120,29 +3141,21 @@
             const hakmatChartCountOverlay = document.getElementById('hakmatChartCountOverlay');
             if (hakmatChartCountOverlay) hakmatChartCountOverlay.textContent = hakmatOrdersInTimeRange.length;
 
-            const aliChartData = {
-                labels: ['הזמנות בוקר'],
-                datasets: [{
-                    label: 'כמות הזמנות',
-                    data: [aliOrdersInTimeRange.length],
-                    backgroundColor: 'rgba(52, 152, 219, 0.7)', 
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 1,
-                    barPercentage: 0.7 
-                }]
-            };
+            const aliCtx = document.getElementById('aliChart');
+            const hakmatCtx = document.getElementById('hakmatChart');
 
-            const hakmatChartData = {
-                labels: ['הזמנות בוקר'],
+            // Chart data and options
+            const chartDataTemplate = (count, label) => ({
+                labels: [label],
                 datasets: [{
                     label: 'כמות הזמנות',
-                    data: [hakmatOrdersInTimeRange.length],
-                    backgroundColor: 'rgba(46, 204, 113, 0.7)', 
-                    borderColor: 'rgba(46, 204, 113, 1)',
+                    data: [count],
+                    backgroundColor: label === 'הזמנות בוקר' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(46, 204, 113, 0.7)',
+                    borderColor: label === 'הזמנות בוקר' ? 'rgba(52, 152, 219, 1)' : 'rgba(46, 204, 113, 1)',
                     borderWidth: 1,
                     barPercentage: 0.7 
                 }]
-            };
+            });
 
             const chartOptions = {
                 responsive: true,
@@ -3206,29 +3219,23 @@
             };
 
             // Destroy previous chart instances to prevent duplicates
-            if (aliChartInstance) {
-                aliChartInstance.destroy();
-            }
-            if (hakmatChartInstance) {
-                hakmatChartInstance.destroy();
-            }
+            if (aliChartInstance) aliChartInstance.destroy();
+            if (hakmatChartInstance) hakmatChartInstance.destroy();
 
-            const aliCtx = document.getElementById('aliChart');
             if (aliCtx) {
                 aliChartInstance = new Chart(aliCtx.getContext('2d'), {
                     type: 'bar',
-                    data: aliChartData,
+                    data: chartDataTemplate(aliOrdersInTimeRange.length, 'הזמנות בוקר'),
                     options: chartOptions
                 });
             } else {
                 console.error("Error: Canvas element with ID 'aliChart' not found.");
             }
 
-            const hakmatCtx = document.getElementById('hakmatChart');
             if (hakmatCtx) {
                 hakmatChartInstance = new Chart(hakmatCtx.getContext('2d'), {
                     type: 'bar',
-                    data: hakmatChartData,
+                    data: chartDataTemplate(hakmatOrdersInTimeRange.length, 'הזמנות בוקר'),
                     options: chartOptions
                 });
             } else {
@@ -3294,6 +3301,16 @@
                     (currentUserRole === 'driver' && order.assignedDriver === currentAssignedDriver) ||
                     (currentUserRole === 'warehouse_manager' && order.warehouse && order.warehouse.includes(currentUserManagedWarehouse));
                 modalStatusSelect.disabled = !canEditStatus;
+
+                // Also update the UI for the specific status if it changes
+                modalStatusSelect.style.backgroundColor = ''; // Reset
+                modalStatusSelect.style.color = ''; // Reset
+                switch(order.status) {
+                    case 'הושלם': modalStatusSelect.style.backgroundColor = 'rgba(46, 204, 113, 0.2)'; modalStatusSelect.style.color = '#2ecc71'; break;
+                    case 'בדרך': modalStatusSelect.style.backgroundColor = 'rgba(52, 152, 219, 0.2)'; modalStatusSelect.style.color = '#3498db'; break;
+                    case 'ממתין': modalStatusSelect.style.backgroundColor = 'rgba(241, 196, 15, 0.2)'; modalStatusSelect.style.color = '#f1c40f'; break;
+                    case 'בוטל': modalStatusSelect.style.backgroundColor = 'rgba(231, 76, 60, 0.2)'; modalStatusSelect.style.color = '#e74c3c'; break;
+                }
             }
 
             // Auto-fill customer contact name and order ID
@@ -3383,6 +3400,15 @@
             if (currentOrderDetails.status !== newStatus) {
                 updateOrderStatusInFirestore(currentOrderDetails.id, newStatus);
                 currentOrderDetails.status = newStatus; // Update local state immediately for responsiveness
+                // Visually update the dropdown
+                modalStatusSelect.style.backgroundColor = ''; // Reset
+                modalStatusSelect.style.color = ''; // Reset
+                switch(newStatus) {
+                    case 'הושלם': modalStatusSelect.style.backgroundColor = 'rgba(46, 204, 113, 0.2)'; modalStatusSelect.style.color = '#2ecc71'; break;
+                    case 'בדרך': modalStatusSelect.style.backgroundColor = 'rgba(52, 152, 219, 0.2)'; modalStatusSelect.style.color = '#3498db'; break;
+                    case 'ממתין': modalStatusSelect.style.backgroundColor = 'rgba(241, 196, 15, 0.2)'; modalStatusSelect.style.color = '#f1c40f'; break;
+                    case 'בוטל': modalStatusSelect.style.backgroundColor = 'rgba(231, 76, 60, 0.2)'; modalStatusSelect.style.color = '#e74c3c'; break;
+                }
             }
         }
 
@@ -3459,6 +3485,7 @@
                 closeModal('passwordModal');
                 shareToWhatsAppConfirmed(); // Proceed to share if password is correct
             } else {
+                passwordError.textContent = 'סיסמה שגויה. נסה שוב.';
                 passwordError.style.display = 'block'; // Show error message
             }
         }
@@ -3629,7 +3656,7 @@
         /**
          * Displays orders filtered by warehouse type.
          * This function is called when a specific warehouse type is selected from the dropdown.
-         * @param {string} warehouseType The type of warehouse to filter by (e.g., 'התלמיד', 'החרש').
+         * @param {string} warehouseType The type of warehouse to filter by (e.g., 'מחסן התלמיד', 'מחסן החרש').
          */
         function showWarehouseOrders(warehouseType) {
             document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
@@ -3643,9 +3670,9 @@
             warehouseDisplayContainer.dataset.activeWarehouse = warehouseType; // Store active warehouse type
 
             let avatarUrl = '';
-            if (warehouseType === 'התלמיד') {
+            if (warehouseType === 'מחסן התלמיד') {
                 avatarUrl = STUDENT_WAREHOUSE_AVATAR_URL;
-            } else if (warehouseType === 'החרש') {
+            } else if (warehouseType === 'מחסן החרש') {
                 avatarUrl = CARPENTER_WAREHOUSE_AVATAR_URL;
             }
 
@@ -3718,6 +3745,7 @@
                     message = message.replace(/\[מספר הזמנה1\]/g, (currentOrderDetails.orderId || orderIdInput.value) || 'הזמנה זו');
                     message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
                     message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
+                    // This specific placeholder needs to extract minutes if time is like "HH:MM", otherwise a default.
                     message = message.replace(/\[זמן משוער\]/g, estimatedArrivalTimeInput.value ? estimatedArrivalTimeInput.value.split(':')[1] ? `${parseInt(estimatedArrivalTimeInput.value.split(':')[1])} דקות` : 'זמן קצר' : 'זמן קצר');
                     message = message.replace(/\[קישור Waze\]/g, directWazeLinkInput.value || 'קישור למפה'); 
 
@@ -3827,7 +3855,7 @@
                 wazePopupEta.textContent = estimatedArrivalTimeInput.value || 'לא נמצא';
                 wazePopupModal.classList.add('visible');
             } else {
-                alert("אין קישור Waze זמין עבור הזמנה זו."); 
+                showToast("אין קישור Waze זמין עבור הזמנה זו.", 'error'); 
             }
         }
 
@@ -4005,6 +4033,14 @@
             document.getElementById('newOrderWazeLink').value = '';
             document.getElementById('newOrderAssignedDriver').value = '';
 
+            // Set current date as default for new order
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('newOrderDate').value = `${year}-${month}-${day}`;
+
+
             const newOrderModal = document.getElementById('newOrderModal');
             if (newOrderModal) {
                 newOrderModal.classList.add('visible');
@@ -4040,7 +4076,8 @@
                 status: newOrderStatus,
                 wazeLink: newOrderWazeLink || null,
                 assignedDriver: newOrderAssignedDriver || null,
-                orderId: 'ORD' + Date.now().toString().slice(-6) // Simple unique ID
+                orderId: 'ORD' + Date.now().toString().slice(-6), // Simple unique ID
+                timestamp: new Date().toISOString() // Add timestamp for history/sorting
             };
 
             await addNewOrder(orderData);
@@ -4092,6 +4129,16 @@
             // The initial screen is always the login page.
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginPage').style.display = 'flex';
+
+            // Set current date as default for new order date input in the modal
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const day = String(today.getDate()).padStart(2, '0');
+            const newOrderDateInput = document.getElementById('newOrderDate');
+            if (newOrderDateInput) {
+                newOrderDateInput.value = `${year}-${month}-${day}`;
+            }
         });
 
     </script>
