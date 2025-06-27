@@ -3,201 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח. סבן חומרי בניין - מערכת ניהול הזמנות</title>
+    <title>📋 מערכת ניהול הובלות ח.סבן - לוח בקרה</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <!-- Firebase SDK Imports -->
+    
+    <!-- Firebase SDK (Version 11.6.1 is used as per common practice in Canvas) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, onSnapshot, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, onSnapshot, addDoc, updateDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: These global variables are provided by the Canvas environment.
-        // DO NOT remove or modify these lines.
+        // Global variables for Firebase instances
+        window.firebaseApp = null;
+        window.db = null;
+        window.auth = null;
+        window.currentFirebaseUser = null; // Stores Firebase Auth user object
+
+        // MANDATORY: These variables are provided by the Canvas environment.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let app;
-        let db;
-        let auth;
+        // Initialize Firebase
+        if (firebaseConfig) {
+            window.firebaseApp = initializeApp(firebaseConfig);
+            window.db = getFirestore(window.firebaseApp);
+            window.auth = getAuth(window.firebaseApp);
 
-        // Initialize Firebase when the script loads
-        window.initFirebase = () => {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                window.firebaseApp = app; // Make accessible globally for other scripts
-                window.firestoreDb = db;
-                window.firebaseAuth = auth;
-
-                // Listen for auth state changes to manage user session
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        console.log("User is signed in:", user.uid);
-                        const userDocRef = doc(db, "users", user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        if (userDocSnap.exists()) {
-                            const userData = userDocSnap.data();
-                            window.currentUserRole = userData.role;
-                            window.currentUserName = userData.username; // Store username
-                            window.currentUserId = user.uid; // Store user ID
-                            console.log("User role:", window.currentUserRole);
-                            // Hide login, show main app
-                            document.getElementById('loginPage').style.display = 'none';
-                            document.getElementById('mainAppContainer').style.display = 'block';
-                            initializeAppContent(); // Initialize app content after login
-                        } else {
-                            console.error("User document not found for UID:", user.uid);
-                            // This should ideally not happen if users are pre-created
-                            signOut(auth);
-                        }
-                    } else {
-                        console.log("No user is signed in.");
-                        // Show login, hide main app
-                        document.getElementById('loginPage').style.display = 'block';
-                        document.getElementById('mainAppContainer').style.display = 'none';
-                        window.currentUserRole = null;
-                        window.currentUserName = null;
-                        window.currentUserId = null;
-                    }
-                });
-
-                // Pre-create users in Firestore if they don't exist (for initial setup)
-                // This part should only run once, e.g., on first deploy or manually.
-                // In a production app, user management is done via Admin SDK or a proper backend.
-                // For this Canvas app, we'll ensure the roles exist on initial run.
-                ensureUsersExist(db, auth);
-
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                alert("שגיאה באתחול Firebase. אנא בדוק את הגדרות הפרויקט.");
-            }
-        };
-
-        // Make functions accessible globally for HTML event handlers
-        window.signInUser = async () => {
-            const email = document.getElementById('usernameInput').value + "@yourdomain.com"; // Using email format for Firebase Auth
-            const password = document.getElementById('passwordInputLogin').value;
-            const loginError = document.getElementById('loginError');
-            loginError.textContent = "";
-
-            if (!email || !password) {
-                loginError.textContent = "אנא הזן שם משתמש וסיסמה.";
-                return;
-            }
-
-            try {
-                // Attempt to sign in with email/password
-                await signInWithEmailAndPassword(auth, email, password);
-                console.log("User signed in successfully!");
-                // onAuthStateChanged will handle UI update
-            } catch (error) {
-                console.error("Login error:", error);
-                switch (error.code) {
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                        loginError.textContent = "שם משתמש או סיסמה שגויים.";
-                        break;
-                    case 'auth/invalid-email':
-                        loginError.textContent = "פורמט שם משתמש לא תקין.";
-                        break;
-                    default:
-                        loginError.textContent = `שגיאת התחברות: ${error.message}`;
-                        break;
-                }
-            }
-        };
-
-        window.signOutUser = async () => {
-            try {
-                await signOut(auth);
-                console.log("User signed out.");
-                // onAuthStateChanged will handle UI update
-            } catch (error) {
-                console.error("Error signing out:", error);
-                alert("שגיאה ביציאה מהמערכת. נסה שוב.");
-            }
-        };
-
-        /**
-         * Pre-creates users in Firestore and Firebase Auth for demonstration purposes.
-         * In a real application, this would be managed securely via an admin panel.
-         */
-        async function ensureUsersExist(db, auth) {
-            const users = [
-                { username: 'rami', password: '1125', role: 'manager' },
-                { username: 'oren', password: '1234', role: 'warehouse_carpenter' },
-                { username: 'amir', password: '4321', role: 'warehouse_student' },
-                { username: 'hakmat', password: 'driverhak', role: 'driver_hakmat' },
-                { username: 'ali', password: 'driverali', role: 'driver_ali' },
-                { username: 'rami', password: 'sorterami', role: 'sorter' },
-                { username: 'yoav', password: 'sortyoav', role: 'sorter' },
-                { username: 'viewer', password: 'viewonly', role: 'viewer' }
-            ];
-
-            for (const user of users) {
-                const email = user.username + "@yourdomain.com"; // Use a consistent domain
-                try {
-                    // Try to sign in to check if user exists (simple check, not robust)
-                    await signInWithEmailAndPassword(auth, email, user.password);
-                    console.log(`User ${user.username} already exists and signed in.`);
-                    // Sign out immediately if succeeded, to not interfere with current session
-                    await signOut(auth);
-                } catch (authError) {
-                    if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
-                        // User not found or wrong password (meaning it's not the pre-defined password)
-                        // Try to create the user
+            // Listen for auth state changes
+            onAuthStateChanged(window.auth, async (user) => {
+                if (user) {
+                    window.currentFirebaseUser = user;
+                    console.log("Firebase Authenticated UID:", user.uid);
+                    // After Firebase auth, attempt to store/retrieve user role from Firestore
+                    await window.ensureUserRoleInFirestore(user.uid);
+                } else {
+                    window.currentFirebaseUser = null;
+                    console.log("Firebase: No user signed in.");
+                    // Attempt anonymous sign-in if no user and no custom token
+                    if (!initialAuthToken) {
                         try {
-                            const userCredential = await createUserWithEmailAndPassword(auth, email, user.password);
-                            console.log(`Created new Firebase Auth user: ${user.username}`);
-                            // Save user role in Firestore
-                            await setDoc(doc(db, "users", userCredential.user.uid), {
-                                username: user.username,
-                                role: user.role,
-                                createdAt: new Date()
-                            });
-                            console.log(`Saved user role to Firestore for ${user.username}`);
-                            await signOut(auth); // Sign out after creating
-                        } catch (createError) {
-                            if (createError.code === 'auth/email-already-in-use') {
-                                console.log(`Firebase Auth user ${user.username} already exists (email in use).`);
-                                // Ensure Firestore record exists for existing users
-                                // This is a fallback in case Firebase Auth user exists but Firestore doc is missing
-                                const existingUserQuery = await getDoc(doc(db, "users", user.uid)); // This requires knowing UID, which is tricky without sign-in
-                                // A more robust approach would be to attempt sign in first, then if successful, check/update Firestore.
-                                // For simplicity here, we assume if email-already-in-use, the Firestore doc probably exists.
-                            } else {
-                                console.error(`Error creating Firebase Auth user ${user.username}:`, createError.code, createError.message);
-                            }
+                            await signInAnonymously(window.auth);
+                            console.log("Firebase: Signed in anonymously.");
+                        } catch (error) {
+                            console.error("Firebase: Anonymous sign-in failed:", error);
                         }
-                    } else {
-                        console.error(`Unexpected Firebase Auth error for ${user.username}:`, authError.code, authError.message);
                     }
                 }
+            });
+
+            // Sign in with custom token if provided (standard Canvas auth)
+            if (initialAuthToken) {
+                signInWithCustomToken(window.auth, initialAuthToken)
+                    .then((userCredential) => {
+                        console.log("Firebase: Signed in with custom token:", userCredential.user.uid);
+                    })
+                    .catch((error) => {
+                        console.error("Firebase: Custom token sign-in failed:", error.code, error.message);
+                        // If custom token fails, try anonymous sign-in as fallback
+                        signInAnonymously(window.auth)
+                            .then(() => console.log("Firebase: Signed in anonymously after custom token failure."))
+                            .catch((anonError) => console.error("Firebase: Anonymous sign-in failed as fallback:", anonError));
+                    });
+            } else {
+                // If no custom token, try anonymous sign-in immediately
+                signInAnonymously(window.auth)
+                    .then(() => console.log("Firebase: Signed in anonymously."))
+                    .catch((error) => console.error("Firebase: Anonymous sign-in failed at start:", error));
             }
+        } else {
+            console.error("Firebase config not available. Firebase will not be initialized.");
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Check if Firebase is already initialized by the browser
-            if (typeof window.firebaseApp === 'undefined') {
-                 window.initFirebase();
-            } else {
-                console.log("Firebase already initialized, skipping initFirebase call.");
-            }
-        });
-
+        // Expose Firestore methods globally for use in the HTML script block
+        window.getFirestore = getFirestore;
+        window.collection = collection;
+        window.getDocs = getDocs;
+        window.onSnapshot = onSnapshot;
+        window.addDoc = addDoc;
+        window.updateDoc = updateDoc;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.appId = appId; // Expose appId globally
     </script>
+
 
     <style>
         /* General styling for the application */
@@ -658,6 +549,48 @@
             transform: translateX(0); /* Slide into view */
             position: relative; /* Bring back into flow once transition complete */
         }
+        
+        /* Toast Notification Styling */
+        #toastContainer {
+            position: fixed;
+            bottom: 100px; /* Above the bottom nav */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000; /* On top of everything */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toast-notification {
+            background-color: rgba(46, 204, 113, 0.95); /* Green for success */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            min-width: 250px;
+            max-width: 80%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-notification.error {
+            background-color: rgba(231, 76, 60, 0.95); /* Red for error */
+        }
+
 
         /* Modal styling */
         .modal-overlay {
@@ -1977,250 +1910,214 @@
             transform: translateY(-4px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
         }
-
-        /* Styles for Add New Order Modal */
+        
+        /* New Order Form styles */
         #newOrderModal .modal-content {
-            max-width: 650px; /* Wider for the form */
+            max-width: 600px;
+        }
+        #newOrderModal .modal-content .form-group {
+            margin-bottom: 15px;
             text-align: right;
         }
-        #newOrderModal .modal-content h2 {
-            font-size: 2.2rem;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-        }
-        #newOrderModal .form-group {
-            margin-bottom: 15px;
-        }
-        #newOrderModal label {
+        #newOrderModal .modal-content label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             font-weight: 600;
             color: var(--dark-color);
-            font-size: 1.1rem;
         }
-        #newOrderModal input[type="text"],
-        #newOrderModal input[type="date"],
-        #newOrderModal input[type="time"],
-        #newOrderModal select {
-            width: calc(100% - 22px); /* Adjust for padding and border */
+        #newOrderModal .modal-content input,
+        #newOrderModal .modal-content select,
+        #newOrderModal .modal-content textarea {
+            width: calc(100% - 22px);
             padding: 10px;
             border: 1px solid var(--primary-color);
             border-radius: 8px;
             font-size: 1rem;
             direction: rtl;
             text-align: right;
-            background-color: white;
         }
-        #newOrderModal input[type="text"]:focus,
-        #newOrderModal input[type="date"]:focus,
-        #newOrderModal input[type="time"]:focus,
-        #newOrderModal select:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
-            outline: none;
-        }
-        #newOrderModal button.submit-button {
+        #newOrderModal .modal-content button {
             background-color: var(--secondary-color);
             color: white;
-            padding: 15px 30px;
+            padding: 12px 25px;
             border: none;
-            border-radius: 12px;
-            font-size: 1.3rem;
-            font-weight: bold;
+            border-radius: 10px;
+            font-size: 1.1rem;
             cursor: pointer;
-            margin-top: 25px;
-            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            margin-top: 20px;
             width: 100%;
-            max-width: 250px;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
         }
-        #newOrderModal button.submit-button:hover {
-            background-color: #27ae60;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        #newOrderModal .modal-content button:hover {
+            background-color: #28a745;
+            transform: translateY(-2px);
         }
+
+        /* Status Dropdown in Order Card */
+        .order-card .status-dropdown {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+            background-color: var(--light-color);
+            font-size: 0.95rem;
+            direction: rtl;
+            text-align: right;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .order-card .status-dropdown:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
+        }
+        /* Style specific statuses */
+        .status-dropdown option[value="הושלם"] { color: #2ecc71; font-weight: bold; }
+        .status-dropdown option[value="בדרך"] { color: #3498db; font-weight: bold; }
+        .status-dropdown option[value="ממתין"] { color: #f1c40f; font-weight: bold; }
+        .status-dropdown option[value="בוטל"] { color: #e74c3c; font-weight: bold; }
         
-        /* Login Page Styles */
+        /* Login Page styles */
         #loginPage {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background-image: url('https://i.postimg.cc/k47b0H5n/Screenshot-20250624-192750-Gallery.jpg'); /* Background image for login page */
+            background-size: cover;
+            background-position: center;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); /* Sunset gradient */
-            background-size: 400% 400%;
-            animation: gradientLogin 15s ease infinite alternate;
-            z-index: 2000; /* Ensure it's on top of everything */
-        }
-
-        @keyframes gradientLogin {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 450px;
-            width: 90%;
-            text-align: center;
-            display: flex;
+            z-index: 2000; /* On top of everything */
             flex-direction: column;
             gap: 20px;
-            animation: fadeInScale 0.7s ease-out forwards;
         }
 
-        @keyframes fadeInScale {
-            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .login-card h2 {
-            font-size: 2.5rem;
-            color: var(--dark-color);
-            margin-bottom: 25px;
-            position: relative;
-            padding-bottom: 10px;
-        }
-        .login-card h2::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background-color: var(--primary-color);
-            border-radius: 5px;
-        }
-
-        .login-card input[type="text"],
-        .login-card input[type="password"] {
-            width: calc(100% - 30px); /* Adjust for padding */
-            padding: 15px;
+        #loginForm {
+            background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            backdrop-filter: blur(8px);
             border: 2px solid var(--primary-color);
-            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #loginForm h2 {
+            margin-top: 0;
+            color: var(--dark-color);
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+        }
+
+        #loginForm input {
+            width: calc(100% - 20px);
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid var(--primary-color);
+            border-radius: 10px;
             font-size: 1.2rem;
             text-align: center;
+            direction: ltr; /* For username/password input */
             outline: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            direction: ltr; /* Force LTR for username/password */
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-
-        .login-card input[type="text"]:focus,
-        .login-card input[type="password"]:focus {
+        #loginForm input:focus {
             border-color: var(--secondary-color);
             box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
         }
 
-        .login-card button {
-            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+        #loginForm button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 18px 30px;
+            padding: 15px 30px;
             border: none;
-            border-radius: 15px;
-            font-size: 1.5rem;
+            border-radius: 12px;
+            font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-top: 15px;
         }
-
-        .login-card button:hover {
-            background: linear-gradient(135deg, #2980b9, var(--primary-color));
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        #loginForm button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
         }
 
         #loginError {
             color: var(--accent-color);
-            font-size: 1.1rem;
-            margin-top: 15px;
-            background-color: rgba(231, 76, 60, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            display: none; /* Hidden by default */
-        }
-
-        /* Logout Button */
-        #logoutButton {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: var(--accent-color);
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: background-color 0.2s ease, transform 0.2s ease;
-        }
-        #logoutButton:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-        }
-
-        /* Add Order Button on Main Page */
-        #addNewOrderButton {
-            background: linear-gradient(135deg, #FF6F00, #FFA500); /* Orange gradient */
-            color: white;
-            padding: 15px 25px;
-            font-size: 1.2rem;
+            margin-top: 10px;
             font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            margin: 30px auto 20px auto;
+            display: none;
+        }
+
+        /* User Info Display */
+        #userInfoDisplay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 1rem;
+            color: var(--dark-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
+            gap: 8px;
+            direction: rtl;
+            text-align: right;
         }
-        #addNewOrderButton:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(135deg, #FFA500, #FF6F00);
+        #userInfoDisplay i {
+            color: var(--primary-color);
         }
-
+        #userInfoDisplay button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            transition: background-color 0.2s ease;
+        }
+        #userInfoDisplay button:hover {
+            background-color: #c0392b;
+        }
 
     </style>
 </head>
 <body>
     <!-- Login Page -->
-    <div id="loginPage" style="display: none;">
-        <div class="login-card">
-            <h2><i class="fas fa-lock"></i> כניסה למערכת</h2>
-            <p style="font-size: 1rem; color: #666;">ח. סבן חומרי בניין</p>
-            <input type="text" id="usernameInput" placeholder="שם משתמש" onkeyup="if(event.keyCode === 13) signInUser()">
-            <input type="password" id="passwordInputLogin" placeholder="סיסמה" onkeyup="if(event.keyCode === 13) signInUser()">
-            <button onclick="signInUser()">התחבר</button>
-            <p id="loginError" style="color: var(--accent-color); margin-top: 15px; display: none;"></p>
+    <div id="loginPage">
+        <div id="loginForm">
+            <h2>ברוכים הבאים למערכת הובלות ח.סבן</h2>
+            <input type="text" id="usernameInput" placeholder="שם משתמש" onkeyup="if(event.keyCode === 13) loginUser()">
+            <input type="password" id="passwordLoginInput" placeholder="סיסמה" onkeyup="if(event.keyCode === 13) loginUser()">
+            <button onclick="loginUser()">התחבר</button>
+            <p id="loginError" style="display: none;"></p>
         </div>
     </div>
 
     <!-- Main Application Container -->
-    <div id="mainAppContainer" style="display: none;">
-        <button id="logoutButton" onclick="signOutUser()">התנתק <i class="fas fa-sign-out-alt"></i></button>
+    <div id="appContainer" style="display: none;">
+        <!-- User Info Display -->
+        <div id="userInfoDisplay">
+            <i class="fas fa-user-circle"></i>
+            <span>מחובר כ: <span id="currentUsernameDisplay"></span> (<span id="currentUserRoleDisplay"></span>)</span>
+            <button onclick="logoutUser()">התנתק</button>
+        </div>
 
         <!-- Top Navigation Bar -->
         <nav class="top-nav">
@@ -2240,6 +2137,10 @@
                     <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
                 </div>
             </button>
+            <!-- New Order Button (Visible only to Admin/Dispatchers) -->
+            <button class="nav-button" id="addNewOrderButton" onclick="showNewOrderModal()" style="display: none;">
+                <i class="fas fa-plus-circle"></i> הזמנה חדשה
+            </button>
         </nav>
 
         <div class="header">
@@ -2248,16 +2149,11 @@
                     <div class="time" id="currentTimeDisplay"></div> 
                     <div class="date" id="currentDateDisplay"></div>
                 </div>
-                <h1>🚛 דוח בוקר - סידור הובלות<br>ח. סבן חומרי בניין</h1>
+                <h1>🚛 דוח בוקר - סידור הובלות</h1>
             </div>
         </div>
 
         <div class="container">
-            <!-- Add New Order Button (Visible to Manager/Sorter) -->
-            <button id="addNewOrderButton" onclick="showNewOrderModal()" style="display: none;">
-                <i class="fas fa-plus-circle"></i> הוסף הזמנה חדשה
-            </button>
-
             <!-- Main Page Content -->
             <div id="mainPage" class="page-content active">
                 <!-- Summary Counters Section 1: Driver and Total Warehouse -->
@@ -2370,7 +2266,7 @@
             
             <!-- WhatsApp share button -->
             <button class="share-button" onclick="showPasswordModal()">
-                <i class="fab fa-whatsapp"></i> שתף דוח בוקר לווצאפ
+                <i class="fab fa-whatsapp"></i> שתף לווצאפ
             </button>
         </div>
 
@@ -2384,24 +2280,18 @@
                 <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
                 <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
                 <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
-                
-                <!-- Status update dropdown (visible to roles with update permissions) -->
-                <p id="modalStatusContainer">
-                    <strong><i class="fas fa-info-circle"></i> סטטוס:</strong> 
-                    <span id="modalStatusText" style="display: none;"></span>
-                    <select id="modalStatusSelect" style="display: none;" onchange="updateOrderStatus(this.value)">
-                        <option value="ממתין לשיבוץ">ממתין לשיבוץ</option>
-                        <option value="שובץ לנהג">שובץ לנהג</option>
-                        <option value="בדרך ללקוח">בדרך ללקוח</option>
-                        <option value="נמסר">נמסר</option>
+                <!-- Status dropdown -->
+                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> 
+                    <select id="modalStatusSelect" class="status-dropdown" onchange="updateOrderStatusUI()">
+                        <option value="ממתין">ממתין</option>
+                        <option value="בדרך">בדרך</option>
+                        <option value="הושלם">הושלם</option>
                         <option value="בוטל">בוטל</option>
-                        <option value="נדחה">נדחה</option>
-                        <option value="טופל במחסן">טופל במחסן</option>
                     </select>
                 </p>
-
+                
                 <!-- NEW: Button to open Customer Messaging section (protected by password) -->
-                <button class="llm-button" id="openCustomerMessageButton" onclick="showCustomerMessagePasswordModal()" style="display: none;">
+                <button class="llm-button" id="openCustomerMessageButton" onclick="showCustomerMessagePasswordModal()">
                     <i class="fas fa-lock"></i> פתח שליחת הודעות ללקוח
                 </button>
 
@@ -2514,7 +2404,7 @@
             </div>
         </div>
 
-        <!-- Password Modal (for morning report share) -->
+        <!-- Password Modal (for WhatsApp share button) -->
         <div id="passwordModal" class="modal-overlay">
             <div class="modal-content">
                 <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
@@ -2552,11 +2442,11 @@
             </div>
         </div>
 
-        <!-- NEW Order Modal -->
+        <!-- NEW: Add New Order Modal -->
         <div id="newOrderModal" class="modal-overlay">
             <div class="modal-content">
                 <button class="modal-close-button" onclick="closeModal('newOrderModal')">&times;</button>
-                <h2><i class="fas fa-plus-circle"></i> יצירת הזמנה חדשה</h2>
+                <h2>הוספת הזמנה חדשה</h2>
                 <div class="form-group">
                     <label for="newOrderDate">תאריך:</label>
                     <input type="date" id="newOrderDate">
@@ -2571,56 +2461,46 @@
                 </div>
                 <div class="form-group">
                     <label for="newOrderAddress">כתובת:</label>
-                    <input type="text" id="newOrderAddress" placeholder="כתובת מלאה כולל עיר">
+                    <input type="text" id="newOrderAddress" placeholder="כתובת מלאה">
                 </div>
                 <div class="form-group">
                     <label for="newOrderCity">עיר:</label>
                     <input type="text" id="newOrderCity" placeholder="עיר">
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="newOrderWarehouse">מחסן:</label>
                     <select id="newOrderWarehouse">
                         <option value="">בחר מחסן</option>
-                        <option value="התלמיד">התלמיד</option>
-                        <option value="החרש">החרש</option>
-                        <option value="כללי">כללי</option>
+                        <option value="מחסן התלמיד">מחסן התלמיד</option>
+                        <option value="מחסן החרש">מחסן החרש</option>
+                        <option value="אחר">אחר</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="newOrderStatus">סטטוס:</label>
                     <select id="newOrderStatus">
-                        <option value="ממתין לשיבוץ">ממתין לשיבוץ</option>
-                        <option value="שובץ לנהג">שובץ לנהג</option>
-                        <option value="בדרך ללקוח">בדרך ללקוח</option>
-                        <option value="נמסר">נמסר</option>
+                        <option value="ממתין">ממתין</option>
+                        <option value="בדרך">בדרך</option>
+                        <option value="הושלם">הושלם</option>
                         <option value="בוטל">בוטל</option>
-                        <option value="נדחה">נדחה</option>
-                        <option value="טופל במחסן">טופל במחסן</option>
                     </select>
                 </div>
                  <div class="form-group">
-                    <label for="newOrderDriver">נהג (אופציונלי):</label>
-                    <select id="newOrderDriver">
+                    <label for="newOrderWazeLink">קישור Waze:</label>
+                    <input type="text" id="newOrderWazeLink" placeholder="קישור Waze מלא (אופציונלי)">
+                </div>
+                 <div class="form-group">
+                    <label for="newOrderAssignedDriver">נהג משויך:</label>
+                    <select id="newOrderAssignedDriver">
                         <option value="">לא משויך</option>
                         <option value="עלי">עלי</option>
                         <option value="חכמת">חכמת</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="newOrderWazeLink">קישור Waze:</label>
-                    <input type="text" id="newOrderWazeLink" placeholder="קישור Waze (אופציונלי)">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderEstimatedAddress">כתובת הגעה משוערת:</label>
-                    <input type="text" id="newOrderEstimatedAddress" placeholder="כתובת הגעה משוערת (אופציונלי)">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderEstimatedTime">שעת הגעה משוערת:</label>
-                    <input type="time" id="newOrderEstimatedTime" placeholder="שעת הגעה משוערת (אופציונלי)">
-                </div>
-                <button class="submit-button" onclick="addNewOrder()">הוסף הזמנה</button>
+                <button onclick="submitNewOrder()">הוסף הזמנה</button>
             </div>
         </div>
+
 
         <!-- Bottom Navigation Bar -->
         <nav class="bottom-nav">
@@ -2640,65 +2520,39 @@
                     <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
                 </div>
             </button>
+            <!-- New Order Button (Visible only to Admin/Dispatchers) -->
+            <button class="nav-button" id="addNewOrderButtonBottom" onclick="showNewOrderModal()" style="display: none;">
+                <i class="fas fa-plus-circle"></i> הזמנה חדשה
+            </button>
         </nav>
-    </div> <!-- End of mainAppContainer -->
-
-    <script type="module">
-        // Import Firestore and Auth modules (already imported above in main script tag)
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, onSnapshot, where, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // IMPORTANT: Ensure these match the ones initialized in the main script tag.
-        const db = window.firestoreDb;
-        const auth = window.firebaseAuth;
-
-        // Google Maps Static API Key
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwc8_iJXc4eMfq-EE'; // Your Google Maps Static API Key
         
-        // Gemini API Key - NOTE: This variable is intentionally left as an empty string.
-        // The Canvas environment automatically injects the Gemini API key at runtime,
-        // making it unnecessary and potentially insecure to hardcode it here.
-        const geminiApiKey = "AIzaSyCNn7GZMsQPCdRSfgz_o08M1YV63CkA3Ow"; 
+        <!-- Toast Notification Container -->
+        <div id="toastContainer"></div>
+    </div>
 
-        // Password for WhatsApp share button
-        const WHATSAPP_PASSWORD = "1125";
-        const CUSTOMER_MESSAGE_PASSWORD = "1125"; // New password for customer messaging section
+    <script>
+        // Global User State
+        let currentUserRole = null;
+        let currentUsername = null;
+        let currentUserId = null; // Firebase Auth UID
+        let currentUserManagedWarehouse = null; // For warehouse managers
+        let currentAssignedDriver = null; // For drivers
 
-        // Avatar image URLs for drivers (replace with actual image links)
-        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
-        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
-        // New avatar URLs for warehouses
-        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
-        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
-
-
-        let allOrders = []; // Stores all fetched orders from Firestore
-        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
-        let currentOrderId = null; // Stores the Firestore document ID of the current order
-
-        let studentWarehouseOrderCount = 0;
-        let carpenterWarehouseOrderCount = 0;
-        let morningOrdersCount = 0;
-
-        // Define user roles and their permissions (simplified client-side check)
-        const USER_ROLES = {
-            'manager': { canAdd: true, canEditStatus: true, canViewAll: true, canMessageCustomers: true, canMessageDrivers: true },
-            'warehouse_carpenter': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: false },
-            'warehouse_student': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: false },
-            'driver_hakmat': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: true },
-            'driver_ali': { canAdd: false, canEditStatus: true, canViewAll: false, canMessageCustomers: false, canMessageDrivers: true },
-            'sorter': { canAdd: true, canEditStatus: true, canViewAll: true, canMessageCustomers: true, canMessageDrivers: true },
-            'viewer': { canAdd: false, canEditStatus: false, canViewAll: true, canMessageCustomers: false, canMessageDrivers: false }
+        // Mock User Data for Client-Side Login Simulation
+        // IMPORTANT: In a real application, user authentication and roles would be managed securely via Firebase Authentication.
+        // This is for demonstration purposes within the Canvas environment.
+        const USERS = {
+            "admin": { password: "adminpass", role: "admin" },
+            "oren": { password: "1234", role: "warehouse_manager", managedWarehouse: "החרש" },
+            "tamir": { password: "tamiropen", role: "warehouse_manager", managedWarehouse: "התלמיד" },
+            "rami": { password: "ramipass", role: "dispatcher" },
+            "yoav": { password: "yoavpass", role: "dispatcher" },
+            "hakmatdriver": { password: "hakmatpass", role: "driver", assignedDriver: "חכמת" },
+            "alidriver": { password: "alipass", role: "driver", assignedDriver: "עלי" },
+            "viewer": { password: "viewonly", role: "viewer" }
         };
 
-        let currentUserRole = null; // Will be set by Firebase Auth listener
-        let currentUserName = null; // Will be set by Firebase Auth listener
-        let currentUserId = null;   // Will be set by Firebase Auth listener
-
-
-        /**
-         * Function to update the current time and date
-         */
+        // Function to update the current time and date
         function updateDateTime() {
             const now = new Date();
             const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -2706,140 +2560,183 @@
             const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             let formattedDate = now.toLocaleDateString('he-IL', dateOptions);
             formattedDate = formattedDate.replace('יום ', '');
-            
             document.getElementById('currentTimeDisplay').textContent = formattedTime; 
             document.getElementById('currentDateDisplay').textContent = formattedDate;
         }
         setInterval(updateDateTime, 1000);
         updateDateTime(); 
+        
+        // Google Maps Static API Key 
+        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwc8_iJXc4eMfq-EE'; 
+        
+        // Gemini API Key - This variable is intentionally left as an empty string.
+        // The Canvas environment automatically injects the Gemini API key at runtime.
+        const geminiApiKey = ""; 
 
+        // Password for WhatsApp share button
+        const WHATSAPP_PASSWORD = "1125";
+        const CUSTOMER_MESSAGE_PASSWORD = "1125"; 
 
-        /**
-         * Initializes the application content after a user logs in.
-         * Sets up Firestore listeners and UI based on user role.
-         */
-        window.initializeAppContent = () => {
-            currentUserRole = window.currentUserRole;
-            currentUserName = window.currentUserName;
-            currentUserId = window.currentUserId;
+        // Avatar image URLs for drivers and warehouses
+        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
+        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
+        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
 
-            console.log("Initializing app content for role:", currentUserRole);
+        let allOrders = []; // Stores all fetched orders from Firestore
+        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
 
-            // Update UI based on role
-            updateUIVisibilityBasedOnRole();
+        // Global Firebase Firestore references
+        let db;
+        let firebaseApp;
+        let auth;
+        let appId; // This is populated from window.appId by the module script
 
-            // Set avatar image sources
-            const aliAvatar = document.getElementById('aliAvatar');
-            if (aliAvatar) aliAvatar.src = ALI_AVATAR_URL;
-            const hakmatAvatar = document.getElementById('hakmatAvatar');
-            if (hakmatAvatar) hakmatAvatar.src = HAKMAT_AVATAR_URL;
-
-            // Start Firestore listeners
-            listenForOrders();
-            
-            // Ensure main page is active on login
-            activatePageAndNav('mainPage', 'main-nav-button'); 
-        };
-
-        /**
-         * Updates visibility of UI elements based on the current user's role.
-         */
-        function updateUIVisibilityBasedOnRole() {
-            const role = currentUserRole;
-            const canAdd = USER_ROLES[role]?.canAdd || false;
-            const canEditStatus = USER_ROLES[role]?.canEditStatus || false;
-            const canMessageCustomers = USER_ROLES[role]?.canMessageCustomers || false;
-
-            // Add New Order Button
-            const addNewOrderButton = document.getElementById('addNewOrderButton');
-            if (addNewOrderButton) addNewOrderButton.style.display = canAdd ? 'flex' : 'none';
-
-            // Customer Messaging Section Wrapper
-            const openCustomerMessageButton = document.getElementById('openCustomerMessageButton');
-            if (openCustomerMessageButton) openCustomerMessageButton.style.display = canMessageCustomers ? 'block' : 'none';
-
-            // Status Update Dropdown in Order Details Modal
-            const modalStatusText = document.getElementById('modalStatusText');
-            const modalStatusSelect = document.getElementById('modalStatusSelect');
-            if (modalStatusText && modalStatusSelect) {
-                // Initial state: hide dropdown, show text. Visibility changes in showOrderDetails
-                modalStatusSelect.style.display = 'none'; 
-                modalStatusText.style.display = 'inline'; 
-            }
-        }
-
-
-        /**
-         * Sets up real-time listener for 'orders' collection in Firestore.
-         */
-        function listenForOrders() {
-            if (!db) {
-                console.error("Firestore DB not initialized.");
+        // Function to ensure user role is stored in Firestore
+        // This function maps the simulated login user to a Firebase UID
+        window.ensureUserRoleInFirestore = async (uid) => {
+            if (!db || !uid || !currentUserRole) {
+                console.warn("Firestore not ready or user role/UID not set for Firestore sync.");
                 return;
             }
 
-            const ordersCollectionRef = collection(db, "orders");
-            const q = query(ordersCollectionRef); // You can add orderBy here if needed, e.g., orderBy("createdAt", "desc")
+            const userProfileRef = doc(db, 'artifacts', appId, 'users', uid, 'user_profiles', uid);
+            try {
+                const userProfileSnap = await getDoc(userProfileRef);
+                if (!userProfileSnap.exists()) {
+                    // Create user profile if it doesn't exist
+                    await setDoc(userProfileRef, {
+                        username: currentUsername,
+                        role: currentUserRole,
+                        managedWarehouse: currentUserManagedWarehouse || null,
+                        assignedDriver: currentAssignedDriver || null,
+                        uid: uid // Store UID for easier queries if needed
+                    });
+                    console.log("User profile created in Firestore for:", currentUsername);
+                } else {
+                    // Optionally update if role/username changed (though for this demo, they are static)
+                    console.log("User profile already exists for:", currentUsername);
+                }
+            } catch (error) {
+                console.error("Error ensuring user role in Firestore:", error);
+            }
+        };
 
-            onSnapshot(q, (snapshot) => {
-                allOrders = [];
-                snapshot.forEach((doc) => {
-                    allOrders.push({ id: doc.id, ...doc.data() });
-                });
+        /**
+         * Simulates user login and sets global user state.
+         */
+        async function loginUser() {
+            const usernameInput = document.getElementById('usernameInput').value;
+            const passwordInput = document.getElementById('passwordLoginInput').value;
+            const loginError = document.getElementById('loginError');
+
+            loginError.style.display = 'none'; // Hide previous errors
+
+            if (USERS[usernameInput] && USERS[usernameInput].password === passwordInput) {
+                currentUserRole = USERS[usernameInput].role;
+                currentUsername = usernameInput;
+                currentUserManagedWarehouse = USERS[usernameInput].managedWarehouse || null;
+                currentAssignedDriver = USERS[usernameInput].assignedDriver || null;
                 
-                // Sort orders consistently (e.g., by date and then time)
-                allOrders.sort((a, b) => {
-                    const dateA = new Date(a.date);
-                    const dateB = new Date(b.date);
-                    if (dateA.getTime() !== dateB.getTime()) {
-                        return dateA.getTime() - dateB.getTime();
-                    }
-                    return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
-                });
+                // Set currentUserId based on Firebase UID, which should be available
+                if (window.auth && window.auth.currentUser) {
+                    currentUserId = window.auth.currentUser.uid;
+                    await window.ensureUserRoleInFirestore(currentUserId); // Sync role to Firestore
+                } else {
+                    console.warn("Firebase Auth user not available yet. User role will be set after Firebase initializes.");
+                    // In a real app, you'd wait for onAuthStateChanged here or handle pending state.
+                    // For this simulation, we proceed but log the warning.
+                }
 
-                console.log("Orders updated:", allOrders);
-                renderAllTimelines(); // Re-render all sections of the app
-                updateSummaryCounts();
-                renderCharts();
-            }, (error) => {
-                console.error("Error listening to orders:", error);
-                alert("שגיאה בטעינת ההזמנות בזמן אמת. אנא רענן את הדף.");
-            });
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                updateUserInfoDisplay();
+                applyRolePermissions();
+                initializeApp(); // Re-initialize app to fetch data and apply permissions
+            } else {
+                loginError.textContent = 'שם משתמש או סיסמה שגויים.';
+                loginError.style.display = 'block';
+            }
         }
 
         /**
-         * Rerenders all main timelines based on the updated allOrders array.
+         * Logs out the current user and returns to the login page.
          */
-        function renderAllTimelines() {
-            // Filter orders for Ali and Hakmat
-            const aliOrders = allOrders.filter(order => order.driver === "עלי");
-            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
-
-            // Render orders on the main page
-            renderOrders(aliOrders, "aliTimeline", "עלי");
-            renderOrders(hakmatOrders, "hakmatTimeline", "חכמת");
-
-            // If on a specific driver's page, re-render that too
-            if (document.getElementById('hakmatPage').classList.contains('active')) {
-                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
-            }
-            if (document.getElementById('aliPage').classList.contains('active')) {
-                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
-            }
-            // Re-render warehouse if active (will need to know which type was selected last)
-            const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
-            if (document.getElementById('warehousePage').classList.contains('active') && warehouseDisplayContainer && warehouseDisplayContainer.querySelector('.driver-section-title')) {
-                const selectedWarehouseType = warehouseDisplayContainer.querySelector('.driver-section-title').textContent.replace('מחסן: ', '').trim();
-                if (selectedWarehouseType) {
-                    showWarehouseOrders(selectedWarehouseType); // Re-run the filter/render
-                }
+        function logoutUser() {
+            currentUserRole = null;
+            currentUsername = null;
+            currentUserId = null;
+            currentUserManagedWarehouse = null;
+            currentAssignedDriver = null;
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordLoginInput').value = '';
+            showToast('התנתקת בהצלחה.', 'success');
+            // Optionally, sign out from Firebase Auth if desired, though anonymous session might remain
+            if (window.auth) {
+                window.auth.signOut().then(() => {
+                    console.log("Firebase signed out.");
+                }).catch((error) => {
+                    console.error("Error signing out from Firebase:", error);
+                });
             }
         }
 
+        /**
+         * Updates the user information display in the header.
+         */
+        function updateUserInfoDisplay() {
+            document.getElementById('currentUsernameDisplay').textContent = currentUsername || 'אורח';
+            document.getElementById('currentUserRoleDisplay').textContent = getRoleTranslation(currentUserRole) || 'צופה';
+            document.getElementById('userInfoDisplay').style.display = 'flex';
+        }
+
+        /**
+         * Translates role names for display.
+         */
+        function getRoleTranslation(role) {
+            switch(role) {
+                case 'admin': return 'מנהל מערכת';
+                case 'warehouse_manager': return 'מנהל מחסן';
+                case 'dispatcher': return 'איש סידור';
+                case 'driver': return 'נהג';
+                case 'viewer': return 'צופה';
+                default: return 'אורח';
+            }
+        }
+
+        /**
+         * Applies permissions based on the current user's role.
+         */
+        function applyRolePermissions() {
+            const addNewOrderButton = document.getElementById('addNewOrderButton');
+            const addNewOrderButtonBottom = document.getElementById('addNewOrderButtonBottom');
+            const whatsappShareButton = document.querySelector('.share-button'); // Main WhatsApp share
+            const openCustomerMessageButton = document.getElementById('openCustomerMessageButton'); // Button in order details modal
+
+            // Hide all by default
+            addNewOrderButton.style.display = 'none';
+            addNewOrderButtonBottom.style.display = 'none';
+            whatsappShareButton.style.display = 'none';
+            if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'none';
+
+            // Show elements based on role
+            if (currentUserRole === 'admin' || currentUserRole === 'dispatcher') {
+                addNewOrderButton.style.display = 'flex';
+                addNewOrderButtonBottom.style.display = 'flex';
+            }
+            if (currentUserRole === 'admin' || currentUserRole === 'dispatcher' || currentUserRole === 'warehouse_manager') {
+                 whatsappShareButton.style.display = 'flex'; // Share button visible to these roles
+                 if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'block'; // Or flex/block depending on element
+            }
+
+            // Status dropdown and driver buttons permissions will be handled dynamically in showOrderDetails and renderOrders
+        }
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
-         * Handles "ביחד" by treating it as if it's within the morning delivery window if the driver typically works morning.
+         * Handles "ביחד" by treating it as if it's within the morning delivery window.
          * @param {string} timeStr The time string in HH:MM format or "ביחד".
          * @returns {Date} A Date object representing the time.
          */
@@ -2860,9 +2757,9 @@
          * Generic function to render orders into a specified timeline container.
          * @param {Array<Object>} orders The array of order objects to render.
          * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
-         * @param {string} driverName The name of the driver to apply specific styling. (Optional)
+         * @param {string} displayDriverName The name of the driver for display purposes (e.g., "עלי").
          */
-        function renderOrders(orders, timelineId, driverName = null) {
+        function renderOrders(orders, timelineId, displayDriverName = null) {
             const timelineContainer = document.getElementById(timelineId);
             if (!timelineContainer) {
                 console.error(`Error: Timeline container with ID '${timelineId}' not found.`);
@@ -2871,41 +2768,28 @@
             timelineContainer.innerHTML = ""; // Clear existing content
 
             if (orders && orders.length > 0) {
-                // Filter orders relevant to the current user's role if they are a driver/warehouse manager
-                const filteredOrdersForRole = orders.filter(order => {
-                    if (currentUserRole === 'driver_ali' && order.driver !== 'עלי') return false;
-                    if (currentUserRole === 'driver_hakmat' && order.driver !== 'חכמת') return false;
-                    if (currentUserRole === 'warehouse_student' && order.warehouse !== 'התלמיד') return false;
-                    if (currentUserRole === 'warehouse_carpenter' && order.warehouse !== 'החרש') return false;
-                    // Managers, sorters, and viewers see all applicable orders for the timeline they are on.
-                    return true;
-                });
+                orders.forEach((order) => {
+                    // Filter orders by assigned driver if timeline is specific to a driver
+                    if (displayDriverName && order.assignedDriver !== displayDriverName) {
+                        return; // Skip rendering if not assigned to this driver
+                    }
 
-                if (filteredOrdersForRole.length === 0) {
-                     const noOrdersMessage = document.createElement("p");
-                    noOrdersMessage.textContent = "אין הזמנות זמינות עבור תפקיד זה/נהג זה/מחסן זה.";
-                    noOrdersMessage.style.textAlign = "center";
-                    noOrdersMessage.style.marginTop = "30px";
-                    noOrdersMessage.style.fontSize = "1.2rem";
-                    noOrdersMessage.style.color = getComputedStyle(document.documentElement).getPropertyValue('--dark-color'); 
-                    timelineContainer.appendChild(noOrdersMessage);
-                    return;
-                }
-
-
-                filteredOrdersForRole.forEach((order) => {
                     const orderCard = document.createElement("div");
                     orderCard.classList.add("order-card");
                     
-                    if (driverName === "עלי" || order.driver === "עלי") { // Use order.driver for main view
+                    // Add driver specific class for styling
+                    if (order.assignedDriver === "עלי") {
                         orderCard.classList.add("ali");
-                    } else if (driverName === "חכמת" || order.driver === "חכמת") { // Use order.driver for main view
+                    } else if (order.assignedDriver === "חכמת") {
                         orderCard.classList.add("hakmat");
                     }
 
+                    // Store full order data as a JSON string for easy retrieval in modal
                     orderCard.dataset.order = JSON.stringify(order);
-                    orderCard.addEventListener('click', () => showOrderDetails(orderCard.dataset.order, order.id)); // Pass order ID
                     
+                    // Add click listener to open full details modal
+                    orderCard.addEventListener('click', () => showOrderDetails(orderCard.dataset.order));
+
                     const timeDisplay = order.time && order.time.includes("ביחד") ? 
                         `${order.time} <span class="biachad-indicator">ביחד</span>` : 
                         (order.time || "לא ידוע");
@@ -2921,7 +2805,7 @@
                             <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${wazeIconHtml} <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
                             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || "לא ידוע"}</p>
-                            <p><strong><i class="fas fa-truck"></i> נהג:</strong> ${order.driver || "לא משויך"}</p>
+                            <p><strong><i class="fas fa-truck"></i> נהג משויך:</strong> ${order.assignedDriver || "לא משויך"}</p>
                             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${order.status || "לא ידוע"}</p>
                         </div>
                         <div class="order-arrow"></div>
@@ -2929,9 +2813,10 @@
                     timelineContainer.appendChild(orderCard);
                 });
 
+                // Add event listeners for city links after all cards are rendered
                 timelineContainer.querySelectorAll('.city-link').forEach(link => {
                     link.onclick = (event) => {
-                        event.stopPropagation();
+                        event.stopPropagation(); // Prevent order card click when city link is clicked
                         showCityMap(link.dataset.city);
                     };
                 });
@@ -2948,11 +2833,199 @@
         }
 
         /**
+         * Fetches data from Firestore for orders.
+         * @returns {Promise<Array<Object>>} A promise that resolves to an array of parsed order objects.
+         */
+        async function fetchOrdersData() {
+            if (!db) {
+                console.error("Firestore is not initialized.");
+                return [];
+            }
+            try {
+                const ordersCol = collection(db, 'artifacts', appId, 'public', 'orders');
+                const orderSnapshot = await getDocs(ordersCol);
+                const ordersList = orderSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Sort by time
+                return ordersList.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+            } catch (error) {
+                console.error("שגיאה בשליפת הנתונים מ-Firestore:", error);
+                showToast("שגיאה בטעינת הנתונים. אנא בדוק את הגדרות Firebase.", "error");
+                return [];
+            }
+        }
+
+        /**
+         * Adds a new order to Firestore.
+         */
+        async function addNewOrder(orderData) {
+            if (!db) {
+                showToast("שגיאה: Firestore אינו מאותחל. לא ניתן להוסיף הזמנה.", "error");
+                return;
+            }
+            try {
+                const ordersCol = collection(db, 'artifacts', appId, 'public', 'orders');
+                await addDoc(ordersCol, orderData);
+                showToast("הזמנה חדשה נוספה בהצלחה!", "success");
+                closeModal('newOrderModal');
+            } catch (error) {
+                console.error("שגיאה בהוספת הזמנה ל-Firestore:", error);
+                showToast("שגיאה בהוספת ההזמנה. אנא נסה שוב.", "error");
+            }
+        }
+
+        /**
+         * Updates the status of an order in Firestore.
+         * @param {string} orderId The ID of the order document.
+         * @param {string} newStatus The new status.
+         */
+        async function updateOrderStatusInFirestore(orderId, newStatus) {
+            if (!db || !currentUserId) {
+                showToast("שגיאה: אינך מורשה לשנות סטטוס.", "error");
+                return;
+            }
+
+            // Check permissions before updating
+            const orderRef = doc(db, 'artifacts', appId, 'public', 'orders', orderId);
+            try {
+                const orderSnap = await getDoc(orderRef);
+                if (!orderSnap.exists()) {
+                    showToast("שגיאה: הזמנה לא נמצאה.", "error");
+                    return;
+                }
+                const orderData = orderSnap.data();
+
+                // Role-based permission check
+                let hasPermission = false;
+                switch (currentUserRole) {
+                    case 'admin':
+                    case 'dispatcher':
+                        hasPermission = true; // Admins and dispatchers can change any status
+                        break;
+                    case 'driver':
+                        // Drivers can only change status for orders assigned to them
+                        if (orderData.assignedDriver === currentAssignedDriver) {
+                            hasPermission = true;
+                        } else {
+                            showToast("אין לך הרשאה לשנות סטטוס להזמנה שאינה משויכת אליך.", "error");
+                        }
+                        break;
+                    case 'warehouse_manager':
+                        // Warehouse managers can only change status for orders from their managed warehouse
+                        if (orderData.warehouse && orderData.warehouse.includes(currentUserManagedWarehouse)) {
+                            hasPermission = true;
+                        } else {
+                            showToast("אין לך הרשאה לשנות סטטוס להזמנה שאינה שייכת למחסן שבניהולך.", "error");
+                        }
+                        break;
+                    case 'viewer':
+                        showToast("אין לך הרשאה לשנות סטטוס. חשבונך הוא לצפייה בלבד.", "error");
+                        break;
+                    default:
+                        showToast("אין לך הרשאה לשנות סטטוס.", "error");
+                        break;
+                }
+
+                if (hasPermission) {
+                    await updateDoc(orderRef, { status: newStatus });
+                    showToast(`סטטוס הזמנה ${orderData.customer} (${orderData.orderId || orderData.customer}) עודכן ל: ${newStatus}`, "success");
+                    // No need to re-fetch all orders, onSnapshot will handle UI update
+                }
+            } catch (error) {
+                console.error("שגיאה בעדכון סטטוס ב-Firestore:", error);
+                showToast("שגיאה בעדכון הסטטוס. אנא נסה שוב.", "error");
+            }
+        }
+
+
+        /**
+         * Initializes the application by fetching all data and rendering initial views.
+         * Sets up Firestore snapshot listener for real-time updates.
+         */
+        async function initializeApp() {
+            if (!db) {
+                console.warn("Firebase (db) not ready, waiting for initialization...");
+                setTimeout(initializeApp, 500); // Retry after a short delay
+                return;
+            }
+
+            // Set avatar image sources on load
+            const aliAvatar = document.getElementById('aliAvatar');
+            if (aliAvatar) aliAvatar.src = ALI_AVATAR_URL;
+
+            const hakmatAvatar = document.getElementById('hakmatAvatar');
+            if (hakmatAvatar) hakmatAvatar.src = HAKMAT_AVATAR_URL;
+
+            // Setup real-time listener for orders
+            const ordersColRef = collection(db, 'artifacts', appId, 'public', 'orders');
+            onSnapshot(ordersColRef, (snapshot) => {
+                const changes = snapshot.docChanges();
+                changes.forEach((change) => {
+                    const orderData = { id: change.doc.id, ...change.doc.data() };
+                    if (change.type === "added") {
+                        // showToast(`הזמנה חדשה נוספה: ${orderData.customer}`, "success");
+                        console.log("New order:", orderData);
+                    }
+                    if (change.type === "modified") {
+                        console.log("Modified order:", orderData);
+                        // Trigger popup only if status changed
+                        if (currentOrderDetails && currentOrderDetails.id === orderData.id && currentOrderDetails.status !== orderData.status) {
+                             showToast(`סטטוס הזמנה ${orderData.customer} השתנה ל: ${orderData.status}`, "success");
+                        }
+                    }
+                    if (change.type === "removed") {
+                        // showToast(`הזמנה בוטלה/נמחקה: ${orderData.customer}`, "error");
+                        console.log("Removed order:", orderData);
+                    }
+                });
+                // After any change, re-fetch and re-render everything to ensure consistency
+                fetchAndRenderAllOrders();
+            }, (error) => {
+                console.error("Error listening to Firestore orders:", error);
+                showToast("שגיאה בהאזנה לשינויים במסד הנתונים.", "error");
+            });
+
+            // Initial fetch and render
+            await fetchAndRenderAllOrders();
+            updateUserInfoDisplay(); // Update display once app starts
+            applyRolePermissions(); // Apply permissions on initial load
+            activatePageAndNav('mainPage', 'main-nav-button'); // Ensure main page is active
+        }
+
+        async function fetchAndRenderAllOrders() {
+             allOrders = await fetchOrdersData();
+             const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
+             const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
+
+            // Render orders on the main page with driver-specific styling
+            renderOrders(aliOrders, "aliTimeline", "עלי");
+            renderOrders(hakmatOrders, "hakmatTimeline", "חכמת");
+
+            // Update specific driver pages if active
+            if (document.getElementById('aliPage').classList.contains('active')) {
+                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
+            }
+            if (document.getElementById('hakmatPage').classList.contains('active')) {
+                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
+            }
+
+            // Update warehouse page if active and a warehouse type is selected
+            const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
+            if (document.getElementById('warehousePage').classList.contains('active') && warehouseOrdersDisplay.dataset.activeWarehouse) {
+                 showWarehouseOrders(warehouseOrdersDisplay.dataset.activeWarehouse);
+            }
+
+            updateSummaryCounts();
+            renderCharts();
+        }
+
+
+        /**
          * Updates the summary count displays based on fetched orders.
          */
         function updateSummaryCounts() {
-            const aliOrders = allOrders.filter(order => order.driver === "עלי");
-            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
+            const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
+            const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
 
             document.getElementById('aliOrderCount').textContent = aliOrders.length;
             document.getElementById('hakmatOrderCount').textContent = hakmatOrders.length;
@@ -3001,14 +3074,17 @@
             const nineAM = new Date();
             nineAM.setHours(9, 0, 0, 0);
 
-            const aliOrdersInTimeRange = allOrders.filter(order => 
-                (order.driver === "עלי") && ((parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד")))
-            );
+            const aliOrdersInTimeRange = allOrders.filter(order => {
+                const orderTime = parseTimeForSorting(order.time);
+                return (order.assignedDriver === 'עלי' && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))));
+            });
 
-            const hakmatOrdersInTimeRange = allOrders.filter(order => 
-                (order.driver === "חכמת") && ((parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד")))
-            );
+            const hakmatOrdersInTimeRange = allOrders.filter(order => {
+                const orderTime = parseTimeForSorting(order.time);
+                return (order.assignedDriver === 'חכמת' && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))));
+            });
 
+            // Update customer lists next to charts
             const aliCustomersList = document.getElementById('aliMorningCustomers');
             if (aliCustomersList) {
                 aliCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
@@ -3037,6 +3113,7 @@
                 }
             }
 
+            // Update the in-chart count overlays
             const aliChartCountOverlay = document.getElementById('aliChartCountOverlay');
             if (aliChartCountOverlay) aliChartCountOverlay.textContent = aliOrdersInTimeRange.length;
             
@@ -3163,21 +3240,18 @@
         /**
          * Displays the full order details in a modal.
          * @param {string} orderJson The JSON string of the order data.
-         * @param {string} orderId The Firestore document ID of the order.
          */
-        function showOrderDetails(orderJson, orderId) {
+        function showOrderDetails(orderJson) {
             const order = JSON.parse(orderJson);
-            currentOrderDetails = order; 
-            currentOrderId = orderId;
-
+            currentOrderDetails = order; // Store the current order details globally
+            
             // Get all modal elements
             const modalDate = document.getElementById('modalDate');
             const modalTime = document.getElementById('modalTime');
             const modalCustomer = document.getElementById('modalCustomer');
             const modalAddress = document.getElementById('modalAddress');
             const modalWarehouse = document.getElementById('modalWarehouse');
-            const modalStatusText = document.getElementById('modalStatusText');
-            const modalStatusSelect = document.getElementById('modalStatusSelect');
+            const modalStatusSelect = document.getElementById('modalStatusSelect'); // Changed to select
             
             const customerContactNameInput = document.getElementById('customerContactName');
             const customerPhoneNumberInput = document.getElementById('customerPhoneNumberInput');
@@ -3201,6 +3275,9 @@
             const workTypeInput = document.getElementById('workTypeInput'); 
             const customerMessagingSectionWrapper = document.getElementById('customerMessagingSectionWrapper'); 
 
+            const driverButtons = document.querySelectorAll('#orderDetailsModal .message-section .button-group button');
+
+
             // Populate basic order details
             if (modalDate) modalDate.textContent = order.date || 'אין נתונים';
             if (modalTime) modalTime.textContent = order.time || 'אין נתונים';
@@ -3208,26 +3285,16 @@
             if (modalAddress) modalAddress.textContent = order.address || 'אין נתונים';
             if (modalWarehouse) modalWarehouse.textContent = order.warehouse || 'אין נתונים';
             
-            // Status field: show dropdown if editable, otherwise just text
-            if (modalStatusText && modalStatusSelect) {
-                const canEditStatus = USER_ROLES[currentUserRole]?.canEditStatus && 
-                                      (currentUserRole === 'manager' || currentUserRole === 'sorter' ||
-                                       (currentUserRole === 'driver_ali' && order.driver === 'עלי') ||
-                                       (currentUserRole === 'driver_hakmat' && order.driver === 'חכמת') ||
-                                       (currentUserRole === 'warehouse_student' && order.warehouse === 'התלמיד') ||
-                                       (currentUserRole === 'warehouse_carpenter' && order.warehouse === 'החרש'));
-
-                if (canEditStatus) {
-                    modalStatusSelect.value = order.status || 'ממתין לשיבוץ';
-                    modalStatusSelect.style.display = 'inline-block';
-                    modalStatusText.style.display = 'none';
-                } else {
-                    modalStatusText.textContent = order.status || 'אין נתונים';
-                    modalStatusText.style.display = 'inline';
-                    modalStatusSelect.style.display = 'none';
-                }
+            if (modalStatusSelect) {
+                modalStatusSelect.value = order.status || 'ממתין';
+                // Enable/Disable status dropdown based on role
+                const canEditStatus = 
+                    currentUserRole === 'admin' || 
+                    currentUserRole === 'dispatcher' ||
+                    (currentUserRole === 'driver' && order.assignedDriver === currentAssignedDriver) ||
+                    (currentUserRole === 'warehouse_manager' && order.warehouse && order.warehouse.includes(currentUserManagedWarehouse));
+                modalStatusSelect.disabled = !canEditStatus;
             }
-
 
             // Auto-fill customer contact name and order ID
             if (customerContactNameInput) customerContactNameInput.value = order.customer || '';
@@ -3239,11 +3306,12 @@
             if (workTypeInput) workTypeInput.value = '';
 
             // Waze elements logic
-            if (directWazeLinkInput) directWazeLinkInput.value = order.wazeLink || ''; 
+            if (directWazeLinkInput) directWazeLinkInput.value = order.wazeLink || ''; // Populate with Waze link from sheet
             
             // Populate NEW estimated arrival fields with original order data as default
-            if (estimatedArrivalAddressInput) estimatedArrivalAddressInput.value = order.estimatedArrivalAddress || order.address || '';
-            if (estimatedArrivalTimeInput) estimatedArrivalTimeInput.value = order.estimatedArrivalTime || order.time || '';
+            // These are editable, so they can be changed by dispatcher/admin
+            if (estimatedArrivalAddressInput) estimatedArrivalAddressInput.value = order.address || '';
+            if (estimatedArrivalTimeInput) estimatedArrivalTimeInput.value = order.time || '';
 
             if (wazeLinkDisplay && wazeIconContainer && animatedWazeIcon) {
                 if (order.wazeLink) {
@@ -3283,6 +3351,16 @@
                 customerMessagePasswordInput.value = '';
             }
 
+            // Driver buttons visibility (only for admin/dispatchers)
+            driverButtons.forEach(button => {
+                if (currentUserRole === 'admin' || currentUserRole === 'dispatcher') {
+                    button.style.display = 'flex'; // Or 'block'
+                } else {
+                    button.style.display = 'none';
+                }
+            });
+
+
             // Finally, show the modal
             const orderDetailsModal = document.getElementById('orderDetailsModal');
             if (orderDetailsModal) orderDetailsModal.classList.add('visible');
@@ -3290,58 +3368,23 @@
         }
 
         /**
-         * Updates the status of the current order in Firestore.
-         * @param {string} newStatus The new status to set.
+         * Handles the status change from the dropdown in the order details modal.
+         * Updates Firestore.
          */
-        async function updateOrderStatus(newStatus) {
-            if (!currentOrderId || !db) {
-                console.error("No current order ID or Firestore not initialized.");
+        function updateOrderStatusUI() {
+            const modalStatusSelect = document.getElementById('modalStatusSelect');
+            if (!currentOrderDetails || !modalStatusSelect) {
+                console.error("Cannot update status: No current order or status select element missing.");
+                showToast("שגיאה בעדכון סטטוס.", "error");
                 return;
             }
-
-            // Check permissions before updating
-            const role = currentUserRole;
-            const canEditStatus = USER_ROLES[role]?.canEditStatus || false;
-            
-            if (!canEditStatus) {
-                alert("אין לך הרשאה לעדכן סטטוסים.");
-                return;
-            }
-
-            // Additional check for drivers/warehouse managers to only update their assigned orders
-            if ((role === 'driver_ali' && currentOrderDetails.driver !== 'עלי') ||
-                (role === 'driver_hakmat' && currentOrderDetails.driver !== 'חכמת') ||
-                (role === 'warehouse_student' && currentOrderDetails.warehouse !== 'התלמיד') ||
-                (role === 'warehouse_carpenter' && currentOrderDetails.warehouse !== 'החרש')) {
-                alert("אין לך הרשאה לעדכן סטטוס של הזמנה שאינה משויכת אליך.");
-                // Revert dropdown to original status
-                document.getElementById('modalStatusSelect').value = currentOrderDetails.status;
-                return;
-            }
-
-
-            const orderDocRef = doc(db, "orders", currentOrderId);
-            try {
-                await updateDoc(orderDocRef, { 
-                    status: newStatus,
-                    lastUpdatedBy: currentUserName || 'Unknown', // Track who made the last change
-                    updatedAt: new Date()
-                });
-                console.log("Order status updated successfully to:", newStatus);
-                // The onSnapshot listener will automatically re-render the UI
-                alert(`הסטטוס של הזמנה ${currentOrderId} עודכן ל: ${newStatus}`);
-
-                // Option to send WhatsApp notification on status change (manual trigger)
-                // You might want to prompt the user here: "Would you like to notify the customer about this status change?"
-                // For simplicity, we'll just log it.
-                // console.log(`Consider sending a WhatsApp notification to customer about status change to ${newStatus}.`);
-
-            } catch (error) {
-                console.error("Error updating order status:", error);
-                alert("שגיאה בעדכון הסטטוס. אנא נסה שוב.");
+            const newStatus = modalStatusSelect.value;
+            // Only update if the status actually changed to avoid unnecessary writes
+            if (currentOrderDetails.status !== newStatus) {
+                updateOrderStatusInFirestore(currentOrderDetails.id, newStatus);
+                currentOrderDetails.status = newStatus; // Update local state immediately for responsiveness
             }
         }
-
 
         /**
          * Displays a map view for a given city in a modal, using Google Static Maps API.
@@ -3361,7 +3404,7 @@
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
                 mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Invalid+API+Key+or+Network+Issue';" />`;
-                mapDisplay.style.backgroundImage = 'none';
+                mapDisplay.style.backgroundImage = 'none'; 
                 mapDisplay.style.backgroundColor = 'transparent';
             } else {
                 mapDisplay.innerHTML = `<p id="cityMapName">⚠ יש להזין מפתח Google Maps Static API תקף כדי להציג מפה.<br>אנא עדכן את הקוד עם המפתח שלך.</p>`;
@@ -3389,10 +3432,10 @@
          */
         function showPasswordModal() {
             const passwordInput = document.getElementById('passwordInput');
-            if (passwordInput) passwordInput.value = '';
+            if (passwordInput) passwordInput.value = ''; // Clear previous input
             
             const passwordError = document.getElementById('passwordError');
-            if (passwordError) passwordError.style.display = 'none';
+            if (passwordError) passwordError.style.display = 'none'; // Hide error message
             
             const passwordModal = document.getElementById('passwordModal');
             if (passwordModal) passwordModal.classList.add('visible');
@@ -3414,14 +3457,14 @@
             const inputPassword = passwordInput.value;
             if (inputPassword === WHATSAPP_PASSWORD) {
                 closeModal('passwordModal');
-                shareToWhatsAppConfirmed(); 
+                shareToWhatsAppConfirmed(); // Proceed to share if password is correct
             } else {
-                passwordError.style.display = 'block'; 
+                passwordError.style.display = 'block'; // Show error message
             }
         }
 
         /**
-         * Formats the data from Firestore orders into a WhatsApp message string.
+         * Formats the data for WhatsApp summary report.
          * @param {Array<Object>} ordersData Array of order objects.
          * @param {string} driverName The name of the driver for WhatsApp formatting.
          * @returns {string} The formatted message string.
@@ -3431,14 +3474,7 @@
                 return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
             }
 
-            const sortedData = ordersData.sort((a, b) => {
-                const dateA = new Date(a.date);
-                const dateB = new Date(b.date);
-                if (dateA.getTime() !== dateB.getTime()) {
-                    return dateA.getTime() - dateB.getTime();
-                }
-                return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
-            });
+            const sortedData = ordersData.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
 
             let message = `📝 *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
@@ -3453,28 +3489,22 @@
          * Shares the formatted driver reports to WhatsApp (after password confirmation).
          */
         async function shareToWhatsAppConfirmed() {
-            const aliOrders = allOrders.filter(order => order.driver === "עלי");
-            const hakmatOrders = allOrders.filter(order => order.driver === "חכמת");
+            const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
+            const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
 
             const aliDataFormatted = formatDriverWhatsAppData(aliOrders, "עלי");
             const hakmatDataFormatted = formatDriverWhatsAppData(hakmatOrders, "חכמת");
             const link = "🔗 https://did.li/berOf"; 
 
-            const aliCount = allOrders.filter(order => order.driver === 'עלי').length;
-            const hakmatCount = allOrders.filter(order => order.driver === 'חכמת').length;
-            
-            const totalWarehouseOrders = allOrders.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
-            const studentWarehouseCountDisplay = allOrders.filter(order => order.warehouse === 'התלמיד').length;
-            const carpenterWarehouseCountDisplay = allOrders.filter(order => order.warehouse === 'החרש').length;
-
-            const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
-            const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
-            const morningOrdersCountDisplay = allOrders.filter(order => 
-                (parseTimeForSorting(order.time) >= sixAM && parseTimeForSorting(order.time) <= nineAM) || (order.time && order.time.includes("ביחד"))
-            ).length;
+            const aliCount = document.getElementById('aliOrderCount').textContent;
+            const hakmatCount = document.getElementById('hakmatOrderCount').textContent;
+            const totalWarehouseOrders = document.getElementById('totalWarehouseOrderCount').textContent;
+            const studentWarehouseCountDisplay = document.getElementById('studentWarehouseCount').textContent;
+            const carpenterWarehouseCountDisplay = document.getElementById('carpenterWarehouseCount').textContent;
+            const morningOrdersCountDisplay = document.getElementById('morningOrdersCount').textContent;
 
 
-            let fullMessage = `*סיכום הזמנות - ח. סבן חומרי בניין*\n`;
+            let fullMessage = `*סיכום הזמנות*\n`;
             fullMessage += `🚚 עלי: ${aliCount} הזמנות\n`;
             fullMessage += `🚛 חכמת: ${hakmatCount} הזמנות\n`;
             fullMessage += `📦 סה"כ מחסן: ${totalWarehouseOrders} הזמנות\n`; 
@@ -3490,7 +3520,7 @@
             const phoneNumber = "972508860896"; 
             const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
 
-            window.open(url, "_blank");
+            window.open(url, "_blank"); 
         }
 
         /**
@@ -3531,7 +3561,7 @@
             if (warehousePage) {
                 if (pageId === 'warehousePage') {
                     const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
-                    if (warehouseOrdersDisplay) {
+                    if (warehouseOrdersDisplay && !warehouseOrdersDisplay.dataset.activeWarehouse) {
                         warehouseOrdersDisplay.innerHTML = `
                             <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
                                 <i class="fas fa-hand-point-up"></i> בחר מחסן מהתפריט הנפתח
@@ -3539,7 +3569,6 @@
                         `;
                     }
                     
-                    warehousePage.style.backgroundImage = `url(${STUDENT_WAREHOUSE_AVATAR_URL})`; 
                     warehousePage.style.backgroundSize = 'cover';
                     warehousePage.style.backgroundPosition = 'center';
                     warehousePage.style.backgroundAttachment = 'fixed';
@@ -3550,6 +3579,8 @@
                     warehousePage.style.backgroundImage = 'none';
                     warehousePage.style.opacity = '1'; 
                     document.body.classList.remove('warehouse-page-active');
+                    const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
+                    if(warehouseOrdersDisplay) warehouseOrdersDisplay.dataset.activeWarehouse = ''; // Clear active warehouse
                 }
             } else {
                 console.warn("Warning: Element with ID 'warehousePage' not found.");
@@ -3558,15 +3589,13 @@
             document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
 
 
-            // Specific rendering based on page and user role
             if (pageId === 'hakmatPage') {
-                const hakmatOrders = allOrders.filter(order => order.driver === 'חכמת');
+                const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
                 renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
             } else if (pageId === 'aliPage') {
-                const aliOrders = allOrders.filter(order => order.driver === 'עלי');
+                const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
                 renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
             }
-            // Main page is rendered by listenForOrders callback
         }
 
 
@@ -3611,12 +3640,12 @@
                 console.error("Error: Warehouse orders display container not found.");
                 return;
             }
+            warehouseDisplayContainer.dataset.activeWarehouse = warehouseType; // Store active warehouse type
 
             let avatarUrl = '';
             if (warehouseType === 'התלמיד') {
                 avatarUrl = STUDENT_WAREHOUSE_AVATAR_URL;
-            }
-            else if (warehouseType === 'החרש') {
+            } else if (warehouseType === 'החרש') {
                 avatarUrl = CARPENTER_WAREHOUSE_AVATAR_URL;
             }
 
@@ -3635,34 +3664,18 @@
                 warehousePage.style.backgroundPosition = 'center';
                 warehousePage.style.backgroundAttachment = 'fixed';
                 warehousePage.style.opacity = '0.5'; 
-                warehousePage.style.transition = 'opacity 0.5s ease-in-out, background-image 0.5s ease-in-out';
+                warehousePage.style.transition = 'opacity 0.5s ease-in-out, background-image 0.5s ease-in-out'; 
             } else {
                 console.warn("Warning: Element with ID 'warehousePage' not found when trying to set background.");
             }
 
             document.body.classList.add('warehouse-page-active');
 
-            const filteredOrders = allOrders.filter(order => {
-                const isWarehouseMatch = order.warehouse && order.warehouse.includes(warehouseType);
-                // Filter by role if it's a warehouse manager
-                if (currentUserRole === 'warehouse_student' && warehouseType === 'התלמיד') {
-                    return isWarehouseMatch;
-                }
-                if (currentUserRole === 'warehouse_carpenter' && warehouseType === 'החרש') {
-                    return isWarehouseMatch;
-                }
-                // Managers, sorters, viewers see all for the selected warehouse type
-                return (currentUserRole === 'manager' || currentUserRole === 'sorter' || currentUserRole === 'viewer') && isWarehouseMatch;
-            });
+            const filteredOrders = allOrders.filter(order => 
+                order.warehouse && order.warehouse.includes(warehouseType)
+            );
             
-            filteredOrders.sort((a, b) => {
-                const dateA = new Date(a.date);
-                const dateB = new Date(b.date);
-                if (dateA.getTime() !== dateB.getTime()) {
-                    return dateA.getTime() - dateB.getTime();
-                }
-                return parseTimeForSorting(a.time) - parseTimeForSorting(b.time);
-            });
+            filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
 
             renderOrders(filteredOrders, "filteredWarehouseTimeline", null);
         }
@@ -3682,6 +3695,7 @@
             const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
             const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
 
+
             if (!selectElement || !freeTextMessageArea || !llmResponseMessage || !llmResponseContainer || !llmLoader || !customerContactNameInput || !orderIdInput || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput) {
                 console.error("Error: One or more required elements for fillMessageFromTemplate not found.");
                 return;
@@ -3692,15 +3706,16 @@
             if (selectedTemplateKey && predefinedMessages[selectedTemplateKey]) {
                 let message = predefinedMessages[selectedTemplateKey];
 
+                // Replace placeholders with current order details and new estimated fields
                 if (currentOrderDetails) {
                     message = message.replace(/\[שם לקוח\]/g, customerContactNameInput.value || currentOrderDetails.customer || 'לקוח יקר');
-                    message = message.replace(/\[מספר הזמנה\]/g, orderIdInput.value || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע')); // Use Firestore ID
+                    message = message.replace(/\[מספר הזמנה\]/g, orderIdInput.value || (currentOrderDetails.orderId || 'לא ידוע'));
                     message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
-                    message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driver || 'הנהג'); 
+                    message = message.replace(/\[שם נהג\]/g, currentOrderDetails.assignedDriver || 'הנהג'); 
                     message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
                     message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן'); 
                     message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
-                    message = message.replace(/\[מספר הזמנה1\]/g, orderIdInput.value || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'הזמנה זו'));
+                    message = message.replace(/\[מספר הזמנה1\]/g, (currentOrderDetails.orderId || orderIdInput.value) || 'הזמנה זו');
                     message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
                     message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
                     message = message.replace(/\[זמן משוער\]/g, estimatedArrivalTimeInput.value ? estimatedArrivalTimeInput.value.split(':')[1] ? `${parseInt(estimatedArrivalTimeInput.value.split(':')[1])} דקות` : 'זמן קצר' : 'זמן קצר');
@@ -3812,7 +3827,7 @@
                 wazePopupEta.textContent = estimatedArrivalTimeInput.value || 'לא נמצא';
                 wazePopupModal.classList.add('visible');
             } else {
-                alert("אין קישור Waze זמין עבור הזמנה זו.");
+                alert("אין קישור Waze זמין עבור הזמנה זו."); 
             }
         }
 
@@ -3842,23 +3857,22 @@
             const orderId = orderIdInput.value;
 
             if (!phoneNumber) {
-                alert('אנא הזן מספר טלפון של הלקוח.');
+                showToast('אנא הזן מספר טלפון של הלקוח.', 'error');
                 return;
             }
             if (!message || message === 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.') {
-                alert('אנא צור/בחר הודעה לפני השליחה.');
+                showToast('אנא צור/בחר הודעה לפני השליחה.', 'error');
                 return;
             }
 
-            // Dynamically replace placeholders in the message before sending
             message = message.replace(/\[שם לקוח\]/g, customerName || 'לקוח יקר');
-            message = message.replace(/\[מספר הזמנה\]/g, orderId || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע')); 
+            message = message.replace(/\[מספר הזמנה\]/g, orderId || 'לא ידוע');
             message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
-            message = message.replace(/\[שם נהג\]/g, currentOrderDetails.driver || 'הנהג'); 
+            message = message.replace(/\[שם נהג\]/g, currentOrderDetails.assignedDriver || 'הנהג'); 
             message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
             message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
             message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
-            message = message.replace(/\[מספר הזמנה1\]/g, orderId || (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'הזמנה זו'));
+            message = message.replace(/\[מספר הזמנה1\]/g, orderId || 'הזמנה זו');
             message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
             message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
             message = message.replace(/\[זמן משוער\]/g, estimatedTime.split(':')[1] ? `${parseInt(estimatedTime.split(':')[1])} דקות` : 'זמן קצר'); 
@@ -3880,18 +3894,18 @@
             let driverName;
 
             if (driverType === 'hakmat') {
-                driverPhoneNumber = '972532316985'; // Placeholder
+                driverPhoneNumber = '972532316985'; // Hakmat's phone number
                 driverName = 'חכמת';
             } else if (driverType === 'ali') {
-                driverPhoneNumber = '9725475188'; // Placeholder
+                driverPhoneNumber = '9725475188'; // Ali's phone number
                 driverName = 'עלי';
             } else {
-                alert('נהג לא חוקי.');
+                showToast('נהג לא חוקי.', 'error');
                 return;
             }
 
             if (!currentOrderDetails) {
-                alert('אנא בחר הזמנה לשליחה.');
+                showToast('אנא בחר הזמנה לשליחה.', 'error');
                 return;
             }
             const orderIdInput = document.getElementById('orderIdInput');
@@ -3902,7 +3916,7 @@
             const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
             const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
 
-            const orderId = orderIdInput ? orderIdInput.value : (currentOrderDetails.id ? currentOrderDetails.id.substring(0,6) : 'לא ידוע');
+            const orderId = orderIdInput ? orderIdInput.value : (currentOrderDetails.orderId || 'לא ידוע');
             const customerName = customerContactNameInput ? customerContactNameInput.value : (currentOrderDetails.customer || 'לקוח יקר');
             const messageText = freeTextMessageElement ? freeTextMessageElement.value : ''; 
             const workType = workTypeInput ? workTypeInput.value : ''; 
@@ -3927,4 +3941,159 @@
                 message += `קישור Waze: ${wazeLinkForDriver}\n`;
             }
             if (workType) { 
-                message += `*סוג עבודה/
+                message += `*סוג עבודה/הערות:*\n${workType}\n`;
+            }
+            if (messageText) { 
+                message += `\n*הודעה/הערות נוספות:*\n${messageText}`;
+            }
+
+            const url = `https://wa.me/${driverPhoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, "_blank");
+        }
+
+        /**
+         * Shows the customer message password modal.
+         */
+        function showCustomerMessagePasswordModal() {
+            const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
+            if (customerMessagePasswordInput) customerMessagePasswordInput.value = ''; 
+            
+            const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
+            if (customerMessagePasswordError) customerMessagePasswordError.style.display = 'none'; 
+            
+            const customerMessagePasswordModal = document.getElementById('customerMessagePasswordModal');
+            if (customerMessagePasswordModal) customerMessagePasswordModal.classList.add('visible');
+            else console.error("Error: Element with ID 'customerMessagePasswordModal' not found.");
+        }
+
+        /**
+         * Checks password for customer message section.
+         */
+        function checkCustomerMessagePassword() {
+            const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
+            const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
+            const customerMessagingSectionWrapper = document.getElementById('customerMessagingSectionWrapper');
+            const customerMessagePasswordModal = document.getElementById('customerMessagePasswordModal');
+
+            if (!customerMessagePasswordInput || !customerMessagePasswordError || !customerMessagingSectionWrapper || !customerMessagePasswordModal) {
+                console.error("Error: One or more required customer message password elements not found.");
+                return;
+            }
+
+            const inputPassword = customerMessagePasswordInput.value;
+            if (inputPassword === CUSTOMER_MESSAGE_PASSWORD) {
+                customerMessagingSectionWrapper.style.display = 'flex'; 
+                closeModal('customerMessagePasswordModal');
+            } else {
+                customerMessagePasswordError.textContent = 'סיסמה שגויה. נסה שוב.';
+                customerMessagePasswordError.style.display = 'block'; 
+            }
+        }
+
+        /**
+         * Shows the new order creation modal.
+         */
+        function showNewOrderModal() {
+            // Clear previous form data
+            document.getElementById('newOrderDate').value = '';
+            document.getElementById('newOrderTime').value = '';
+            document.getElementById('newOrderCustomer').value = '';
+            document.getElementById('newOrderAddress').value = '';
+            document.getElementById('newOrderCity').value = '';
+            document.getElementById('newOrderWarehouse').value = '';
+            document.getElementById('newOrderStatus').value = 'ממתין';
+            document.getElementById('newOrderWazeLink').value = '';
+            document.getElementById('newOrderAssignedDriver').value = '';
+
+            const newOrderModal = document.getElementById('newOrderModal');
+            if (newOrderModal) {
+                newOrderModal.classList.add('visible');
+            }
+        }
+
+        /**
+         * Submits the new order form data to Firestore.
+         */
+        async function submitNewOrder() {
+            const newOrderDate = document.getElementById('newOrderDate').value;
+            const newOrderTime = document.getElementById('newOrderTime').value;
+            const newOrderCustomer = document.getElementById('newOrderCustomer').value;
+            const newOrderAddress = document.getElementById('newOrderAddress').value;
+            const newOrderCity = document.getElementById('newOrderCity').value;
+            const newOrderWarehouse = document.getElementById('newOrderWarehouse').value;
+            const newOrderStatus = document.getElementById('newOrderStatus').value;
+            const newOrderWazeLink = document.getElementById('newOrderWazeLink').value;
+            const newOrderAssignedDriver = document.getElementById('newOrderAssignedDriver').value;
+
+            if (!newOrderDate || !newOrderTime || !newOrderCustomer || !newOrderAddress || !newOrderWarehouse) {
+                showToast("יש למלא את כל השדות החובה (תאריך, שעה, לקוח, כתובת, מחסן).", "error");
+                return;
+            }
+
+            const orderData = {
+                date: newOrderDate,
+                time: newOrderTime,
+                customer: newOrderCustomer,
+                address: newOrderAddress,
+                city: newOrderCity,
+                warehouse: newOrderWarehouse,
+                status: newOrderStatus,
+                wazeLink: newOrderWazeLink || null,
+                assignedDriver: newOrderAssignedDriver || null,
+                orderId: 'ORD' + Date.now().toString().slice(-6) // Simple unique ID
+            };
+
+            await addNewOrder(orderData);
+        }
+
+        /**
+         * Shows a toast notification.
+         * @param {string} message The message to display.
+         * @param {string} type 'success' or 'error'
+         */
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                console.error("Toast container not found.");
+                return;
+            }
+
+            const toast = document.createElement('div');
+            toast.classList.add('toast-notification');
+            if (type === 'error') {
+                toast.classList.add('error');
+            }
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
+            
+            toastContainer.appendChild(toast);
+
+            // Show the toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            // Hide and remove the toast after a delay
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 5000); // 5 seconds
+        }
+
+
+        // Initialize the app when the DOM is fully loaded, but start with login screen
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure Firebase variables are available from the module script
+            db = window.db;
+            firebaseApp = window.firebaseApp;
+            auth = window.auth;
+            appId = window.appId;
+
+            // Only proceed with app initialization after successful login
+            // The initial screen is always the login page.
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+        });
+
+    </script>
+</body>
+</html>
