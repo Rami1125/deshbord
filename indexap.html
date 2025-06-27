@@ -3,97 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📋 מערכת ניהול הובלות ח.סבן - לוח בקרה</title>
+    <title>📋 דוח הזמנות - ח. סבן חומרי בנין</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    <!-- Firebase SDK (Version 11.6.1 is used as per common practice in Canvas) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, onSnapshot, addDoc, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables for Firebase instances
-        window.firebaseApp = null;
-        window.db = null;
-        window.auth = null;
-        window.currentFirebaseUser = null; // Stores Firebase Auth user object
-
-        // MANDATORY: These variables are provided by the Canvas environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Initialize Firebase
-        if (firebaseConfig) {
-            window.firebaseApp = initializeApp(firebaseConfig);
-            window.db = getFirestore(window.firebaseApp);
-            window.auth = getAuth(window.firebaseApp);
-
-            // Listen for auth state changes
-            onAuthStateChanged(window.auth, async (user) => {
-                if (user) {
-                    window.currentFirebaseUser = user;
-                    console.log("Firebase Authenticated UID:", user.uid);
-                    // After Firebase auth, attempt to store/retrieve user role from Firestore
-                    // This is crucial for role-based access to app features.
-                    await window.ensureUserRoleInFirestore(user.uid);
-                } else {
-                    window.currentFirebaseUser = null;
-                    console.log("Firebase: No user signed in.");
-                    // Attempt anonymous sign-in if no user and no custom token,
-                    // primarily to allow Firestore listeners to work for public data.
-                    if (!initialAuthToken) {
-                        try {
-                            await signInAnonymously(window.auth);
-                            console.log("Firebase: Signed in anonymously.");
-                        } catch (error) {
-                            console.error("Firebase: Anonymous sign-in failed:", error);
-                        }
-                    }
-                }
-            });
-
-            // Sign in with custom token if provided (standard Canvas auth)
-            if (initialAuthToken) {
-                signInWithCustomToken(window.auth, initialAuthToken)
-                    .then((userCredential) => {
-                        console.log("Firebase: Signed in with custom token:", userCredential.user.uid);
-                    })
-                    .catch((error) => {
-                        console.error("Firebase: Custom token sign-in failed:", error.code, error.message);
-                        // If custom token fails, try anonymous sign-in as fallback
-                        signInAnonymously(window.auth)
-                            .then(() => console.log("Firebase: Signed in anonymously after custom token failure."))
-                            .catch((anonError) => console.error("Firebase: Anonymous sign-in failed as fallback:", anonError));
-                    });
-            } else {
-                // If no custom token, try anonymous sign-in immediately
-                signInAnonymously(window.auth)
-                    .then(() => console.log("Firebase: Signed in anonymously."))
-                    .catch((error) => console.error("Firebase: Anonymous sign-in failed at start:", error));
-            }
-        } else {
-            console.error("Firebase config not available. Firebase will not be initialized.");
-        }
-
-        // Expose Firestore methods globally for use in the HTML script block
-        window.getFirestore = getFirestore;
-        window.collection = collection;
-        window.getDocs = getDocs;
-        window.onSnapshot = onSnapshot;
-        window.addDoc = addDoc;
-        window.updateDoc = updateDoc;
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.getDoc = getDoc; // Also expose getDoc for user profile retrieval
-        window.appId = appId; // Expose appId globally
-        window.auth = auth; // Expose auth for logout and user checks
-        window.signOut = signOut; // Expose signOut function
-    </script>
-
 
     <style>
         /* General styling for the application */
@@ -114,33 +28,41 @@
             --glass-light-20: rgba(255, 255, 255, 0.2); /* 20% transparent white for new glass elements */
             --glass-border-20: rgba(255, 255, 255, 0.3);
 
-            /* New driver specific colors for order cards with gradients */
-            --ali-card-bg-gradient: linear-gradient(135deg, rgba(173, 216, 230, 0.7), rgba(135, 206, 235, 0.7)); /* Light blue to Sky Blue */
-            --ali-card-border: rgba(173, 216, 230, 0.9);
-            --ali-card-hover-border: #87CEEB; /* Sky Blue */
+            /* New driver specific colors for order cards with gradients (adjusted for Saban) */
+            --saban-card-bg-gradient: linear-gradient(135deg, rgba(255, 165, 0, 0.7), rgba(255, 140, 0, 0.7)); /* Orange to Dark Orange */
+            --saban-card-border: rgba(255, 165, 0, 0.9);
+            --saban-card-hover-border: #FF8C00; /* Dark Orange */
 
-            --hakmat-card-bg-gradient: linear-gradient(135deg, rgba(255, 223, 186, 0.7), rgba(255, 200, 100, 0.7)); /* Light orange to a more vibrant orange */
-            --hakmat-card-border: rgba(255, 223, 186, 0.9);
-            --hakmat-card-hover-border: #FFDAB9; /* Peach Puff */
+            /* New warehouse specific colors for summary cards with gradients (adjusted for Saban) */
+            --saban-warehouse-bg-gradient: linear-gradient(135deg, rgba(147, 112, 219, 0.7), rgba(128, 0, 128, 0.7)); /* Medium Purple to Purple */
+            --saban-warehouse-border: rgba(147, 112, 219, 0.9);
+            --saban-warehouse-text: white; /* Text color for better contrast on colored glass */
+            --saban-warehouse-count: #DA70D6; /* Orchid */
+            --saban-warehouse-hover-border: #8A2BE2; /* Blue Violet */
 
-            /* New warehouse specific colors for summary cards with gradients */
-            --student-warehouse-bg-gradient: linear-gradient(135deg, rgba(147, 112, 219, 0.7), rgba(128, 0, 128, 0.7)); /* Medium Purple to Purple */
-            --student-warehouse-border: rgba(147, 112, 219, 0.9);
-            --student-warehouse-text: white; /* Text color for better contrast on colored glass */
-            --student-warehouse-count: #DA70D6; /* Orchid */
-            --student-warehouse-hover-border: #8A2BE2; /* Blue Violet */
+            --in-preparation-bg-gradient: linear-gradient(135deg, rgba(255, 223, 186, 0.7), rgba(255, 200, 100, 0.7)); /* Light orange to a more vibrant orange */
+            --in-preparation-border: rgba(255, 223, 186, 0.9);
+            --in-preparation-text: white;
+            --in-preparation-count: #FFDAB9;
+            --in-preparation-hover-border: #FFDAB9;
 
-            --carpenter-warehouse-bg-gradient: linear-gradient(135deg, rgba(60, 179, 113, 0.7), rgba(34, 139, 34, 0.7)); /* Medium Sea Green to Forest Green */
-            --carpenter-warehouse-border: rgba(60, 179, 113, 0.9);
-            --carpenter-warehouse-text: white; /* Text color for better contrast on colored glass */
-            --carpenter-warehouse-count: #32CD32; /* Lime Green */
-            --carpenter-warehouse-hover-border: #2E8B57; /* Sea Green */
+            --ready-bg-gradient: linear-gradient(135deg, rgba(60, 179, 113, 0.7), rgba(34, 139, 34, 0.7)); /* Medium Sea Green to Forest Green */
+            --ready-border: rgba(60, 179, 113, 0.9);
+            --ready-text: white;
+            --ready-count: #32CD32;
+            --ready-hover-border: #2E8B57;
 
-            --morning-orders-bg-gradient: linear-gradient(135deg, rgba(255, 165, 0, 0.7), rgba(255, 140, 0, 0.7)); /* Orange to Dark Orange */
-            --morning-orders-border: rgba(255, 165, 0, 0.9);
-            --morning-orders-text: white; /* Text color for better contrast on colored glass */
-            --morning-orders-count: #FFD700; /* Gold */
-            --morning-orders-hover-border: #FF8C00; /* Dark Orange */
+            --on-delivery-bg-gradient: linear-gradient(135deg, rgba(52, 152, 219, 0.7), rgba(41, 128, 185, 0.7)); /* Blue */
+            --on-delivery-border: rgba(52, 152, 219, 0.9);
+            --on-delivery-text: white;
+            --on-delivery-count: #3498db;
+            --on-delivery-hover-border: #2980b9;
+
+            --delivered-bg-gradient: linear-gradient(135deg, rgba(128, 128, 128, 0.7), rgba(100, 100, 100, 0.7)); /* Grey */
+            --delivered-border: rgba(128, 128, 128, 0.9);
+            --delivered-text: white;
+            --delivered-count: #808080;
+            --delivered-hover-border: #646464;
         }
         
         body {
@@ -176,7 +98,7 @@
         }
 
         /* New rule to hide body background when warehousePage is active */
-        body.warehouse-page-active::before {
+        body.status-page-active::before { /* Changed from warehouse-page-active */
             opacity: 0 !important; /* Fully hide the main background */
             visibility: hidden;
         }
@@ -299,8 +221,8 @@
         }
 
 
-        /* Section title for each driver */
-        .driver-section-title {
+        /* Section title for each driver / status */
+        .section-title { /* Renamed from driver-section-title */
             font-size: 32px; /* Larger title for driver sections */
             font-weight: 700;
             margin: 50px 0 35px; /* More spacing */
@@ -322,7 +244,7 @@
             margin-right: auto; /* Center with flexbox */
         }
         
-        .driver-section-title::before {
+        .section-title::before {
             content: '';
             position: absolute;
             top: 0;
@@ -339,12 +261,12 @@
             transition: left 0.7s ease;
         }
 
-        .driver-section-title:hover::before {
+        .section-title:hover::before {
             left: 100%;
         }
 
-        /* Driver Avatar Styling */
-        .driver-avatar {
+        /* Avatar Styling for section titles */
+        .section-avatar { /* Renamed from driver-avatar */
             width: 60px; /* Size of the avatar */
             height: 60px;
             border-radius: 50%; /* Make it circular */
@@ -354,7 +276,7 @@
             transition: transform 0.3s ease;
         }
 
-        .driver-section-title:hover .driver-avatar {
+        .section-title:hover .section-avatar { /* Renamed from driver-section-title */
             transform: scale(1.1); /* Slightly enlarge on hover */
         }
 
@@ -395,31 +317,22 @@
             overflow: hidden; /* For shine effect */
             animation: fadeIn 0.8s ease-out forwards; /* Fade in animation */
             cursor: pointer; /* Indicate clickable */
-            z-index: 2; /* Increased z-index to ensure clickability */
+            z-index: 1; /* Ensure cards are above timeline effects */
             min-width: 300px; /* Ensure content fits within a column */
         }
 
         .order-card:hover {
             transform: translateY(-8px); /* Slightly less pronounced lift effect on hover */
             box-shadow: 0 12px 25px var(--shadow); /* Deeper shadow on hover */
-            /* border-color: var(--primary-color); */ /* This will be overridden by driver-specific hover colors */
         }
 
-        /* Driver-specific order card styling with gradients */
-        .order-card.ali {
-            background: var(--ali-card-bg-gradient); /* Apply gradient */
-            border: 1px solid var(--ali-card-border);
+        /* Saban specific order card styling with gradients */
+        .order-card.saban-order { /* Specific class for Saban orders */
+            background: var(--saban-card-bg-gradient); /* Apply gradient */
+            border: 1px solid var(--saban-card-border);
         }
-        .order-card.ali:hover {
-            border-color: var(--ali-card-hover-border);
-        }
-
-        .order-card.hakmat {
-            background: var(--hakmat-card-bg-gradient); /* Apply gradient */
-            border: 1px solid var(--hakmat-card-border);
-        }
-        .order-card.hakmat:hover {
-            border-color: var(--hakmat-card-hover-border);
+        .order-card.saban-order:hover {
+            border-color: var(--saban-card-hover-border);
         }
 
         /* Shine effect for order cards (already exists, but ensures it works with gradients) */
@@ -428,7 +341,7 @@
             position: absolute;
             top: -50%;
             left: -50%;
-            width: 0%;
+            width: 200%;
             height: 200%;
             background: linear-gradient(
                 to right,
@@ -479,14 +392,54 @@
             font-size: 1.6rem; /* Make icon slightly smaller than text */
         }
         
-        .order-time .biachad-indicator {
-            font-size: 0.9em; /* Smaller for indicator */
-            padding: 3px 8px;
-            background-color: #ffeb3b; /* Yellow background */
-            color: #333;
+        /* New: Status update area within order card */
+        .order-status-update {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(0, 0, 0, 0.1);
+        }
+
+        .order-status-update select {
+            flex-grow: 1;
+            padding: 8px 10px;
             border-radius: 8px;
-            margin-right: 10px;
-            font-weight: 500;
+            border: 1px solid var(--primary-color);
+            background-color: var(--light-color);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            direction: rtl; /* Ensure dropdown text is RTL */
+            text-align: right; /* Ensure selected option is right-aligned */
+        }
+
+        .order-status-update select option {
+            direction: rtl;
+            text-align: right;
+        }
+
+        .order-status-update select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 5px rgba(46, 204, 113, 0.4);
+            outline: none;
+        }
+
+        .order-status-update button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .order-status-update button:hover {
+            background-color: var(--dark-color);
+            transform: translateY(-2px);
         }
 
         .order-details p {
@@ -523,17 +476,6 @@
             color: var(--accent-color);
         }
 
-        /* NEW: Waze linked icon in order card */
-        .order-details .waze-linked-icon {
-            color: #4CAF50; /* Waze green */
-            font-size: 1.2rem;
-            margin-right: 5px; /* Space from text */
-            transition: transform 0.2s ease;
-        }
-        .order-details p:hover .waze-linked-icon {
-            transform: scale(1.1);
-        }
-
         /* Keyframe animation for page content transition */
         .page-content {
             display: none;
@@ -554,48 +496,6 @@
             transform: translateX(0); /* Slide into view */
             position: relative; /* Bring back into flow once transition complete */
         }
-        
-        /* Toast Notification Styling */
-        #toastContainer {
-            position: fixed;
-            bottom: 100px; /* Above the bottom nav */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2000; /* On top of everything */
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .toast-notification {
-            background-color: rgba(46, 204, 113, 0.95); /* Green for success */
-            color: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            font-size: 1.1rem;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            min-width: 250px;
-            max-width: 80%;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        .toast-notification.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .toast-notification.error {
-            background-color: rgba(231, 76, 60, 0.95); /* Red for error */
-        }
-
 
         /* Modal styling */
         .modal-overlay {
@@ -666,104 +566,6 @@
             font-weight: 600;
             min-width: 90px; /* Align content */
         }
-
-        /* New: LLM button styling */
-        .llm-button {
-            background: linear-gradient(135deg, #FF6F00, #FFD700); /* Orange to Gold gradient */
-            color: white;
-            padding: 15px 25px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            width: fit-content;
-            margin-left: auto; /* Align to right in RTL */
-            margin-right: 0;
-            position: relative; /* For shine effect */
-            overflow: hidden; /* For shine effect */
-        }
-
-        .llm-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(135deg, #FFA000, #FFEA00); /* Slightly brighter on hover */
-        }
-        
-        .llm-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -75%;
-            width: 50%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.3); /* White shimmer */
-            transform: skewX(-20deg);
-            transition: left 0.5s ease-in-out;
-        }
-
-        .llm-button:hover::before {
-            left: 125%;
-        }
-
-        /* New: LLM response display area */
-        #llmResponseContainer {
-            background-color: var(--light-color); /* Light background for the response */
-            border-radius: 15px;
-            padding: 15px;
-            margin-top: 25px; /* More space from button */
-            text-align: right;
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-            min-height: 80px; /* Minimum height for response area */
-            display: flex; /* For loading indicator centering */
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            color: var(--text-color);
-            position: relative;
-        }
-
-        #llmResponseContainer.loading {
-            min-height: 100px;
-            justify-content: center;
-        }
-
-        #llmResponseMessage {
-            white-space: pre-wrap; /* Preserve whitespace and line breaks */
-            direction: rtl; /* Ensure RTL for Hebrew text */
-            text-align: right;
-            width: 100%;
-        }
-
-        /* Loading spinner for LLM response */
-        .loader {
-            border: 6px solid #f3f3f3; /* Light grey */
-            border-top: 6px solid var(--primary-color); /* Blue */
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            display: none; /* Hidden by default */
-            margin: 0 auto;
-        }
-
-        .loader.visible {
-            display: block;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
 
         .modal-close-button {
             position: absolute;
@@ -900,6 +702,44 @@
             border-radius: 8px;
         }
 
+        /* User selection modal (new) */
+        #userSelectModal .modal-content {
+            max-width: 450px;
+            gap: 15px;
+            text-align: center;
+        }
+
+        #userSelectModal .modal-content h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+        }
+
+        #userSelectModal .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #userSelectModal .user-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            width: 100%;
+            text-align: center;
+        }
+
+        #userSelectModal .user-button:hover {
+            background-color: var(--dark-color);
+            transform: translateY(-2px);
+        }
+
         /* Styles for summary counters and graphs */
         .summary-grid {
             display: grid;
@@ -925,6 +765,7 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
+            cursor: pointer; /* Make summary cards clickable */
         }
 
         .summary-card:hover {
@@ -982,8 +823,8 @@
         }
 
         @keyframes spiralShine {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Customer List glass card design */
@@ -995,13 +836,10 @@
             box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.1);
             border: 1px solid var(--glass-border-20);
             padding: 15px;
-            /* Removed margin-top for horizontal layout */
+            margin-top: 20px; /* Space from chart */
             text-align: right;
-            max-height: 250px; /* Set max height to align with chart, overflow scroll */
+            max-height: 150px; /* Allow more height for list */
             overflow-y: auto;
-            flex: 1; /* Allow list to take remaining space */
-            min-width: 180px; /* Ensure a minimum width for the list */
-            box-sizing: border-box; /* Include padding in width/height */
         }
 
         .chart-card .chart-customer-list h4 {
@@ -1038,7 +876,6 @@
             font-size: 0.9rem;
         }
 
-        /* CHANGED: Chart Card Layout for horizontal chart and customer list */
         .chart-card {
             grid-column: span 2; /* Chart takes full width on larger screens */
             background: var(--glass-bg); /* Glassmorphism */
@@ -1049,28 +886,15 @@
             border: 1px solid var(--glass-border);
             padding: 25px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            
             display: flex;
-            flex-direction: row-reverse; /* For RTL: List on the right, chart on the left */
-            align-items: center; /* Vertically center content */
-            justify-content: space-between; /* Space out the chart and the list */
-            gap: 20px; /* Space between chart and list */
-            box-sizing: border-box; /* Include padding in width/height calculation */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .chart-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
-        }
-
-        /* New wrapper for chart content to control its size within the flex container */
-        .chart-content-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 2; /* Allow chart content to take more space */
-            min-width: 250px; /* Ensure chart has enough space */
         }
 
         .chart-card h3 {
@@ -1079,60 +903,14 @@
             margin-bottom: 15px;
             border-bottom: 2px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 10px;
-            width: 100%; /* Ensure title takes full width within its wrapper */
-            text-align: center; /* Center the title */
+            width: 100%;
         }
 
         .chart-container {
-            position: relative; /* For absolute positioning of count overlay */
-            width: 100%; /* Max width within its flex item */
-            max-width: 400px; /* Limit chart width even within flex */
-            height: 250px; /* Adjusted height if needed */
-            margin: 0 auto; /* Center the canvas horizontally */
-        }
-
-        /* Styling for the in-chart count overlay */
-        .chart-count-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3rem; /* Large font for count */
-            font-weight: 700;
-            color: white; /* White text for contrast */
-            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
-            padding: 10px 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            pointer-events: none; /* Allow clicks to pass through to the chart canvas if needed */
-            overflow: hidden; /* For shine effect */
-            z-index: 10; /* Ensure it's above the chart bars */
-            border: 2px solid rgba(255, 255, 255, 0.4); /* Subtle border for glass effect */
-            text-shadow: 0 0 8px rgba(0, 0, 0, 0.7); /* Text shadow for prominence */
-        }
-
-        /* Shine effect for the in-chart count overlay */
-        .chart-count-overlay::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(
-                to right,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.5) 50%, /* Increased visibility for shine */
-                rgba(255, 255, 255, 0) 100%
-            );
-            transform: skewX(-20deg);
-            animation: shine 2s infinite linear; /* Shine animation */
-        }
-
-        @keyframes shine {
-            0% { left: -100%; }
-            50% { left: 100%; }
-            100% { left: -100%; }
+            width: 95%;
+            max-width: 600px; /* Limit chart width */
+            height: 300px; /* Fixed height for chart */
+            margin: 0 auto;
         }
 
         /* Fixed bottom navigation bar */
@@ -1217,19 +995,19 @@
             color: var(--accent-color); /* Active button color */
         }
 
-        /* Specific Nav Button for Warehouse */
-        .nav-button.warehouse-button { /* Changed class to avoid conflict with dropdown menu logic */
+        /* Specific Nav Button for Status (renamed from Warehouse) */
+        .nav-button.status-button { 
             background: linear-gradient(45deg, #9370DB, #8A2BE2); /* Medium Purple to Blue Violet */
             color: white;
             z-index: 1000; /* Ensure this button and its dropdown are above other nav buttons */
             overflow: visible; /* Allow dropdown to escape button boundaries */
         }
-        .nav-button.warehouse-button:hover, .nav-button.warehouse-button.active {
+        .nav-button.status-button:hover, .nav-button.status-button.active {
             background-color: #6A5ACD; /* Slate Blue */
             transform: translateY(-3px);
         }
 
-        /* Dropdown menu for Warehouse */
+        /* Dropdown menu for Status */
         .dropdown-menu {
             position: absolute;
             bottom: 100%; /* Position above the button */
@@ -1247,8 +1025,8 @@
             z-index: 1001; /* Above nav bar */
         }
 
-        /* CHANGED: Dropdown now visible on hover */
-        .nav-button.warehouse-button:hover .dropdown-menu { 
+        /* Change: Dropdown only visible when button is 'active', not on hover */
+        .nav-button.status-button.active .dropdown-menu { 
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) translateY(-5px); /* Slight lift */
@@ -1269,61 +1047,76 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* Warehouse orders display */
-        #warehouseOrdersDisplay {
+        /* Status orders display (renamed from warehouseOrdersDisplay) */
+        #statusOrdersDisplay {
             margin-top: 20px;
         }
-        #warehouseOrdersDisplay .driver-section-title {
+        #statusOrdersDisplay .section-title { /* Renamed from driver-section-title */
             margin-top: 0; /* Remove extra top margin */
         }
-        #warehouseOrdersDisplay .timeline-grid {
+        #statusOrdersDisplay .timeline-grid {
             margin-bottom: 20px; /* Spacing below the grid */
         }
 
-        /* Specific Summary Card Styling */
-        .summary-card.student-warehouse {
-            background: var(--student-warehouse-bg-gradient); /* Apply gradient */
-            border: 1px solid var(--student-warehouse-border);
+        /* Specific Summary Card Styling (adjusted for Saban statuses) */
+        .summary-card.pending {
+            background: var(--in-preparation-bg-gradient);
+            border: 1px solid var(--in-preparation-border);
         }
-        .summary-card.student-warehouse h3 {
-            color: var(--student-warehouse-text);
+        .summary-card.pending h3 {
+            color: var(--in-preparation-text);
         }
-        .summary-card.student-warehouse .summary-count {
-            background: linear-gradient(45deg, #FF69B4, #BA55D3); /* Hot Pink to Medium Orchid */
+        .summary-card.pending .summary-count {
+            background: linear-gradient(45deg, #FFDAB9, #FFA07A); /* Peach Puff to Light Salmon */
             color: white;
         }
-        .summary-card.student-warehouse:hover {
-            border-color: var(--student-warehouse-hover-border);
+        .summary-card.pending:hover {
+            border-color: var(--in-preparation-hover-border);
         }
 
-        .summary-card.carpenter-warehouse {
-            background: var(--carpenter-warehouse-bg-gradient); /* Apply gradient */
-            border: 1px solid var(--carpenter-warehouse-border);
+        .summary-card.ready {
+            background: var(--ready-bg-gradient);
+            border: 1px solid var(--ready-border);
         }
-        .summary-card.carpenter-warehouse h3 {
-            color: var(--carpenter-warehouse-text);
+        .summary-card.ready h3 {
+            color: var(--ready-text);
         }
-        .summary-card.carpenter-warehouse .summary-count {
-            background: linear-gradient(45deg, #00CED1, #40E0D0); /* Dark Cyan to Turquoise */
+        .summary-card.ready .summary-count {
+            background: linear-gradient(45deg, #98FB98, #3CB371); /* Pale Green to Medium Sea Green */
             color: white;
         }
-        .summary-card.carpenter-warehouse:hover {
-            border-color: var(--carpenter-warehouse-hover-border);
+        .summary-card.ready:hover {
+            border-color: var(--ready-hover-border);
         }
 
-        .summary-card.morning-orders {
-            background: var(--morning-orders-bg-gradient); /* Apply gradient */
-            border: 1px solid var(--morning-orders-border);
+        .summary-card.on-delivery {
+            background: var(--on-delivery-bg-gradient);
+            border: 1px solid var(--on-delivery-border);
         }
-        .summary-card.morning-orders h3 {
-            color: var(--morning-orders-text);
+        .summary-card.on-delivery h3 {
+            color: var(--on-delivery-text);
         }
-        .summary-card.morning-orders .summary-count {
-            background: linear-gradient(45deg, #FFD700, #FFA500); /* Gold to Orange */
+        .summary-card.on-delivery .summary-count {
+            background: linear-gradient(45deg, #87CEEB, #4682B4); /* Sky Blue to Steel Blue */
             color: white;
         }
-        .summary-card.morning-orders:hover {
-            border-color: var(--morning-orders-hover-border);
+        .summary-card.on-delivery:hover {
+            border-color: var(--on-delivery-hover-border);
+        }
+
+        .summary-card.delivered {
+            background: var(--delivered-bg-gradient);
+            border: 1px solid var(--delivered-border);
+        }
+        .summary-card.delivered h3 {
+            color: var(--delivered-text);
+        }
+        .summary-card.delivered .summary-count {
+            background: linear-gradient(45deg, #A9A9A9, #696969); /* Dark Gray to Dim Gray */
+            color: white;
+        }
+        .summary-card.delivered:hover {
+            border-color: var(--delivered-hover-border);
         }
 
         /* Top Navigation Bar */
@@ -1341,7 +1134,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
-            /* margin-bottom: 20px; Removed as it's fixed */
             flex-wrap: wrap; /* Allow wrapping */
             box-sizing: border-box;
             z-index: 990;
@@ -1372,24 +1164,6 @@
         }
 
         @media (max-width: 992px) {
-            /* CHART CARD: Revert to column on smaller screens */
-            .chart-card {
-                flex-direction: column; 
-                gap: 20px;
-            }
-            .chart-content-wrapper {
-                flex: none; /* Remove flex grow */
-                width: 100%;
-                min-width: unset;
-            }
-            .chart-card .chart-customer-list {
-                margin-top: 20px; /* Re-add top margin for list when in column layout */
-                max-height: 150px; /* Restore original max-height for list on small screens */
-                flex: none; /* Remove flex grow */
-                width: 100%;
-                min-width: unset;
-            }
-
             .timeline-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
@@ -1409,6 +1183,9 @@
             }
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            .chart-card {
+                grid-column: span 1;
             }
             .top-nav .nav-button {
                 max-width: none; 
@@ -1433,7 +1210,7 @@
             h1 {
                 font-size: 2.2rem;
             }
-            .driver-section-title {
+            .section-title { /* Renamed */
                 font-size: 26px;
                 padding: 8px 25px;
             }
@@ -1479,6 +1256,9 @@
                 font-size: 1.2rem;
                 padding: 12px 20px;
             }
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
             .summary-card h3 {
                 font-size: 1.6rem;
             }
@@ -1490,10 +1270,10 @@
             }
             .nav-button {
                 font-size: 0.9rem;
-                padding: 5px 8px;
+                padding: 8px 10px;
             }
             .nav-button i {
-                font-size: 1.1rem;
+                font-size: 1.2rem;
             }
             .top-nav .nav-button {
                 flex-basis: calc(50% - 10px); 
@@ -1523,7 +1303,7 @@
             h1 {
                 font-size: 1.8rem;
             }
-            .driver-section-title {
+            .section-title { /* Renamed */
                 font-size: 22px;
                 padding: 6px 20px;
                 margin: 30px 0 20px;
@@ -1582,1168 +1362,277 @@
                 width: calc(100% - 20px); 
             }
         }
-
-        /* New styles for the advanced messaging modal */
-        .message-section {
-            background-color: var(--light-color);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message-section h4 {
-            margin-top: 0;
-            color: var(--dark-color);
-            font-size: 1.5rem;
-            border-bottom: 1px dashed rgba(0,0,0,0.1);
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .message-section label {
-            font-weight: 600;
-            color: var(--dark-color);
-            font-size: 1.1rem;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .message-section input[type="text"],
-        .message-section input[type="tel"],
-        .message-section textarea,
-        .message-section select,
-        .message-section input[type="date"],
-        .message-section input[type="time"] { /* Added time input */
-            width: calc(100% - 20px);
-            padding: 12px;
-            border: 1px solid var(--primary-color);
-            border-radius: 10px;
-            font-size: 1rem;
-            direction: rtl;
-            text-align: right;
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .message-section input[type="text"]:focus,
-        .message-section input[type="tel"]:focus,
-        .message-section textarea:focus,
-        .message-section select:focus,
-        .message-section input[type="date"]:focus,
-        .message-section input[type="time"]:focus { /* Added time input */
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
-        }
-
-        .message-section textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        .message-section .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-            justify-content: flex-end; /* Align buttons to the right (RTL) */
-        }
-
-        .message-section .button-group button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .message-section .button-group button:hover {
-            background-color: var(--dark-color);
-            transform: translateY(-2px);
-        }
-
-        /* WhatsApp send button within modal */
-        #sendCustomerMessageButton {
-            background-color: #25D366; /* WhatsApp green */
-        }
-        #sendCustomerMessageButton:hover {
-            background-color: #128C7E; /* Darker WhatsApp green */
-        }
-
-        /* Waze Icon Styling */
-        .waze-icon-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .waze-icon {
-            font-size: 1.8rem;
-            color: #4CAF50; /* Green for Waze */
-            cursor: pointer;
-            position: relative;
-            animation: bounce 1s infinite alternate; /* Moving emoji effect */
-        }
-
-        @keyframes bounce {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-5px); }
-        }
-
-        .waze-icon.blinking-light::after {
-            content: '';
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 10px;
-            height: 10px;
-            background-color: #ff0000; /* Red light */
-            border-radius: 50%;
-            animation: blink 1s infinite alternate;
-        }
-
-        @keyframes blink {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
-        }
-
-        /* Waze Pop-up Modal */
-        #wazePopupModal .modal-content {
-            width: 95%; /* Wider for full page feel */
-            max-width: 800px; /* Limit max width for very large screens */
-            text-align: center;
-            background: linear-gradient(135deg, #e0f2f7, #d4ebf2); /* Light blue gradient */
-            border: 3px solid #87CEEB; /* Sky Blue border */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            padding: 30px; /* Adjust padding for new size */
-        }
-        #wazePopupModal .modal-content h2 {
-            font-size: 2.2rem;
-            color: #2C3E50; /* Dark blue-gray */
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-        }
-        #wazePopupModal .modal-content .waze-info-title { /* New style for the prominent title */
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-top: 10px;
-            margin-bottom: 5px;
-            display: block; /* Ensure it takes full width and breaks line */
-        }
-        #wazePopupModal .modal-content p {
-            word-break: break-all; /* Break long URLs */
-            font-size: 1.1rem;
-            direction: ltr; /* LTR for URL */
-            text-align: center;
-            color: var(--text-color);
-            margin-bottom: 15px;
-        }
-        #wazePopupModal .modal-content a {
-            color: var(--primary-color);
-            text-decoration: underline;
-        }
-        #wazePopupModal .modal-content .button {
-            background-color: #4CAF50; /* Waze green */
-            color: white;
-            padding: 12px 25px;
-            border-radius: 10px;
-            text-decoration: none;
-            margin-top: 20px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        #wazePopupModal .modal-content .button:hover {
-            background-color: #388E3C; /* Darker green */
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Order Details Modal specific styling (make it more colorful and modern) */
-        #orderDetailsModal .modal-content {
-            background: linear-gradient(135deg, rgba(230, 240, 255, 0.98), rgba(200, 220, 245, 0.98)); /* Light blue gradient */
-            border: 3px solid var(--primary-color);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-            padding: 40px; /* More padding */
-            gap: 25px; /* More gap */
-        }
-        #orderDetailsModal .modal-content h2 {
-            color: #2C3E50; /* Dark title */
-            font-size: 2.8rem; /* Larger title */
-            border-bottom: 3px solid var(--primary-color); /* Thicker border */
-            padding-bottom: 15px;
-            margin-bottom: 30px;
-        }
-        #orderDetailsModal .modal-content p {
-            font-size: 1.5rem; /* Larger text */
-            color: #444;
-            margin: 12px 0;
-        }
-        #orderDetailsModal .message-section {
-            background-color: rgba(255, 255, 255, 0.7); /* Slightly transparent white for sections */
-            border: 1px solid rgba(0,0,0,0.15);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 25px;
-            border-radius: 20px;
-            gap: 18px;
-        }
-        #orderDetailsModal .message-section h4 {
-            font-size: 1.7rem;
-            color: var(--primary-color); /* Blue section title */
-            border-bottom: 2px solid rgba(52, 152, 219, 0.3); /* Lighter blue dashed border */
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-        #orderDetailsModal .message-section label {
-            font-size: 1.2rem;
-            color: var(--dark-color);
-        }
-        #orderDetailsModal .message-section input,
-        #orderDetailsModal .message-section textarea,
-        #orderDetailsModal .message-section select {
-            border: 2px solid var(--secondary-color); /* Green border for inputs */
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 1.1rem;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        #orderDetailsModal .message-section input:focus,
-        #orderDetailsModal .message-section textarea:focus,
-        #orderDetailsModal .message-section select:focus {
-            box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
-        }
-        #orderDetailsModal .button-group button {
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            border-radius: 15px;
-            background: linear-gradient(135deg, var(--primary-color), #5DADE2); /* Lighter blue gradient */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        #orderDetailsModal .button-group button:hover {
-            background: linear-gradient(135deg, #5DADE2, var(--primary-color));
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
-        }
-
-        /* Specific override for LLM button in order details modal */
-        #orderDetailsModal .llm-button {
-            background: linear-gradient(135deg, #FF6F00, #FFD700); /* Orange to Gold gradient */
-            padding: 15px 30px;
-            font-size: 1.3rem;
-            border-radius: 20px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            margin-top: 30px;
-        }
-        #orderDetailsModal .llm-button:hover {
-            background: linear-gradient(135deg, #FFA000, #FFEA00);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        }
-        /* Specific override for WhatsApp send button in order details modal */
-        #orderDetailsModal #sendCustomerMessageButton {
-            background: linear-gradient(135deg, #25D366, #128C7E); /* WhatsApp green gradient */
-            padding: 20px 35px;
-            font-size: 1.5rem;
-            border-radius: 30px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            margin-top: 40px;
-            max-width: none; /* Ensure it takes full width */
-        }
-        #orderDetailsModal #sendCustomerMessageButton:hover {
-            background: linear-gradient(135deg, #128C7E, #25D366);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-        }
-        #orderDetailsModal .message-section .button-group button { /* Driver buttons */
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 1.05rem;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-        }
-        #orderDetailsModal .message-section .button-group button:hover {
-            background: linear-gradient(135deg, #2980b9, #3498db);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
-        }
-
-        /* NEW: Styles for driver buttons with avatars */
-        .driver-button-avatar {
-            width: 25px; /* Adjust size as needed */
-            height: 25px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-left: 8px; /* Space between avatar and text */
-            border: 1px solid rgba(255, 255, 255, 0.5); /* Subtle white border */
-        }
-
-        /* Adjust button group if avatars push content */
-        #orderDetailsModal .message-section .button-group {
-            justify-content: center; /* Center content within buttons */
-        }
-
-        /* Style for the open customer message button */
-        #openCustomerMessageButton {
-            background: linear-gradient(135deg, #007bff, #0056b3); /* Blue gradient */
-            padding: 15px 30px;
-            font-size: 1.3rem;
-            border-radius: 20px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            margin-top: 20px; /* Space from previous elements */
-            width: 100%;
-            max-width: 350px; /* Limit width */
-            margin-left: auto;
-            margin-right: auto;
-        }
-        #openCustomerMessageButton:hover {
-            background: linear-gradient(135deg, #0056b3, #007bff);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        }
-        
-        /* New Order Form styles */
-        #newOrderModal .modal-content {
-            max-width: 600px;
-        }
-        #newOrderModal .modal-content .form-group {
-            margin-bottom: 15px;
-            text-align: right;
-        }
-        #newOrderModal .modal-content label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: var(--dark-color);
-        }
-        #newOrderModal .modal-content input,
-        #newOrderModal .modal-content select,
-        #newOrderModal .modal-content textarea {
-            width: calc(100% - 22px);
-            padding: 10px;
-            border: 1px solid var(--primary-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            direction: rtl;
-            text-align: right;
-        }
-        #newOrderModal .modal-content button {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            margin-top: 20px;
-            width: 100%;
-        }
-        #newOrderModal .modal-content button:hover {
-            background-color: #28a745;
-            transform: translateY(-2px);
-        }
-
-        /* Status Dropdown in Order Card */
-        .order-card .status-dropdown {
-            margin-top: 10px;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid var(--primary-color);
-            background-color: var(--light-color);
-            font-size: 0.95rem;
-            direction: rtl;
-            text-align: right;
-            cursor: pointer;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .order-card .status-dropdown:hover {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
-        }
-        /* Style specific statuses */
-        .status-dropdown option[value="הושלם"] { color: #2ecc71; font-weight: bold; }
-        .status-dropdown option[value="בדרך"] { color: #3498db; font-weight: bold; }
-        .status-dropdown option[value="ממתין"] { color: #f1c40f; font-weight: bold; }
-        .status-dropdown option[value="בוטל"] { color: #e74c3c; font-weight: bold; }
-        
-        /* Login Page styles */
-        #loginPage {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('https://i.postimg.cc/k47b0H5n/Screenshot-20250624-192750-Gallery.jpg'); /* Background image for login page */
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000; /* On top of everything */
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        #loginForm {
-            background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            backdrop-filter: blur(8px);
-            border: 2px solid var(--primary-color);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-width: 400px;
-            width: 90%;
-        }
-
-        #loginForm h2 {
-            margin-top: 0;
-            color: var(--dark-color);
-            font-size: 2.5rem;
-            margin-bottom: 25px;
-        }
-
-        #loginForm input {
-            width: calc(100% - 20px);
-            padding: 15px;
-            margin-bottom: 10px;
-            border: 1px solid var(--primary-color);
-            border-radius: 10px;
-            font-size: 1.2rem;
-            text-align: center;
-            direction: ltr; /* For username/password input */
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        #loginForm input:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
-        }
-
-        #loginForm button {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            margin-top: 15px;
-        }
-        #loginForm button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-        }
-
-        #loginError {
-            color: var(--accent-color);
-            margin-top: 10px;
-            font-weight: bold;
-            display: none;
-        }
-
-        /* User Info Display */
-        #userInfoDisplay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 8px 15px;
-            border-radius: 15px;
-            font-size: 1rem;
-            color: var(--dark-color);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            direction: rtl;
-            text-align: right;
-        }
-        #userInfoDisplay i {
-            color: var(--primary-color);
-        }
-        #userInfoDisplay button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-right: 10px;
-            transition: background-color 0.2s ease;
-        }
-        #userInfoDisplay button:hover {
-            background-color: #c0392b;
-        }
-
     </style>
 </head>
 <body>
-    <!-- Login Page -->
-    <div id="loginPage">
-        <div id="loginForm">
-            <h2>ברוכים הבאים למערכת הובלות ח.סבן</h2>
-            <input type="text" id="usernameInput" placeholder="שם משתמש" onkeyup="if(event.keyCode === 13) loginUser()">
-            <input type="password" id="passwordLoginInput" placeholder="סיסמה" onkeyup="if(event.keyCode === 13) loginUser()">
-            <button onclick="loginUser()">התחבר</button>
-            <p id="loginError" style="display: none;"></p>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
+            <i class="fas fa-home"></i> ראשי
+        </button>
+        <!-- Changed to represent order statuses or types -->
+        <button class="nav-button" data-page-id="pendingOrdersPage" data-nav-id="pending-nav-button">
+            <i class="fas fa-hourglass-start"></i> ממתין להכנה
+        </button>
+        <button class="nav-button" data-page-id="readyOrdersPage" data-nav-id="ready-nav-button">
+            <i class="fas fa-check-circle"></i> מוכן
+        </button>
+        <button class="nav-button status-button" data-nav-id="status-filter-nav-button">
+            <i class="fas fa-tasks"></i> סטטוסים
+            <div class="dropdown-menu">
+                <div class="dropdown-item" data-status-type="בהכנה"><i class="fas fa-utensils"></i> בהכנה</div>
+                <div class="dropdown-item" data-status-type="לשינוע"><i class="fas fa-truck-loading"></i> לשינוע</div>
+                <div class="dropdown-item" data-status-type="בדרך"><i class="fas fa-truck-moving"></i> בדרך</div>
+                <div class="dropdown-item" data-status-type="נמסרה"><i class="fas fa-box"></i> נמסרה</div>
+            </div>
+        </button>
+    </nav>
+
+    <div class="header">
+        <div class="header-content">
+            <div class="datetime">
+                <div class="time" id="currentTimeDisplay"></div> 
+                <div class="date" id="currentDateDisplay"></div>
+            </div>
+            <h1>📋 דוח הזמנות - ח. סבן חומרי בנין</h1>
+            <div id="loggedInUser" style="color: rgba(255,255,255,0.8); font-size: 1.2rem; margin-top: 10px;"></div>
         </div>
     </div>
 
-    <!-- Main Application Container -->
-    <div id="appContainer" style="display: none;">
-        <!-- User Info Display -->
-        <div id="userInfoDisplay">
-            <i class="fas fa-user-circle"></i>
-            <span>מחובר כ: <span id="currentUsernameDisplay"></span> (<span id="currentUserRoleDisplay"></span>)</span>
-            <button onclick="logoutUser()">התנתק</button>
-        </div>
-
-        <!-- Top Navigation Bar -->
-        <nav class="top-nav">
-            <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
-                <i class="fas fa-home"></i> ראשי
-            </button>
-            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
-                <i class="fas fa-user-tie"></i> חכמת
-            </button>
-            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
-                <i class="fas fa-user-astronaut"></i> עלי
-            </button>
-            <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
-                <i class="fas fa-boxes"></i> מחסן
-                <div class="dropdown-menu">
-                    <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
-                    <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
+    <div class="container">
+        <!-- Main Page Content -->
+        <div id="mainPage" class="page-content active">
+            <!-- Summary Counters Section: Order Statuses -->
+            <div class="summary-grid">
+                <div class="summary-card pending" data-status="ממתין להכנה">
+                    <h3><i class="fas fa-hourglass-start"></i> הזמנות ממתינות להכנה</h3>
+                    <div class="summary-count" id="pendingOrdersCount">0</div>
                 </div>
-            </button>
-            <!-- New Order Button (Visible only to Admin/Dispatchers) -->
-            <button class="nav-button" id="addNewOrderButton" onclick="showNewOrderModal()" style="display: none;">
-                <i class="fas fa-plus-circle"></i> הזמנה חדשה
-            </button>
-        </nav>
-
-        <div class="header">
-            <div class="header-content">
-                <div class="datetime">
-                    <div class="time" id="currentTimeDisplay"></div> 
-                    <div class="date" id="currentDateDisplay"></div>
+                <div class="summary-card ready" data-status="מוכן">
+                    <h3><i class="fas fa-check-circle"></i> הזמנות מוכנות</h3>
+                    <div class="summary-count" id="readyOrdersCount">0</div>
                 </div>
-                <h1>🚛 דוח בוקר - סידור הובלות</h1>
+                <div class="summary-card on-delivery" data-status="בדרך">
+                    <h3><i class="fas fa-truck-moving"></i> הזמנות בדרך</h3>
+                    <div class="summary-count" id="onDeliveryOrdersCount">0</div>
+                </div>
+                <div class="summary-card delivered" data-status="נמסרה">
+                    <h3><i class="fas fa-box"></i> הזמנות שנמסרו</h3>
+                    <div class="summary-count" id="deliveredOrdersCount">0</div>
+                </div>
+            </div>
+
+            <!-- All Orders Timeline on Main Page -->
+            <div class="section-title">
+                <img src="https://placehold.co/60x60/3498db/ffffff?text=S" alt="Avatar for Saban" class="section-avatar">
+                כל ההזמנות
+            </div>
+            <div id="allOrdersTimeline" class="timeline-grid">
+                <!-- All Saban orders will be dynamically inserted here -->
             </div>
         </div>
 
-        <div class="container">
-            <!-- Main Page Content -->
-            <div id="mainPage" class="page-content active">
-                <!-- Summary Counters Section 1: Driver and Total Warehouse -->
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <h3><i class="fas fa-truck"></i> סה"כ הזמנות עלי</h3>
-                        <div class="summary-count" id="aliOrderCount">0</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3><i class="fas fa-truck"></i> סה"כ הזמנות חכמת</h3>
-                        <div class="summary-count" id="hakmatOrderCount">0</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3><i class="fas fa-warehouse"></i> סה"כ הזמנות מחסן</h3>
-                        <div class="summary-count" id="totalWarehouseOrderCount">0</div>
-                    </div>
-                </div>
-
-                <!-- Summary Counters Section 2: Specific Warehouses and Morning Orders -->
-                <div class="summary-grid">
-                    <div class="summary-card student-warehouse">
-                        <h3><i class="fas fa-boxes"></i> מחסן התלמיד</h3>
-                        <div class="summary-count" id="studentWarehouseCount">0</div>
-                    </div>
-                    <div class="summary-card carpenter-warehouse">
-                        <h3><i class="fas fa-tools"></i> מחסן החרש</h3>
-                        <div class="summary-count" id="carpenterWarehouseCount">0</div>
-                    </div>
-                    <div class="summary-card morning-orders">
-                        <h3><i class="fas fa-sun"></i> הזמנות 06:00-09:00</h3>
-                        <div class="summary-count" id="morningOrdersCount">0</div>
-                    </div>
-                </div>
-
-                <!-- Charts Section -->
-                <div class="summary-grid">
-                    <div class="chart-card">
-                        <div class="chart-content-wrapper">
-                            <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - עלי</h3>
-                            <div class="chart-container">
-                                <canvas id="aliChart"></canvas>
-                                <div class="chart-count-overlay" id="aliChartCountOverlay">0</div>
-                            </div>
-                        </div>
-                        <div class="chart-customer-list" id="aliMorningCustomers">
-                            <!-- Customer names will be inserted here -->
-                        </div>
-                    </div>
-                    <div class="chart-card">
-                        <div class="chart-content-wrapper">
-                            <h3><i class="fas fa-chart-bar"></i> הזמנות 06:00-09:00 - חכמת</h3>
-                            <div class="chart-container">
-                                <canvas id="hakmatChart"></canvas>
-                                <div class="chart-count-overlay" id="hakmatChartCountOverlay">0</div>
-                            </div>
-                        </div>
-                        <div class="chart-customer-list" id="hakmatMorningCustomers">
-                            <!-- Customer names will be inserted here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Driver Ali's section on Main Page -->
-                <div class="driver-section-title">
-                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Avatar for Ali" class="driver-avatar" id="aliAvatar">
-                    נהג: עלי
-                </div>
-                <div id="aliTimeline" class="timeline-grid">
-                    <!-- Orders for Ali will be dynamically inserted here -->
-                </div>
-
-                <!-- Driver Hakmat's section on Main Page -->
-                <div class="driver-section-title">
-                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Avatar for Hakmat" class="driver-avatar" id="hakmatAvatar">
-                    נהג: חכמת
-                </div>
-                <div id="hakmatTimeline" class="timeline-grid">
-                    <!-- Orders for Hakmat will be dynamically inserted here -->
-                </div>
+        <!-- Pending Orders Page Content -->
+        <div id="pendingOrdersPage" class="page-content">
+            <div class="section-title">
+                <img src="https://placehold.co/60x60/FFDAB9/2c3e50?text=P" alt="Avatar for Pending" class="section-avatar">
+                הזמנות ממתינות להכנה
             </div>
-
-            <!-- Hakmat's Page Content -->
-            <div id="hakmatPage" class="page-content">
-                <div class="driver-section-title">
-                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Avatar for Hakmat" class="driver-avatar">
-                    נהג: חכמת
-                </div>
-                <div id="hakmatOnlyTimeline" class="timeline-grid">
-                    <!-- Orders for Hakmat only will be dynamically inserted here -->
-                </div>
-            </div>
-
-            <!-- Ali's Page Content -->
-            <div id="aliPage" class="page-content">
-                <div class="driver-section-title">
-                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Avatar for Ali" class="driver-avatar">
-                    נהג: עלי
-                </div>
-                <div id="aliOnlyTimeline" class="timeline-grid">
-                    <!-- Orders for Ali only will be dynamically inserted here -->
-                </div>
-            </div>
-
-            <!-- Warehouse Page Content -->
-            <div id="warehousePage" class="page-content">
-                <div id="warehouseOrdersDisplay">
-                    <!-- Warehouse orders will be dynamically inserted here -->
-                </div>
-            </div>
-            
-            <!-- WhatsApp share button -->
-            <button class="share-button" onclick="showPasswordModal()">
-                <i class="fab fa-whatsapp"></i> שתף לווצאפ
-            </button>
-        </div>
-
-        <!-- Order Details Modal: This is where the LLM button and new messaging features are located -->
-        <div id="orderDetailsModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
-                <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
-                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
-                <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
-                <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
-                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
-                <!-- Status dropdown -->
-                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> 
-                    <select id="modalStatusSelect" class="status-dropdown" onchange="updateOrderStatusUI()">
-                        <option value="ממתין">ממתין</option>
-                        <option value="בדרך">בדרך</option>
-                        <option value="הושלם">הושלם</option>
-                        <option value="בוטל">בוטל</option>
-                    </select>
-                </p>
-                
-                <!-- NEW: Button to open Customer Messaging section (protected by password) -->
-                <button class="llm-button" id="openCustomerMessageButton" onclick="showCustomerMessagePasswordModal()">
-                    <i class="fas fa-lock"></i> פתח שליחת הודעות ללקוח
-                </button>
-
-                <!-- NEW: Wrapper for customer messaging sections, hidden by default -->
-                <div id="customerMessagingSectionWrapper" style="display: none; flex-direction: column; gap: 20px;">
-                    <!-- New: Customer contact info and Order ID -->
-                    <div class="message-section">
-                        <h4><i class="fas fa-address-card"></i> פרטי יצירת קשר והזמנה</h4>
-                        <label for="customerContactName">שם איש קשר:</label>
-                        <input type="text" id="customerContactName" placeholder="הכנס שם איש קשר">
-                        
-                        <label for="customerPhoneNumberInput">מספר טלפון לווצאפ:</label>
-                        <input type="tel" id="customerPhoneNumberInput" placeholder="דוגמה: 972501234567">
-
-                        <label for="orderIdInput">מספר הזמנה:</label>
-                        <input type="text" id="orderIdInput" placeholder="דוגמה: 6201547">
-                    </div>
-
-                    <!-- New: Waze Integration Section (now direct input with manual address/time) -->
-                    <div class="message-section">
-                        <h4><i class="fas fa-map-marked-alt"></i> שילוב Waze</h4>
-                        <label for="directWazeLinkInput">קישור Waze מלא (להדבקה ישירה):</label>
-                        <input type="text" id="directWazeLinkInput" placeholder="הכנס קישור Waze כאן (מתחיל ב-https://waze.com/ul?...)">
-                        <p id="wazeLinkDisplay" style="margin-top: 10px; font-size: 0.9rem;"></p>
-                        
-                        <!-- New: Manual input for estimated arrival address and time -->
-                        <label for="estimatedArrivalAddressInput" style="margin-top: 15px;">כתובת הגעה משוערת (למילוי ידני):</label>
-                        <input type="text" id="estimatedArrivalAddressInput" placeholder="לדוגמה: הנרייטה סולד 7, רעננה">
-                        
-                        <label for="estimatedArrivalTimeInput" style="margin-top: 10px;">שעת הגעה משוערת (למילוי ידני):</label>
-                        <input type="text" id="estimatedArrivalTimeInput" placeholder="לדוגמה: 10:25">
-
-                        <!-- Waze Icon for opening the link (no AI parsing) -->
-                        <div id="wazeIconContainer" class="waze-icon-container">
-                            <i class="fab fa-waze waze-icon" id="animatedWazeIcon" onclick="showWazePopupWrapper()"></i>
-                            <span>לחץ על אייקון Waze לפתיחת הקישור.</span>
-                        </div>
-                    </div>
-
-                    <!-- New: Predefined Messages Section -->
-                    <div class="message-section">
-                        <h4><i class="fas fa-comment-dots"></i> בחר הודעה מוכנה</h4>
-                        <select id="predefinedMessageSelect">
-                            <option value="">בחר תבנית הודעה</option>
-                            <option value="template1">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] בתכנון ליציאה קרובה. נא לצפות ל[שעה].</option>
-                            <option value="template2">ההזמנה שלך [מספר הזמנה] בדרך אליך! הנהג [שם נהג] יגיע בקרוב ל[כתובת].</option>
-                            <option value="template3">ההזמנה שלך [מספר הזמנה] נמסרה בהצלחה. תודה שבחרת בחברתנו!</option>
-                            <option value="template4">עדכון: ההזמנה שלך [מספר הזמנה] נדחתה למועד מאוחר יותר עקב [סיבה, למשל: עומס/בעיית מלאי]. ניצור קשר בהקדם.</option>
-                            <option value="template5">שלום [שם לקוח], ההזמנה שלך [מספר הזמנה] מוכנה לאיסוף במחסן [מחסן]. שעות פעילות: [שעות פעילות].</option>
-                            <option value="template6">לידיעתך, ההזמנות שלך [מספר הזמנה1] ו-[מספר הזמנה2] אוחדו למשלוח אחד כדי לייעל את השירות.</option>
-                            <option value="template7">בוקר טוב [שם לקוח], רק רצינו לאשר שההזמנה שלך [מספר הזמנה] מתוכננת למשלוח הבוקר.</option>
-                            <option value="template8">נא לוודא זמינות בכתובת [כתובת] בשעה [שעה] לצורך קבלת ההזמנה [מספר הזמנה].</option>
-                            <option value="template9">תזכורת: ההזמנה שלך [מספר הזמנה] תצא היום. נעדכן כאשר הנהג יהיה בדרך.</option>
-                            <option value="template10">אנחנו מתקרבים! הנהג [שם נהג] צפוי להגיע ל[כתובת יעד משוערת] בשעה [שעת הגעה משוערת]. לחץ כאן למעקב: [קישור Waze].</option>
-                        </select>
-                        <div class="button-group">
-                            <button onclick="fillMessageFromTemplate()"><i class="fas fa-file-alt"></i> מלא מהתבנית</button>
-                        </div>
-                    </div>
-
-                    <!-- New: Free Text Message and AI Emoji/Styling -->
-                    <div class="message-section">
-                        <h4><i class="fas fa-pencil-alt"></i> כתיבה חופשית</h4>
-                        <textarea id="freeTextMessage" placeholder="כתוב הודעה חופשית כאן..."></textarea>
-                        <div class="button-group">
-                            <button id="generateMessageButton" onclick="applyAIEmojiAndStyle()"><i class="fas fa-magic"></i> AI: עיצוב והוספת אימוג'י</button>
-                        </div>
-                    </div>
-                    
-                    <!-- LLM generated message preview area -->
-                    <div id="llmResponseContainer">
-                        <div class="loader" id="llmLoader"></div>
-                        <div id="llmResponseMessage">לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.</div>
-                    </div>
-
-                    <!-- New: Main Send WhatsApp Message Button for customer -->
-                    <button class="share-button" id="sendCustomerMessageButton" style="width: 100%; max-width: none;">
-                        <i class="fab fa-whatsapp"></i> שלח הודעת ווצאפ ללקוח
-                    </button>
-                </div>
-
-                <!-- New: Driver Specific Messages Section -->
-                <div class="message-section">
-                    <h4><i class="fas fa-truck-loading"></i> שליחת הודעה לנהגים</h4>
-                    <label for="workTypeInput">סוג עבודה/הערות:</label>
-                    <input type="text" id="workTypeInput" placeholder="לדוגמה: עבודת מנוף לשעתיים / איסוף בלות">
-                    <div class="button-group">
-                        <button onclick="sendOrderToDriver('hakmat')">
-                            <img src="${HAKMAT_AVATAR_URL}" alt="חכמת" class="driver-button-avatar">
-                            שלח לחכמת
-                        </button>
-                        <button onclick="sendOrderToDriver('ali')">
-                            <img src="${ALI_AVATAR_URL}" alt="עלי" class="driver-button-avatar">
-                            שלח לעלי
-                        </button>
-                    </div>
-                </div>
-
+            <div id="pendingOnlyTimeline" class="timeline-grid">
+                <!-- Pending orders only will be dynamically inserted here -->
             </div>
         </div>
 
-        <!-- City Map Modal -->
-        <div id="cityMapModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
-                <h2 id="cityModalTitle">מפה של העיר</h2>
-                <div id="cityMapDisplay">
-                    <!-- Map image or message will be inserted here -->
-                </div>
+        <!-- Ready Orders Page Content -->
+        <div id="readyOrdersPage" class="page-content">
+            <div class="section-title">
+                <img src="https://placehold.co/60x60/98FB98/2c3e50?text=R" alt="Avatar for Ready" class="section-avatar">
+                הזמנות מוכנות
+            </div>
+            <div id="readyOnlyTimeline" class="timeline-grid">
+                <!-- Ready orders only will be dynamically inserted here -->
             </div>
         </div>
 
-        <!-- Password Modal (for WhatsApp share button) -->
-        <div id="passwordModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
-                <h2>הכנס סיסמה</h2>
-                <input type="password" id="passwordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkPassword()">
-                <button onclick="checkPassword()">אשר</button>
-                <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
+        <!-- Filtered Status Page Content -->
+        <div id="statusFilterPage" class="page-content">
+            <div id="filteredStatusOrdersDisplay">
+                <!-- Orders filtered by status will be dynamically inserted here -->
             </div>
         </div>
-
-        <!-- NEW: Customer Message Password Modal -->
-        <div id="customerMessagePasswordModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('customerMessagePasswordModal')">&times;</button>
-                <h2>הכנס סיסמה לשליחת הודעות ללקוח</h2>
-                <p style="font-size: 1rem; color: #555; margin-bottom: 15px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 10px;">
-                    <i class="fas fa-info-circle"></i> אופציה זו מיועדת למנהל המערכת בלבד ומאפשרת שליחת הודעות ישירות ללקוחות.
-                </p>
-                <input type="password" id="customerMessagePasswordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkCustomerMessagePassword()">
-                <button onclick="checkCustomerMessagePassword()">אשר</button>
-                <p id="customerMessagePasswordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
-            </div>
-        </div>
-
-        <!-- Waze Pop-up Modal -->
-        <div id="wazePopupModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('wazePopupModal')">&times;</button>
-                <!-- New: Prominent Waze details title -->
-                <h2 id="wazePopupMainTitle">פרטי הגעה Waze</h2>
-                <span class="waze-info-title">📍 כתובת: <span id="wazePopupAddress"></span></span>
-                <span class="waze-info-title">⏰ הגעה משוערת: <span id="wazePopupEta"></span></span>
-                <p id="wazePopupLink"></p>
-                <a id="wazeOpenLink" href="#" target="_blank" class="button">פתח ב-Waze</a>
-            </div>
-        </div>
-
-        <!-- NEW: Add New Order Modal -->
-        <div id="newOrderModal" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close-button" onclick="closeModal('newOrderModal')">&times;</button>
-                <h2>הוספת הזמנה חדשה</h2>
-                <div class="form-group">
-                    <label for="newOrderDate">תאריך:</label>
-                    <input type="date" id="newOrderDate">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderTime">שעה:</label>
-                    <input type="time" id="newOrderTime">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderCustomer">לקוח:</label>
-                    <input type="text" id="newOrderCustomer" placeholder="שם הלקוח">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderAddress">כתובת:</label>
-                    <input type="text" id="newOrderAddress" placeholder="כתובת מלאה">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderCity">עיר:</label>
-                    <input type="text" id="newOrderCity" placeholder="עיר">
-                </div>
-                <div class="form-group">
-                    <label for="newOrderWarehouse">מחסן:</label>
-                    <select id="newOrderWarehouse">
-                        <option value="">בחר מחסן</option>
-                        <option value="מחסן התלמיד">מחסן התלמיד</option>
-                        <option value="מחסן החרש">מחסן החרש</option>
-                        <option value="אחר">אחר</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="newOrderStatus">סטטוס:</label>
-                    <select id="newOrderStatus">
-                        <option value="ממתין">ממתין</option>
-                        <option value="בדרך">בדרך</option>
-                        <option value="הושלם">הושלם</option>
-                        <option value="בוטל">בוטל</option>
-                    </select>
-                </div>
-                 <div class="form-group">
-                    <label for="newOrderWazeLink">קישור Waze:</label>
-                    <input type="text" id="newOrderWazeLink" placeholder="קישור Waze מלא (אופציונלי)">
-                </div>
-                 <div class="form-group">
-                    <label for="newOrderAssignedDriver">נהג משויך:</label>
-                    <select id="newOrderAssignedDriver">
-                        <option value="">לא משויך</option>
-                        <option value="עלי">עלי</option>
-                        <option value="חכמת">חכמת</option>
-                    </select>
-                </div>
-                <button onclick="submitNewOrder()">הוסף הזמנה</button>
-            </div>
-        </div>
-
-
-        <!-- Bottom Navigation Bar -->
-        <nav class="bottom-nav">
-            <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
-                <i class="fas fa-home"></i> ראשי
-            </button>
-            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
-                <i class="fas fa-user-tie"></i> חכמת
-            </button>
-            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
-                <i class="fas fa-user-astronaut"></i> עלי
-            </button>
-            <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
-                <i class="fas fa-boxes"></i> מחסן
-                <div class="dropdown-menu">
-                    <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
-                    <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
-                </div>
-            </button>
-            <!-- New Order Button (Visible only to Admin/Dispatchers) -->
-            <button class="nav-button" id="addNewOrderButtonBottom" onclick="showNewOrderModal()" style="display: none;">
-                <i class="fas fa-plus-circle"></i> הזמנה חדשה
-            </button>
-        </nav>
         
-        <!-- Toast Notification Container -->
-        <div id="toastContainer"></div>
+        <!-- WhatsApp share button -->
+        <button class="share-button" onclick="showUserSelectModal()">
+            <i class="fab fa-whatsapp"></i> שתף לווצאפ
+        </button>
     </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
+            <h2 id="modalTitle">פרטי הזמנה מלאים</h2>
+            <p><strong><i class="fas fa-hashtag"></i> מספר הזמנה:</strong> <span id="modalOrderNumber"></span></p>
+            <p><strong><i class="far fa-calendar-alt"></i> תאריך יצירה:</strong> <span id="modalCreationDate"></span></p>
+            <p><strong><i class="far fa-clock"></i> שעת יצירה:</strong> <span id="modalCreationTime"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-box-open"></i> פריט:</strong> <span id="modalItem"></span></p>
+            <p><strong><i class="fas fa-sort-numeric-up"></i> כמות:</strong> <span id="modalQuantity"></span></p>
+            <p><strong><i class="fas fa-info-circle"></i> סטטוס נוכחי:</strong> <span id="modalStatus"></span></p>
+            <p><strong><i class="fas fa-history"></i> היסטוריית סטטוס:</strong> <span id="modalStatusHistory"></span></p>
+            <p><strong><i class="fas fa-user-edit"></i> עדכון אחרון ע"י:</strong> <span id="modalLastUpdater"></span></p>
+            <p><strong><i class="far fa-clock"></i> שעת עדכון אחרון:</strong> <span id="modalLastUpdateTime"></span></p>
+        </div>
+    </div>
+
+    <!-- City Map Modal -->
+    <div id="cityMapModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('cityMapModal')">&times;</button>
+            <h2 id="cityModalTitle">מפה של העיר</h2>
+            <div id="cityMapDisplay">
+                <!-- Map image or message will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
+            <h2>הכנס סיסמה</h2>
+            <input type="password" id="passwordInput" placeholder="הכנס סיסמה" onkeyup="if(event.keyCode === 13) checkPassword()">
+            <button onclick="checkPassword()">אשר</button>
+            <p id="passwordError" style="color: var(--accent-color); margin-top: 10px; font-size: 0.9rem; display: none;">סיסמה שגויה. נסה שוב.</p>
+        </div>
+    </div>
+
+    <!-- User Select Modal (New) -->
+    <div id="userSelectModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('userSelectModal')">&times;</button>
+            <h2>בחר משתמש</h2>
+            <div class="user-list">
+                <button class="user-button" onclick="selectUser('אורן מחסנאי')">אורן מחסנאי</button>
+                <button class="user-button" onclick="selectUser('יוסי מנהל')">יוסי מנהל</button>
+                <button class="user-button" onclick="selectUser('שחר נהג')">שחר נהג</button>
+                <button class="user-button" onclick="selectUser('מנהל ראשי')">מנהל ראשי</button>
+            </div>
+            <p id="selectedUserDisplay" style="margin-top: 15px; font-size: 1.1rem; font-weight: bold;"></p>
+        </div>
+    </div>
+
+    <!-- Status Change Confirmation Modal (New) -->
+    <div id="statusConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('statusConfirmModal')">&times;</button>
+            <h2>אשר שינוי סטטוס</h2>
+            <p>האם אתה בטוח שברצונך לשנות את הסטטוס של הזמנה מספר <span id="confirmOrderNum"></span> ל"<span id="confirmNewStatus"></span>"?</p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
+                <button style="background-color: var(--secondary-color);" onclick="confirmStatusChange()">אשר</button>
+                <button style="background-color: var(--accent-color);" onclick="closeModal('statusConfirmModal')">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay (New) -->
+    <div id="loadingOverlay" class="modal-overlay">
+        <div class="modal-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: transparent; box-shadow: none; border: none;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 4rem; color: white;"></i>
+            <p style="color: white; font-size: 1.5rem; margin-top: 20px;">טוען נתונים...</p>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
+            <i class="fas fa-home"></i> ראשי
+        </button>
+        <button class="nav-button" data-page-id="pendingOrdersPage" data-nav-id="pending-nav-button">
+            <i class="fas fa-hourglass-start"></i> ממתין להכנה
+        </button>
+        <button class="nav-button" data-page-id="readyOrdersPage" data-nav-id="ready-nav-button">
+            <i class="fas fa-check-circle"></i> מוכן
+        </button>
+        <button class="nav-button status-button" data-nav-id="status-filter-nav-button">
+            <i class="fas fa-tasks"></i> סטטוסים
+            <div class="dropdown-menu">
+                <div class="dropdown-item" data-status-type="בהכנה"><i class="fas fa-utensils"></i> בהכנה</div>
+                <div class="dropdown-item" data-status-type="לשינוע"><i class="fas fa-truck-loading"></i> לשינוע</div>
+                <div class="dropdown-item" data-status-type="בדרך"><i class="fas fa-truck-moving"></i> בדרך</div>
+                <div class="dropdown-item" data-status-type="נמסרה"><i class="fas fa-box"></i> נמסרה</div>
+            </div>
+        </button>
+    </nav>
 
     <script>
-        // Global User State
-        let currentUserRole = null;
-        let currentUsername = null;
-        let currentUserId = null; // Firebase Auth UID
-        let currentUserManagedWarehouse = null; // For warehouse managers
-        let currentAssignedDriver = null; // For drivers
-
-        // Mock User Data for Client-Side Login Simulation
-        // IMPORTANT: In a real application, user authentication and roles would be managed securely via Firebase Authentication.
-        // This is for demonstration purposes within the Canvas environment.
-        const USERS = {
-            "admin": { password: "1125", role: "admin" },
-            "oren": { password: "1234", role: "warehouse_manager", managedWarehouse: "מחסן החרש" },
-            "tamir": { password: "tamiropen", role: "warehouse_manager", managedWarehouse: "מחסן התלמיד" },
-            "rami": { password: "ramipass", role: "dispatcher" },
-            "yoav": { password: "yoavpass", role: "dispatcher" },
-            "hakmatdriver": { password: "hakmatpass", role: "driver", assignedDriver: "חכמת" },
-            "alidriver": { password: "alipass", role: "driver", assignedDriver: "עלי" },
-            "viewer": { password: "viewonly", role: "viewer" }
-        };
-
         // Function to update the current time and date
         function updateDateTime() {
             const now = new Date();
+            
+            // Format time (HH:MM:SS)
             const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const formattedTime = now.toLocaleTimeString('he-IL', timeOptions);
+            
+            // Format date (Day, Month Day, Year)
             const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             let formattedDate = now.toLocaleDateString('he-IL', dateOptions);
+            
+            // Remove "יום " prefix for a more natural Hebrew feel
             formattedDate = formattedDate.replace('יום ', '');
+            
             document.getElementById('currentTimeDisplay').textContent = formattedTime; 
             document.getElementById('currentDateDisplay').textContent = formattedDate;
         }
+        
+        // Update date and time every second
         setInterval(updateDateTime, 1000);
-        updateDateTime(); 
+        updateDateTime(); // Call immediately to display on load
         
-        // Google Maps Static API Key 
-        const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-EE'; // Replace with your actual Google Maps Static API Key
-        
-        // Gemini API Key - This variable is intentionally left as an empty string.
-        // The Canvas environment automatically injects the Gemini API key at runtime.
-        const geminiApiKey = ""; // No need to hardcode a key here, Canvas provides it.
+        // Google Sheets API configuration
+        // IMPORTANT: These values will be provided by Google Apps Script through google.script.run
+        let SPREADSHEET_ID = ''; 
+        let SHEET_NAME = '';
+        let WHATSAPP_NUMBER = '972508860896'; // Fixed WhatsApp number
+        let GOOGLE_MAPS_STATIC_API_KEY = ''; // This should ideally be fetched from Apps Script or set by user
 
-        // Password for WhatsApp share button (admin level)
-        const WHATSAPP_PASSWORD = "1125";
-        const CUSTOMER_MESSAGE_PASSWORD = "1125"; // New password for customer messaging section
+        const WHATSAPP_PASSWORD = "1125"; // Password for WhatsApp share button
 
-        // Avatar image URLs for drivers and warehouses
-        const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg"; 
-        const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg"; 
-        const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png"; // Placeholder
-        const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png"; // Placeholder
+        let allOrders = []; // Stores all fetched orders
+        let currentUser = null; // Stores the currently logged-in user
 
-        let allOrders = []; // Stores all fetched orders from Firestore
-        let currentOrderDetails = null; // Stores the order data currently displayed in the modal
+        // Constants for status types
+        const STATUS_PENDING = "ממתין להכנה";
+        const STATUS_IN_PREPARATION = "בהכנה";
+        const STATUS_READY = "מוכן";
+        const STATUS_FOR_SHIPPING = "לשינוע";
+        const STATUS_ON_THE_WAY = "בדרך";
+        const STATUS_DELIVERED = "נמסרה";
 
-        // Global Firebase Firestore references
-        let db;
-        let firebaseApp;
-        let auth;
-        let appId; // This is populated from window.appId by the module script
-
-        // Function to ensure user role is stored in Firestore
-        // This function maps the simulated login user to a Firebase UID
-        window.ensureUserRoleInFirestore = async (uid) => {
-            if (!window.db || !uid || !currentUserRole) {
-                console.warn("Firestore not ready or user role/UID not set for Firestore sync.");
-                return;
-            }
-
-            const userProfileRef = window.doc(window.db, 'artifacts', window.appId, 'users', uid, 'user_profiles', uid);
-            try {
-                const userProfileSnap = await window.getDoc(userProfileRef);
-                if (!userProfileSnap.exists()) {
-                    // Create user profile if it doesn't exist
-                    await window.setDoc(userProfileRef, {
-                        username: currentUsername,
-                        role: currentUserRole,
-                        managedWarehouse: currentUserManagedWarehouse || null,
-                        assignedDriver: currentAssignedDriver || null,
-                        uid: uid // Store UID for easier queries if needed
-                    });
-                    console.log("User profile created in Firestore for:", currentUsername);
-                } else {
-                    // Optionally update if role/username changed (though for this demo, they are static)
-                    console.log("User profile already exists for:", currentUsername);
-                    // Also, update current user role based on Firestore in case it was changed externally
-                    currentUserRole = userProfileSnap.data().role;
-                    currentUserManagedWarehouse = userProfileSnap.data().managedWarehouse || null;
-                    currentAssignedDriver = userProfileSnap.data().assignedDriver || null;
-                    updateUserInfoDisplay();
-                    applyRolePermissions();
-                }
-            } catch (error) {
-                console.error("Error ensuring user role in Firestore:", error);
-            }
-        };
+        const ALL_STATUSES = [STATUS_PENDING, STATUS_IN_PREPARATION, STATUS_READY, STATUS_FOR_SHIPPING, STATUS_ON_THE_WAY, STATUS_DELIVERED];
 
         /**
-         * Simulates user login and sets global user state.
-         * In a real app, this would involve Firebase `signInWithEmailAndPassword`.
+         * Shows the loading overlay.
          */
-        async function loginUser() {
-        // ... קוד קיים ...
-        if (USERS[usernameInput] && USERS[usernameInput].password === passwordInput) {
-            // ... הגדרת משתני משתמש גלובליים ...
-
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'flex';
-            updateUserInfoDisplay();
-            applyRolePermissions();
-            // REMOVED: initializeApp(); // <--- שורה זו הוסרה!
-            showToast(`ברוך הבא, ${currentUsername}!`, 'success');
-        } else {
-            // ... טיפול בשגיאת התחברות ...
-        }
-    }
-
-        /**
-         * Logs out the current user and returns to the login page.
-         */
-        function logoutUser() {
-            currentUserRole = null;
-            currentUsername = null;
-            currentUserId = null;
-            currentUserManagedWarehouse = null;
-            currentAssignedDriver = null;
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('loginPage').style.display = 'flex';
-            document.getElementById('usernameInput').value = '';
-            document.getElementById('passwordLoginInput').value = '';
-            showToast('התנתקת בהצלחה.', 'success');
-            // Sign out from Firebase Auth. This will typically result in a new anonymous session.
-            if (window.auth) {
-                window.signOut(window.auth).then(() => {
-                    console.log("Firebase signed out.");
-                }).catch((error) => {
-                    console.error("Error signing out from Firebase:", error);
-                });
-            }
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('visible');
         }
 
         /**
-         * Updates the user information display in the header.
+         * Hides the loading overlay.
          */
-        function updateUserInfoDisplay() {
-            document.getElementById('currentUsernameDisplay').textContent = currentUsername || 'אורח';
-            document.getElementById('currentUserRoleDisplay').textContent = getRoleTranslation(currentUserRole) || 'צופה';
-            document.getElementById('userInfoDisplay').style.display = 'flex';
-        }
-
-        /**
-         * Translates role names for display.
-         */
-        function getRoleTranslation(role) {
-            switch(role) {
-                case 'admin': return 'מנהל מערכת';
-                case 'warehouse_manager': return 'מנהל מחסן';
-                case 'dispatcher': return 'איש סידור';
-                case 'driver': return 'נהג';
-                case 'viewer': return 'צופה';
-                default: return 'אורח';
-            }
-        }
-
-        /**
-         * Applies permissions based on the current user's role.
-         */
-        function applyRolePermissions() {
-            const addNewOrderButton = document.getElementById('addNewOrderButton');
-            const addNewOrderButtonBottom = document.getElementById('addNewOrderButtonBottom');
-            const whatsappShareButton = document.querySelector('.share-button'); // Main WhatsApp share
-            const openCustomerMessageButton = document.getElementById('openCustomerMessageButton'); // Button in order details modal
-
-            // Hide all by default
-            addNewOrderButton.style.display = 'none';
-            addNewOrderButtonBottom.style.display = 'none';
-            whatsappShareButton.style.display = 'none';
-            if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'none';
-
-            // Show elements based on role
-            if (currentUserRole === 'admin' || currentUserRole === 'dispatcher') {
-                addNewOrderButton.style.display = 'flex';
-                addNewOrderButtonBottom.style.display = 'flex';
-                if (openCustomerMessageButton) openCustomerMessageButton.style.display = 'block'; // Or flex/block depending on element
-            }
-            if (currentUserRole === 'admin' || currentUserRole === 'dispatcher' || currentUserRole === 'warehouse_manager') {
-                 whatsappShareButton.style.display = 'flex'; // Share button visible to these roles
-            }
-
-            // The status dropdown and driver message buttons are handled dynamically within showOrderDetails.
-            // They are disabled/hidden if the user does not have permission for that specific order.
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('visible');
         }
 
         /**
          * Parses a time string (e.g., "14:30") into a Date object for sorting.
-         * Handles "ביחד" by treating it as if it's within the morning delivery window.
-         * @param {string} timeStr The time string in HH:MM format or "ביחד".
+         * @param {string} timeStr The time string in HH:MM format.
          * @returns {Date} A Date object representing the time.
          */
         function parseTimeForSorting(timeStr) {
-            if (!timeStr) return new Date(0); 
-            if (timeStr.includes("ביחד")) {
-                const date = new Date();
-                date.setHours(7, 0, 0, 0); 
-                return date;
-            }
+            if (!timeStr) return new Date(0); // Return a very early date for empty times
             const [hours, minutes] = timeStr.split(':').map(Number);
             const date = new Date();
             date.setHours(hours, minutes, 0, 0);
@@ -2754,56 +1643,49 @@
          * Generic function to render orders into a specified timeline container.
          * @param {Array<Object>} orders The array of order objects to render.
          * @param {string} timelineId The ID of the HTML element where the orders will be rendered.
-         * @param {string} displayDriverName The name of the driver for display purposes (e.g., "עלי"). Optional.
+         * @param {string} filterStatus Optional: If rendering for a specific status, pass it here.
          */
-        function renderOrders(orders, timelineId, displayDriverName = null) {
+        function renderOrders(orders, timelineId, filterStatus = null) {
             const timelineContainer = document.getElementById(timelineId);
-            if (!timelineContainer) {
-                console.error(`Error: Timeline container with ID '${timelineId}' not found.`);
-                return;
-            }
             timelineContainer.innerHTML = ""; // Clear existing content
 
-            let filteredOrdersForDisplay = orders;
-            if (displayDriverName) {
-                filteredOrdersForDisplay = orders.filter(order => order.assignedDriver === displayDriverName);
-            }
+            const ordersToRender = filterStatus 
+                ? orders.filter(order => order.status === filterStatus) 
+                : orders;
 
-            if (filteredOrdersForDisplay && filteredOrdersForDisplay.length > 0) {
-                filteredOrdersForDisplay.forEach((order) => {
+            if (ordersToRender && ordersToRender.length > 0) {
+                // Sort orders by creation time
+                ordersToRender.sort((a, b) => parseTimeForSorting(a.creationTime) - parseTimeForSorting(b.creationTime));
+
+                ordersToRender.forEach((order) => {
                     const orderCard = document.createElement("div");
-                    orderCard.classList.add("order-card");
+                    orderCard.classList.add("order-card", "saban-order"); // Add saban-order class
                     
-                    // Add driver specific class for styling
-                    if (order.assignedDriver === "עלי") {
-                        orderCard.classList.add("ali");
-                    } else if (order.assignedDriver === "חכמת") {
-                        orderCard.classList.add("hakmat");
-                    }
-
                     // Store full order data as a JSON string for easy retrieval in modal
                     orderCard.dataset.order = JSON.stringify(order);
                     
                     // Add click listener to open full details modal
-                    orderCard.addEventListener('click', () => showOrderDetails(orderCard.dataset.order));
-
-                    const timeDisplay = order.time && order.time.includes("ביחד") ? 
-                        `${order.time} <span class="biachad-indicator">ביחד</span>` : 
-                        (order.time || "לא ידוע");
-
-                    const wazeIconHtml = order.wazeLink ? '<i class="fab fa-waze waze-linked-icon"></i>' : '';
+                    orderCard.onclick = () => showOrderDetails(orderCard.dataset.order);
 
                     orderCard.innerHTML = `
                         <div class="order-time">
-                            <i class="far fa-clock"></i> ${timeDisplay}
+                            <i class="far fa-clock"></i> ${order.creationTime || "לא ידוע"}
+                            <span style="font-size: 0.8em; margin-right: 10px; color: #555;">(${order.creationDate || "לא ידוע"})</span>
                         </div>
                         <div class="order-details">
-                            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> ${order.date || "לא ידוע"}</p>
+                            <p><strong><i class="fas fa-hashtag"></i> מספר הזמנה:</strong> ${order.orderNumber || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || "לא ידוע"}</p>
-                            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${wazeIconHtml} <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
-                            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || "לא ידוע"}</p>
-                            <p><strong><i class="fas fa-truck"></i> נהג משויך:</strong> ${order.assignedDriver || "לא משויך"}</p>
+                            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
+                            <p><strong><i class="fas fa-box-open"></i> פריט:</strong> ${order.item || "לא ידוע"}</p>
+                            <p><strong><i class="fas fa-sort-numeric-up"></i> כמות:</strong> ${order.quantity || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${order.status || "לא ידוע"}</p>
+                        </div>
+                        <div class="order-status-update">
+                            <select onchange="prepareStatusChange(this.value, '${order.orderNumber}', '${order.rowIndex}')">
+                                <option value="" disabled selected>עדכן סטטוס</option>
+                                ${ALL_STATUSES.map(s => `<option value="${s}" ${order.status === s ? 'disabled' : ''}>${s}</option>`).join('')}
+                            </select>
+                            <!-- The update button logic is now handled by the select's onchange -->
                         </div>
                         <div class="order-arrow"></div>
                     `;
@@ -2820,7 +1702,7 @@
 
             } else {
                 const noOrdersMessage = document.createElement("p");
-                noOrdersMessage.textContent = "אין הזמנות זמינות עבור נהג זה/מחסן זה.";
+                noOrdersMessage.textContent = "אין הזמנות זמינות עבור סטטוס זה.";
                 noOrdersMessage.style.textAlign = "center";
                 noOrdersMessage.style.marginTop = "30px";
                 noOrdersMessage.style.fontSize = "1.2rem";
@@ -2830,399 +1712,127 @@
         }
 
         /**
-         * Fetches data from Firestore for orders.
-         * @returns {Promise<Array<Object>>} A promise that resolves to an array of parsed order objects.
+         * Fetches initial configuration from Google Apps Script.
          */
-        async function fetchOrdersData() {
-            if (!window.db) {
-                console.error("Firestore is not initialized.");
-                return [];
-            }
+        async function fetchConfig() {
             try {
-                const ordersCol = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
-                const orderSnapshot = await window.getDocs(ordersCol);
-                const ordersList = orderSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Sort by time
-                return ordersList.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                showLoading();
+                const config = await google.script.run.withSuccessHandler((result) => {
+                    if (result && result.spreadsheetId && result.sheetName && result.mapsApiKey) {
+                        SPREADSHEET_ID = result.spreadsheetId;
+                        SHEET_NAME = result.sheetName;
+                        GOOGLE_MAPS_STATIC_API_KEY = result.mapsApiKey;
+                        initializeApp(); // Initialize app after config is loaded
+                    } else {
+                        console.error("Failed to load configuration from Apps Script.");
+                        alert("שגיאה בטעינת תצורת האפליקציה. אנא פנה למנהל המערכת.");
+                        hideLoading();
+                    }
+                }).withFailureHandler((error) => {
+                    console.error("Error fetching config:", error);
+                    alert("שגיאה בטעינת תצורת האפליקציה: " + error.message);
+                    hideLoading();
+                }).getAppConfig();
             } catch (error) {
-                console.error("שגיאה בשליפת הנתונים מ-Firestore:", error);
-                showToast("שגיאה בטעינת הנתונים. אנא בדוק את הגדרות Firebase.", "error");
-                return [];
+                console.error("Error calling getAppConfig:", error);
+                alert("שגיאה בתקשורת עם שרת Google: " + error.message);
+                hideLoading();
             }
         }
-
-        /**
-         * Adds a new order to Firestore.
-         */
-        async function addNewOrder(orderData) {
-            if (!window.db) {
-                showToast("שגיאה: Firestore אינו מאותחל. לא ניתן להוסיף הזמנה.", "error");
-                return;
-            }
-            try {
-                const ordersCol = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
-                await window.addDoc(ordersCol, orderData);
-                showToast("הזמנה חדשה נוספה בהצלחה!", "success");
-                closeModal('newOrderModal');
-            } catch (error) {
-                console.error("שגיאה בהוספת הזמנה ל-Firestore:", error);
-                showToast("שגיאה בהוספת ההזמנה. אנא נסה שוב.", "error");
-            }
-        }
-
-        /**
-         * Updates the status of an order in Firestore.
-         * @param {string} orderId The ID of the order document.
-         * @param {string} newStatus The new status.
-         */
-        async function updateOrderStatusInFirestore(orderId, newStatus) {
-            if (!window.db || !currentUserId) {
-                showToast("שגיאה: אינך מורשה לשנות סטטוס.", "error");
-                return;
-            }
-
-            // Check permissions before updating
-            const orderRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'orders', orderId);
-            try {
-                const orderSnap = await window.getDoc(orderRef);
-                if (!orderSnap.exists()) {
-                    showToast("שגיאה: הזמנה לא נמצאה.", "error");
-                    return;
-                }
-                const orderData = orderSnap.data();
-
-                // Role-based permission check (client-side enforcement, relies on Firestore Security Rules for server-side)
-                let hasPermission = false;
-                switch (currentUserRole) {
-                    case 'admin':
-                    case 'dispatcher':
-                        hasPermission = true; // Admins and dispatchers can change any status
-                        break;
-                    case 'driver':
-                        // Drivers can only change status for orders assigned to them
-                        if (orderData.assignedDriver === currentAssignedDriver) {
-                            hasPermission = true;
-                        } else {
-                            showToast("אין לך הרשאה לשנות סטטוס להזמנה שאינה משויכת אליך.", "error");
-                        }
-                        break;
-                    case 'warehouse_manager':
-                        // Warehouse managers can only change status for orders from their managed warehouse
-                        if (orderData.warehouse && orderData.warehouse.includes(currentUserManagedWarehouse)) {
-                            hasPermission = true;
-                        } else {
-                            showToast("אין לך הרשאה לשנות סטטוס להזמנה שאינה שייכת למחסן שבניהולך.", "error");
-                        }
-                        break;
-                    case 'viewer':
-                        showToast("אין לך הרשאה לשנות סטטוס. חשבונך הוא לצפייה בלבד.", "error");
-                        break;
-                    default:
-                        showToast("אין לך הרשאה לשנות סטטוס.", "error");
-                        break;
-                }
-
-                if (hasPermission) {
-                    await window.updateDoc(orderRef, { status: newStatus });
-                    showToast(`סטטוס הזמנה ${orderData.customer} (${orderData.orderId || orderData.customer}) עודכן ל: ${newStatus}`, "success");
-                    // No need to re-fetch all orders, onSnapshot will handle UI update
-                }
-            } catch (error) {
-                console.error("שגיאה בעדכון סטטוס ב-Firestore:", error);
-                showToast("שגיאה בעדכון הסטטוס. אנא נסה שוב.", "error");
-            }
-        }
-
 
         /**
          * Initializes the application by fetching all data and rendering initial views.
-         * Sets up Firestore snapshot listener for real-time updates.
          */
         async function initializeApp() {
-            if (!window.db) {
-                console.warn("Firebase (db) not ready, waiting for initialization...");
-                setTimeout(initializeApp, 500); // Retry after a short delay
-                return;
+            showLoading();
+            try {
+                // Fetch all orders from Google Sheet
+                const rawData = await google.script.run.withSuccessHandler((data) => {
+                    allOrders = data.map((row, index) => {
+                        // Assuming the sheet columns are:
+                        // [A] Order Number, [B] Creation Date, [C] Creation Time, [D] Customer,
+                        // [E] Address, [F] Item, [G] Quantity, [H] Status, [I] Status History,
+                        // [J] Last Updater, [K] Last Update Time
+                        const [orderNumber, creationDate, creationTime, customer, address, item, quantity, status, statusHistory, lastUpdater, lastUpdateTime] = row;
+                        const city = address ? address.split(',').pop().trim() : 'לא ידוע'; // Extract city from address
+                        return { 
+                            orderNumber: orderNumber || 'לא ידוע', 
+                            creationDate: creationDate || 'לא ידוע', 
+                            creationTime: creationTime || 'לא ידוע', 
+                            customer: customer || 'לא ידוע', 
+                            address: address || 'לא ידוע', 
+                            city: city, // Extracted city
+                            item: item || 'לא ידוע', 
+                            quantity: quantity || 'לא ידוע', 
+                            status: status || STATUS_PENDING, // Default status if empty
+                            statusHistory: statusHistory || '', // Initialize as empty string if null/undefined
+                            lastUpdater: lastUpdater || 'מערכת',
+                            lastUpdateTime: lastUpdateTime || '' ,
+                            rowIndex: index + 2 // +2 because sheet is 1-indexed and has header row
+                        };
+                    });
+                    
+                    // Render orders on the main page
+                    renderOrders(allOrders, "allOrdersTimeline");
+                    updateSummaryCounts();
+                    // renderCharts(); // Charts might need to be adjusted for new data model
+                    activatePageAndNav('mainPage', 'main-nav-button'); 
+                    hideLoading();
+                }).withFailureHandler((error) => {
+                    console.error("Error fetching orders:", error);
+                    alert("שגיאה בטעינת נתוני ההזמנות: " + error.message);
+                    hideLoading();
+                }).getOrdersData(SHEET_NAME);
+            } catch (error) {
+                console.error("Error in initializeApp:", error);
+                alert("שגיאה כללית באפליקציה: " + error.message);
+                hideLoading();
             }
-
-            // Set avatar image sources on load
-            const aliAvatar = document.getElementById('aliAvatar');
-            if (aliAvatar) aliAvatar.src = ALI_AVATAR_URL;
-
-            const hakmatAvatar = document.getElementById('hakmatAvatar');
-            if (hakmatAvatar) hakmatAvatar.src = HAKMAT_AVATAR_URL;
-
-            // Setup real-time listener for orders
-            const ordersColRef = window.collection(window.db, 'artifacts', window.appId, 'public', 'orders');
-            window.onSnapshot(ordersColRef, (snapshot) => {
-                const changes = snapshot.docChanges();
-                let statusChanged = false; // Flag to track if any status changed
-                changes.forEach((change) => {
-                    const orderData = { id: change.doc.id, ...change.doc.data() };
-                    if (change.type === "added") {
-                        // showToast(`הזמנה חדשה נוספה: ${orderData.customer}`, "success");
-                        console.log("New order:", orderData);
-                    }
-                    if (change.type === "modified") {
-                        console.log("Modified order:", orderData);
-                        // Find the old order in allOrders to compare status
-                        const oldOrder = allOrders.find(o => o.id === orderData.id);
-                        if (oldOrder && oldOrder.status !== orderData.status) {
-                             showToast(`סטטוס הזמנה ${orderData.customer} השתנה ל: ${orderData.status}`, "success");
-                             statusChanged = true; // Mark that a status has changed
-                        }
-                    }
-                    if (change.type === "removed") {
-                        // showToast(`הזמנה בוטלה/נמחקה: ${orderData.customer}`, "error");
-                        console.log("Removed order:", orderData);
-                    }
-                });
-                // After any change, re-fetch and re-render everything to ensure consistency
-                // This ensures all counters and displays are updated with the latest data.
-                fetchAndRenderAllOrders();
-            }, (error) => {
-                console.error("Error listening to Firestore orders:", error);
-                showToast("שגיאה בהאזנה לשינויים במסד הנתונים.", "error");
-            });
-
-            // Initial fetch and render
-            await fetchAndRenderAllOrders();
-            updateUserInfoDisplay(); // Update display once app starts
-            applyRolePermissions(); // Apply permissions on initial load
-            activatePageAndNav('mainPage', 'main-nav-button'); // Ensure main page is active
         }
-
-        async function fetchAndRenderAllOrders() {
-             allOrders = await fetchOrdersData();
-             const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
-             const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
-
-            // Render orders on the main page with driver-specific styling
-            renderOrders(aliOrders, "aliTimeline", "עלי");
-            renderOrders(hakmatOrders, "hakmatTimeline", "חכמת");
-
-            // Update specific driver pages if active
-            if (document.getElementById('aliPage').classList.contains('active')) {
-                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
-            }
-            if (document.getElementById('hakmatPage').classList.contains('active')) {
-                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
-            }
-
-            // Update warehouse page if active and a warehouse type is selected
-            const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
-            if (document.getElementById('warehousePage').classList.contains('active') && warehouseOrdersDisplay.dataset.activeWarehouse) {
-                 showWarehouseOrders(warehouseOrdersDisplay.dataset.activeWarehouse);
-            }
-
-            updateSummaryCounts();
-            renderCharts();
-        }
-
 
         /**
          * Updates the summary count displays based on fetched orders.
          */
         function updateSummaryCounts() {
-            const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
-            const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
+            const pendingCount = allOrders.filter(order => order.status === STATUS_PENDING).length;
+            const inPreparationCount = allOrders.filter(order => order.status === STATUS_IN_PREPARATION).length;
+            const readyCount = allOrders.filter(order => order.status === STATUS_READY).length;
+            const forShippingCount = allOrders.filter(order => order.status === STATUS_FOR_SHIPPING).length;
+            const onTheWayCount = allOrders.filter(order => order.status === STATUS_ON_THE_WAY).length;
+            const deliveredCount = allOrders.filter(order => order.status === STATUS_DELIVERED).length;
 
-            document.getElementById('aliOrderCount').textContent = aliOrders.length;
-            document.getElementById('hakmatOrderCount').textContent = hakmatOrders.length;
-            
-            let studentWarehouseOrderCount = 0; 
-            let carpenterWarehouseOrderCount = 0; 
-            let morningOrdersCount = 0; 
+            document.getElementById('pendingOrdersCount').textContent = pendingCount;
+            document.getElementById('readyOrdersCount').textContent = readyCount;
+            document.getElementById('onDeliveryOrdersCount').textContent = onTheWayCount; // Use 'בדרך' for this count
+            document.getElementById('deliveredOrdersCount').textContent = deliveredCount;
 
-            const sixAM = new Date();
-            sixAM.setHours(6, 0, 0, 0);
-            const nineAM = new Date();
-            nineAM.setHours(9, 0, 0, 0);
-
-            allOrders.forEach(order => {
-                const orderTime = parseTimeForSorting(order.time); 
-                if ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))) {
-                    morningOrdersCount++;
-                }
-                if (order.warehouse) {
-                    if (order.warehouse.includes("מחסן התלמיד")) { // Use full warehouse name
-                        studentWarehouseOrderCount++;
-                    }
-                    if (order.warehouse.includes("מחסן החרש")) { // Use full warehouse name
-                        carpenterWarehouseOrderCount++;
-                    }
-                }
+            // Add event listeners to summary cards to filter
+            document.querySelectorAll('.summary-card').forEach(card => {
+                const status = card.dataset.status;
+                card.onclick = () => {
+                    activatePageAndNav('statusFilterPage', 'status-filter-nav-button'); // Keep status filter button highlighted
+                    document.getElementById('filteredStatusOrdersDisplay').innerHTML = `
+                        <div class="section-title">
+                            <img src="https://placehold.co/60x60/3498db/ffffff?text=S" alt="Status Avatar" class="section-avatar">
+                            הזמנות בסטטוס: ${status}
+                        </div>
+                        <div id="filteredStatusTimeline" class="timeline-grid"></div>
+                    `;
+                    renderOrders(allOrders, "filteredStatusTimeline", status);
+                };
             });
-
-            document.getElementById('studentWarehouseCount').textContent = studentWarehouseOrderCount;
-            document.getElementById('carpenterWarehouseCount').textContent = carpenterWarehouseOrderCount;
-            document.getElementById('morningOrdersCount').textContent = morningOrdersCount;
-
-            const totalWarehouseOrders = allOrders.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
-            document.getElementById('totalWarehouseOrderCount').textContent = totalWarehouseOrders;
         }
 
         /**
-         * Renders the charts for orders between 06:00 and 09:00, including customer names.
+         * Renders charts (Placeholder, adjust as needed for new data).
          */
-        let aliChartInstance = null;
-        let hakmatChartInstance = null;
-
         function renderCharts() {
-            const sixAM = new Date();
-            sixAM.setHours(6, 0, 0, 0);
-            const nineAM = new Date();
-            nineAM.setHours(9, 0, 0, 0);
-
-            const aliOrdersInTimeRange = allOrders.filter(order => {
-                const orderTime = parseTimeForSorting(order.time);
-                return (order.assignedDriver === 'עלי' && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))));
-            });
-
-            const hakmatOrdersInTimeRange = allOrders.filter(order => {
-                const orderTime = parseTimeForSorting(order.time);
-                return (order.assignedDriver === 'חכמת' && ((orderTime >= sixAM && orderTime <= nineAM) || (order.time && order.time.includes("ביחד"))));
-            });
-
-            // Update customer lists next to charts
-            const aliCustomersList = document.getElementById('aliMorningCustomers');
-            if (aliCustomersList) {
-                aliCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
-                if (aliOrdersInTimeRange.length > 0) {
-                    aliOrdersInTimeRange.forEach(order => {
-                        const p = document.createElement('p');
-                        p.innerHTML = `<i class="fas fa-arrow-left"></i> <strong>${order.customer || 'לקוח לא ידוע'}</strong>`;
-                        aliCustomersList.appendChild(p);
-                    });
-                } else {
-                    aliCustomersList.innerHTML += '<p>אין לקוחות בטווח שעות זה.</p>';
-                }
-            }
-
-            const hakmatCustomersList = document.getElementById('hakmatMorningCustomers');
-            if (hakmatCustomersList) {
-                hakmatCustomersList.innerHTML = '<h4><i class="fas fa-users"></i> לקוחות בבוקר:</h4>';
-                if (hakmatOrdersInTimeRange.length > 0) {
-                    hakmatOrdersInTimeRange.forEach(order => {
-                        const p = document.createElement('p');
-                        p.innerHTML = `<i class="fas fa-arrow-left"></i> <strong>${order.customer || 'לקוח לא ידוע'}</strong>`;
-                        hakmatCustomersList.appendChild(p);
-                    });
-                } else {
-                    hakmatCustomersList.innerHTML += '<p>אין לקוחות בטווח שעות זה.</p>';
-                }
-            }
-
-            // Update the in-chart count overlays
-            const aliChartCountOverlay = document.getElementById('aliChartCountOverlay');
-            if (aliChartCountOverlay) aliChartCountOverlay.textContent = aliOrdersInTimeRange.length;
-            
-            const hakmatChartCountOverlay = document.getElementById('hakmatChartCountOverlay');
-            if (hakmatChartCountOverlay) hakmatChartCountOverlay.textContent = hakmatOrdersInTimeRange.length;
-
-            const aliCtx = document.getElementById('aliChart');
-            const hakmatCtx = document.getElementById('hakmatChart');
-
-            // Chart data and options
-            const chartDataTemplate = (count, label) => ({
-                labels: [label],
-                datasets: [{
-                    label: 'כמות הזמנות',
-                    data: [count],
-                    backgroundColor: label === 'הזמנות בוקר' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(46, 204, 113, 0.7)',
-                    borderColor: label === 'הזמנות בוקר' ? 'rgba(52, 152, 219, 1)' : 'rgba(46, 204, 113, 1)',
-                    borderWidth: 1,
-                    barPercentage: 0.7 
-                }]
-            });
-
-            const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutBounce' 
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0 
-                        },
-                        title: {
-                            display: true,
-                            text: 'כמות הזמנות'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'טווח שעות'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false 
-                    },
-                    tooltip: { 
-                        callbacks: {
-                            title: function(context) {
-                                return `הזמנות בין 06:00-09:00`;
-                            },
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat('he-IL').format(context.parsed.y);
-                                    label += ' הזמנות';
-                                }
-                                return label;
-                            },
-                            footer: function(context) {
-                                if (context && context.chart && context.chart.canvas) {
-                                    const chartId = context.chart.canvas.id;
-                                    if (chartId === 'aliChart') {
-                                        return 'עבור נהג: עלי';
-                                    } else if (chartId === 'hakmatChart') {
-                                        return 'עבור נהג: חכמת';
-                                    }
-                                }
-                                return '';
-                            }
-                        }
-                    }
-                }
-            };
-
-            // Destroy previous chart instances to prevent duplicates
-            if (aliChartInstance) aliChartInstance.destroy();
-            if (hakmatChartInstance) hakmatChartInstance.destroy();
-
-            if (aliCtx) {
-                aliChartInstance = new Chart(aliCtx.getContext('2d'), {
-                    type: 'bar',
-                    data: chartDataTemplate(aliOrdersInTimeRange.length, 'הזמנות בוקר'),
-                    options: chartOptions
-                });
-            } else {
-                console.error("Error: Canvas element with ID 'aliChart' not found.");
-            }
-
-            if (hakmatCtx) {
-                hakmatChartInstance = new Chart(hakmatCtx.getContext('2d'), {
-                    type: 'bar',
-                    data: chartDataTemplate(hakmatOrdersInTimeRange.length, 'הזמנות בוקר'),
-                    options: chartOptions
-                });
-            } else {
-                console.error("Error: Canvas element with ID 'hakmatChart' not found.");
-            }
+            // This function would need significant adjustments based on the new data structure.
+            // For now, it will not render anything or might cause errors if existing elements are removed.
+            // Consider what kind of charts are relevant for Saban's orders (e.g., orders by item, by status, by customer).
+            // document.getElementById('aliChart').remove(); // Example of removing old charts
+            // document.getElementById('hakmatChart').remove();
         }
-
 
         /**
          * Displays the full order details in a modal.
@@ -3230,166 +1840,19 @@
          */
         function showOrderDetails(orderJson) {
             const order = JSON.parse(orderJson);
-            currentOrderDetails = order; // Store the current order details globally
-            
-            // Get all modal elements
-            const modalDate = document.getElementById('modalDate');
-            const modalTime = document.getElementById('modalTime');
-            const modalCustomer = document.getElementById('modalCustomer');
-            const modalAddress = document.getElementById('modalAddress');
-            const modalWarehouse = document.getElementById('modalWarehouse');
-            const modalStatusSelect = document.getElementById('modalStatusSelect'); // Changed to select
-            
-            const customerContactNameInput = document.getElementById('customerContactName');
-            const customerPhoneNumberInput = document.getElementById('customerPhoneNumberInput');
-            const orderIdInput = document.getElementById('orderIdInput');
-            
-            const directWazeLinkInput = document.getElementById('directWazeLinkInput');
-            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
-            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
+            document.getElementById('modalOrderNumber').textContent = order.orderNumber || 'אין נתונים';
+            document.getElementById('modalCreationDate').textContent = order.creationDate || 'אין נתונים';
+            document.getElementById('modalCreationTime').textContent = order.creationTime || 'אין נתונים';
+            document.getElementById('modalCustomer').textContent = order.customer || 'אין נתונים';
+            document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
+            document.getElementById('modalItem').textContent = order.item || 'אין נתונים';
+            document.getElementById('modalQuantity').textContent = order.quantity || 'אין נתונים';
+            document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
+            document.getElementById('modalStatusHistory').textContent = order.statusHistory || 'אין היסטוריה';
+            document.getElementById('modalLastUpdater').textContent = order.lastUpdater || 'לא ידוע';
+            document.getElementById('modalLastUpdateTime').textContent = order.lastUpdateTime || 'לא ידוע';
 
-            const wazeLinkDisplay = document.getElementById('wazeLinkDisplay');
-            const wazeIconContainer = document.getElementById('wazeIconContainer');
-            const animatedWazeIcon = document.getElementById('animatedWazeIcon');
-            
-            const llmResponseMessage = document.getElementById('llmResponseMessage');
-            const llmLoader = document.getElementById('llmLoader');
-            const llmResponseContainer = document.getElementById('llmResponseContainer');
-            const freeTextMessage = document.getElementById('freeTextMessage'); 
-            
-            const generateButton = document.getElementById('generateMessageButton');
-            const sendCustomerMessageButton = document.getElementById('sendCustomerMessageButton');
-            const workTypeInput = document.getElementById('workTypeInput'); 
-            const customerMessagingSectionWrapper = document.getElementById('customerMessagingSectionWrapper'); 
-
-            const driverButtons = document.querySelectorAll('#orderDetailsModal .message-section .button-group button');
-
-
-            // Populate basic order details
-            if (modalDate) modalDate.textContent = order.date || 'אין נתונים';
-            if (modalTime) modalTime.textContent = order.time || 'אין נתונים';
-            if (modalCustomer) modalCustomer.textContent = order.customer || 'אין נתונים';
-            if (modalAddress) modalAddress.textContent = order.address || 'אין נתונים';
-            if (modalWarehouse) modalWarehouse.textContent = order.warehouse || 'אין נתונים';
-            
-            if (modalStatusSelect) {
-                modalStatusSelect.value = order.status || 'ממתין';
-                // Enable/Disable status dropdown based on role
-                const canEditStatus = 
-                    currentUserRole === 'admin' || 
-                    currentUserRole === 'dispatcher' ||
-                    (currentUserRole === 'driver' && order.assignedDriver === currentAssignedDriver) ||
-                    (currentUserRole === 'warehouse_manager' && order.warehouse && order.warehouse.includes(currentUserManagedWarehouse));
-                modalStatusSelect.disabled = !canEditStatus;
-
-                // Also update the UI for the specific status if it changes
-                modalStatusSelect.style.backgroundColor = ''; // Reset
-                modalStatusSelect.style.color = ''; // Reset
-                switch(order.status) {
-                    case 'הושלם': modalStatusSelect.style.backgroundColor = 'rgba(46, 204, 113, 0.2)'; modalStatusSelect.style.color = '#2ecc71'; break;
-                    case 'בדרך': modalStatusSelect.style.backgroundColor = 'rgba(52, 152, 219, 0.2)'; modalStatusSelect.style.color = '#3498db'; break;
-                    case 'ממתין': modalStatusSelect.style.backgroundColor = 'rgba(241, 196, 15, 0.2)'; modalStatusSelect.style.color = '#f1c40f'; break;
-                    case 'בוטל': modalStatusSelect.style.backgroundColor = 'rgba(231, 76, 60, 0.2)'; modalStatusSelect.style.color = '#e74c3c'; break;
-                }
-            }
-
-            // Auto-fill customer contact name and order ID
-            if (customerContactNameInput) customerContactNameInput.value = order.customer || '';
-            if (orderIdInput) orderIdInput.value = order.orderId || ''; 
-            if (customerPhoneNumberInput) customerPhoneNumberInput.value = ''; 
-
-            // Clear free text message area and work type
-            if (freeTextMessage) freeTextMessage.value = '';
-            if (workTypeInput) workTypeInput.value = '';
-
-            // Waze elements logic
-            if (directWazeLinkInput) directWazeLinkInput.value = order.wazeLink || ''; // Populate with Waze link from sheet
-            
-            // Populate NEW estimated arrival fields with original order data as default
-            // These are editable, so they can be changed by dispatcher/admin
-            if (estimatedArrivalAddressInput) estimatedArrivalAddressInput.value = order.address || '';
-            if (estimatedArrivalTimeInput) estimatedArrivalTimeInput.value = order.time || '';
-
-            if (wazeLinkDisplay && wazeIconContainer && animatedWazeIcon) {
-                if (order.wazeLink) {
-                    wazeLinkDisplay.innerHTML = `קישור Waze: <a href="${order.wazeLink}" target="_blank">${order.wazeLink.substring(0, Math.min(order.wazeLink.length, 30))}...</a>`;
-                    wazeIconContainer.style.display = 'flex';
-                    animatedWazeIcon.classList.add('blinking-light');
-                } else {
-                    wazeLinkDisplay.textContent = 'אין קישור Waze זמין.';
-                    wazeIconContainer.style.display = 'none';
-                    animatedWazeIcon.classList.remove('blinking-light');
-                }
-            }
-
-            // Reset LLM response area
-            if (llmResponseMessage) llmResponseMessage.textContent = 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.';
-            if (llmLoader) llmLoader.classList.remove('visible');
-            if (llmResponseContainer) llmResponseContainer.classList.remove('loading');
-
-            // Set up event listeners (ensure they are only set once or updated)
-            if (generateButton) { 
-                generateButton.onclick = () => applyAIEmojiAndStyle(); 
-            }
-            if (sendCustomerMessageButton) { 
-                sendCustomerMessageButton.onclick = () => sendWhatsAppCustomerMessage();
-            }
-
-            // Hide customer messaging section by default and clear password input
-            if (customerMessagingSectionWrapper) {
-                customerMessagingSectionWrapper.style.display = 'none'; 
-            }
-            const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
-            if (customerMessagePasswordError) {
-                customerMessagePasswordError.style.display = 'none';
-            }
-            const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
-            if (customerMessagePasswordInput) {
-                customerMessagePasswordInput.value = '';
-            }
-
-            // Driver buttons visibility (only for admin/dispatchers)
-            driverButtons.forEach(button => {
-                if (currentUserRole === 'admin' || currentUserRole === 'dispatcher') {
-                    button.style.display = 'flex'; // Or 'block'
-                } else {
-                    button.style.display = 'none';
-                }
-            });
-
-
-            // Finally, show the modal
-            const orderDetailsModal = document.getElementById('orderDetailsModal');
-            if (orderDetailsModal) orderDetailsModal.classList.add('visible');
-            else console.error("Error: Element with ID 'orderDetailsModal' not found.");
-        }
-
-        /**
-         * Handles the status change from the dropdown in the order details modal.
-         * Updates Firestore.
-         */
-        function updateOrderStatusUI() {
-            const modalStatusSelect = document.getElementById('modalStatusSelect');
-            if (!currentOrderDetails || !modalStatusSelect) {
-                console.error("Cannot update status: No current order or status select element missing.");
-                showToast("שגיאה בעדכון סטטוס.", "error");
-                return;
-            }
-            const newStatus = modalStatusSelect.value;
-            // Only update if the status actually changed to avoid unnecessary writes
-            if (currentOrderDetails.status !== newStatus) {
-                updateOrderStatusInFirestore(currentOrderDetails.id, newStatus);
-                currentOrderDetails.status = newStatus; // Update local state immediately for responsiveness
-                // Visually update the dropdown
-                modalStatusSelect.style.backgroundColor = ''; // Reset
-                modalStatusSelect.style.color = ''; // Reset
-                switch(newStatus) {
-                    case 'הושלם': modalStatusSelect.style.backgroundColor = 'rgba(46, 204, 113, 0.2)'; modalStatusSelect.style.color = '#2ecc71'; break;
-                    case 'בדרך': modalStatusSelect.style.backgroundColor = 'rgba(52, 152, 219, 0.2)'; modalStatusSelect.style.color = '#3498db'; break;
-                    case 'ממתין': modalStatusSelect.style.backgroundColor = 'rgba(241, 196, 15, 0.2)'; modalStatusSelect.style.color = '#f1c40f'; break;
-                    case 'בוטל': modalStatusSelect.style.backgroundColor = 'rgba(231, 76, 60, 0.2)'; modalStatusSelect.style.color = '#e74c3c'; break;
-                }
-            }
+            document.getElementById('orderDetailsModal').classList.add('visible');
         }
 
         /**
@@ -3397,30 +1860,22 @@
          * @param {string} city The city name to display on the map.
          */
         function showCityMap(city) {
-            const cityModalTitle = document.getElementById('cityModalTitle');
-            if (cityModalTitle) cityModalTitle.textContent = `מפה של ${city || 'העיר לא ידועה'}`;
-            
+            document.getElementById('cityModalTitle').textContent = `מפה של ${city || 'העיר לא ידועה'}`;
             const mapDisplay = document.getElementById('cityMapDisplay');
-            if (!mapDisplay) {
-                console.error("Error: Element with ID 'cityMapDisplay' not found.");
-                return;
-            }
             
-            if (GOOGLE_MAPS_STATIC_API_KEY && GOOGLE_MAPS_STATIC_API_KEY !== 'YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE') { 
-                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
+            if (GOOGLE_MAPS_STATIC_API_KEY) { 
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(city)}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(city)}&key=${GOOGLE_MAPS_STATIC_API_KEY}`;
                 
-                mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Invalid+API+Key+or+Network+Issue';" />`;
+                mapDisplay.innerHTML = `<img src="${mapUrl}" alt="Map of ${city}" onerror="this.onerror=null;this.src='https://placehold.co/600x350/cccccc/333333?text=Map+Error:+Check+API+Key+or+Network';" />`;
                 mapDisplay.style.backgroundImage = 'none'; 
                 mapDisplay.style.backgroundColor = 'transparent';
             } else {
-                mapDisplay.innerHTML = `<p id="cityMapName">⚠ יש להזין מפתח Google Maps Static API תקף כדי להציג מפה.<br>אנא עדכן את הקוד עם המפתח שלך.</p>`;
+                mapDisplay.innerHTML = `<p id="cityMapName">⚠ מפתח Google Maps Static API חסר או לא תקין.<br>אנא פנה למנהל המערכת.</p>`;
                 mapDisplay.style.backgroundImage = `url('https://placehold.co/600x350/cccccc/333333?text=Map+Placeholder')`;
                 mapDisplay.style.backgroundColor = '#e0e0e0';
             }
             
-            const cityMapModal = document.getElementById('cityMapModal');
-            if (cityMapModal) cityMapModal.classList.add('visible');
-            else console.error("Error: Element with ID 'cityMapModal' not found.");
+            document.getElementById('cityMapModal').classList.add('visible');
         }
 
         /**
@@ -3428,115 +1883,184 @@
          * @param {string} modalId The ID of the modal overlay to close.
          */
         function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.remove('visible');
-            else console.warn(`Warning: Attempted to close modal with ID '${modalId}' but it was not found.`);
+            document.getElementById(modalId).classList.remove('visible');
         }
         
+        /**
+         * Shows the user selection modal first.
+         */
+        function showUserSelectModal() {
+            document.getElementById('selectedUserDisplay').textContent = ''; // Clear previous selection
+            document.getElementById('userSelectModal').classList.add('visible');
+        }
+
+        /**
+         * Selects a user for the current session.
+         * @param {string} user The selected user's name.
+         */
+        function selectUser(user) {
+            currentUser = user;
+            document.getElementById('selectedUserDisplay').textContent = `נבחר: ${currentUser}`;
+            document.getElementById('loggedInUser').textContent = `משתמש נוכחי: ${currentUser}`;
+            closeModal('userSelectModal');
+            showPasswordModal(); // Proceed to password after user selection
+        }
+
         /**
          * Shows the password input modal before allowing WhatsApp share.
          */
         function showPasswordModal() {
-            const passwordInput = document.getElementById('passwordInput');
-            if (passwordInput) passwordInput.value = ''; // Clear previous input
-            
-            const passwordError = document.getElementById('passwordError');
-            if (passwordError) passwordError.style.display = 'none'; // Hide error message
-            
-            const passwordModal = document.getElementById('passwordModal');
-            if (passwordModal) passwordModal.classList.add('visible');
-            else console.error("Error: Element with ID 'passwordModal' not found.");
+            document.getElementById('passwordInput').value = ''; // Clear previous input
+            document.getElementById('passwordError').style.display = 'none'; // Hide error message
+            document.getElementById('passwordModal').classList.add('visible');
         }
 
         /**
          * Checks the entered password and proceeds to WhatsApp share if correct.
          */
         function checkPassword() {
-            const passwordInput = document.getElementById('passwordInput');
-            const passwordError = document.getElementById('passwordError');
-            
-            if (!passwordInput || !passwordError) {
-                console.error("Error: Password input or error display element not found.");
-                return;
-            }
-
-            const inputPassword = passwordInput.value;
+            const inputPassword = document.getElementById('passwordInput').value;
             if (inputPassword === WHATSAPP_PASSWORD) {
                 closeModal('passwordModal');
-                shareToWhatsAppConfirmed(); // Proceed to share if password is correct
+                if (currentUser) {
+                    shareToWhatsAppConfirmed(); // Proceed to share if password is correct and user is selected
+                } else {
+                    alert("אנא בחר משתמש לפני השיתוף לווצאפ.");
+                    showUserSelectModal(); // Re-open user selection if somehow no user was selected
+                }
             } else {
-                passwordError.textContent = 'סיסמה שגויה. נסה שוב.';
-                passwordError.style.display = 'block'; // Show error message
+                document.getElementById('passwordError').style.display = 'block'; // Show error message
             }
         }
 
         /**
-         * Formats the data for WhatsApp summary report.
-         * @param {Array<Object>} ordersData Array of order objects.
-         * @param {string} driverName The name of the driver for WhatsApp formatting.
+         * Formats the data for a WhatsApp message.
          * @returns {string} The formatted message string.
          */
-        function formatDriverWhatsAppData(ordersData, driverName) {
-            if (!ordersData || ordersData.length === 0) {
-                return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
+        function formatWhatsAppData() {
+            if (!allOrders || allOrders.length === 0) {
+                return `📝 *דוח הזמנות ח. סבן חומרי בנין*\nאין הזמנות זמינות.`;
             }
 
-            const sortedData = ordersData.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
-
-            let message = `📝 *${driverName} - דוח בוקר*\n`;
-            sortedData.forEach((order) => {
-                message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
-                message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
-                message += `-----\n`; 
+            // Group orders by status
+            const ordersByStatus = {};
+            ALL_STATUSES.forEach(status => {
+                ordersByStatus[status] = allOrders.filter(order => order.status === status);
             });
+
+            let message = `📝 *דוח הזמנות ח. סבן חומרי בנין - מעודכן ע"י ${currentUser || 'לא ידוע'}*\n\n`;
+            
+            // Add summary counts
+            message += `*סיכום הזמנות נוכחי:*\n`;
+            message += `⏳ ממתין להכנה: ${document.getElementById('pendingOrdersCount').textContent} הזמנות\n`;
+            message += `✅ מוכן: ${document.getElementById('readyOrdersCount').textContent} הזמנות\n`;
+            message += `🚛 בדרך: ${document.getElementById('onDeliveryOrdersCount').textContent} הזמנות\n`;
+            message += `📦 נמסרה: ${document.getElementById('deliveredOrdersCount').textContent} הזמנות\n\n`;
+            message += `*--------------------*\n\n`;
+
+            // Add detailed orders by status
+            ALL_STATUSES.forEach(status => {
+                const ordersInStatus = ordersByStatus[status];
+                if (ordersInStatus.length > 0) {
+                    message += `*📦 סטטוס: ${status} (${ordersInStatus.length} הזמנות)*\n`;
+                    ordersInStatus.sort((a, b) => parseTimeForSorting(a.creationTime) - parseTimeForSorting(b.creationTime)).forEach(order => {
+                        message += `\n`;
+                        message += `*מס' הזמנה:* ${order.orderNumber}\n`;
+                        message += `*לקוח:* ${order.customer}\n`;
+                        message += `*כתובת:* ${order.address}\n`;
+                        message += `*פריט:* ${order.item} *כמות:* ${order.quantity}\n`;
+                        message += `*שעת יצירה:* ${order.creationTime} *תאריך:* ${order.creationDate}\n`;
+                        if (order.statusHistory && order.statusHistory !== '') {
+                            message += `*היסטוריית סטטוס:* ${order.statusHistory}\n`;
+                        }
+                        message += `*עדכון אחרון ע"י:* ${order.lastUpdater} *ב:* ${order.lastUpdateTime}\n`;
+                    });
+                    message += `\n*--------------------*\n\n`;
+                }
+            });
+
             return message.trim();
         }
 
         /**
-         * Shares the formatted driver reports to WhatsApp (after password confirmation).
+         * Shares the formatted report to WhatsApp.
          */
         async function shareToWhatsAppConfirmed() {
-            const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
-            const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
+            const fullMessage = formatWhatsAppData();
+            const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(fullMessage)}`;
+            window.open(url, "_blank"); // Open WhatsApp in a new tab
+        }
 
-            const aliDataFormatted = formatDriverWhatsAppData(aliOrders, "עלי");
-            const hakmatDataFormatted = formatDriverWhatsAppData(hakmatOrders, "חכמת");
-            const link = "🔗 https://did.li/berOf"; 
+        let pendingStatusChange = {
+            newStatus: null,
+            orderNumber: null,
+            rowIndex: null
+        };
 
-            const aliCount = document.getElementById('aliOrderCount').textContent;
-            const hakmatCount = document.getElementById('hakmatOrderCount').textContent;
-            const totalWarehouseOrders = document.getElementById('totalWarehouseOrderCount').textContent;
-            const studentWarehouseCountDisplay = document.getElementById('studentWarehouseCount').textContent;
-            const carpenterWarehouseCountDisplay = document.getElementById('carpenterWarehouseCount').textContent;
-            const morningOrdersCountDisplay = document.getElementById('morningOrdersCount').textContent;
+        /**
+         * Prepares the status change confirmation modal.
+         * @param {string} newStatus The new status to set.
+         * @param {string} orderNumber The order number.
+         * @param {number} rowIndex The row index in the sheet.
+         */
+        function prepareStatusChange(newStatus, orderNumber, rowIndex) {
+            if (!currentUser) {
+                alert("אנא בחר משתמש לפני עדכון סטטוס.");
+                showUserSelectModal();
+                return;
+            }
 
-
-            let fullMessage = `*סיכום הזמנות*\n`;
-            fullMessage += `🚚 עלי: ${aliCount} הזמנות\n`;
-            fullMessage += `🚛 חכמת: ${hakmatCount} הזמנות\n`;
-            fullMessage += `📦 סה"כ מחסן: ${totalWarehouseOrders} הזמנות\n`; 
-            fullMessage += `🏫 מחסן התלמיד: ${studentWarehouseCountDisplay} הזמנות\n`;
-            fullMessage += `🔨 מחסן החרש: ${carpenterWarehouseCountDisplay} הזמנות\n`;
-            fullMessage += `☀️ הזמנות 06:00-09:00: ${morningOrdersCountDisplay} הזמנות\n\n`;
-            fullMessage += `*--------------------*\n`;
-            fullMessage += `*דוחות בוקר מפורטים*\n\n`;
-            fullMessage += `${aliDataFormatted}\n\n`;
-            fullMessage += `${hakmatDataFormatted}\n\n`;
-            fullMessage += `${link}`;
-
-            const phoneNumber = "972508860896"; 
-            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
-
-            window.open(url, "_blank"); 
+            pendingStatusChange = { newStatus, orderNumber, rowIndex };
+            document.getElementById('confirmOrderNum').textContent = orderNumber;
+            document.getElementById('confirmNewStatus').textContent = newStatus;
+            document.getElementById('statusConfirmModal').classList.add('visible');
         }
 
         /**
+         * Confirms and applies the status change.
+         */
+        async function confirmStatusChange() {
+            closeModal('statusConfirmModal');
+            showLoading();
+
+            const { newStatus, orderNumber, rowIndex } = pendingStatusChange;
+            const updatedBy = currentUser;
+            const updateTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+            try {
+                const success = await google.script.run.withSuccessHandler((result) => {
+                    if (result.success) {
+                        alert(`הזמנה מספר ${orderNumber} עודכנה לסטטוס "${newStatus}" בהצלחה!`);
+                        // Re-fetch data to update UI and counts
+                        initializeApp(); 
+                    } else {
+                        alert("שגיאה בעדכון הסטטוס: " + result.error);
+                        hideLoading();
+                    }
+                }).withFailureHandler((error) => {
+                    console.error("Error updating status:", error);
+                    alert("שגיאה בתקשורת עם שרת Google לצורך עדכון סטטוס: " + error.message);
+                    hideLoading();
+                }).updateOrderStatus(SHEET_NAME, rowIndex, newStatus, updatedBy, updateTime);
+
+            } catch (error) {
+                console.error("Error calling updateOrderStatus:", error);
+                alert("שגיאה כללית במהלך עדכון סטטוס: " + error.message);
+                hideLoading();
+            } finally {
+                pendingStatusChange = { newStatus: null, orderNumber: null, rowIndex: null }; // Reset
+            }
+        }
+
+
+        /**
          * Central function to manage active page and highlighted navigation button.
-         * Also controls the background for the warehouse page.
+         * Also controls the background for the status filter page.
          * @param {string} pageId The ID of the HTML element for the page to activate.
          * @param {string} navButtonId The data-nav-id of the corresponding navigation button to highlight.
          */
         function activatePageAndNav(pageId, navButtonId) {
+            // Deactivate all page contents and nav buttons first
             document.querySelectorAll('.page-content').forEach(page => {
                 page.classList.remove('active');
                 setTimeout(() => {
@@ -3549,65 +2073,56 @@
                 button.classList.remove('active');
             });
 
+            // Activate the requested page
             const currentPage = document.getElementById(pageId);
             if (currentPage) {
                 currentPage.style.display = 'block'; 
                 setTimeout(() => { 
                     currentPage.classList.add('active');
                 }, 10); 
-            } else {
-                console.error(`Error: Page content with ID '${pageId}' not found.`);
-                return;
             }
 
+            // Activate the corresponding nav button (top and bottom)
             document.querySelectorAll(`[data-nav-id="${navButtonId}"]`).forEach(button => {
                 button.classList.add('active');
             });
 
-            const warehousePage = document.getElementById('warehousePage');
-            if (warehousePage) {
-                if (pageId === 'warehousePage') {
-                    const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
-                    if (warehouseOrdersDisplay && !warehouseOrdersDisplay.dataset.activeWarehouse) {
-                        warehouseOrdersDisplay.innerHTML = `
-                            <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
-                                <i class="fas fa-hand-point-up"></i> בחר מחסן מהתפריט הנפתח
-                            </p>
-                        `;
-                    }
-                    
-                    warehousePage.style.backgroundSize = 'cover';
-                    warehousePage.style.backgroundPosition = 'center';
-                    warehousePage.style.backgroundAttachment = 'fixed';
-                    warehousePage.style.opacity = '0.5'; 
+            // Handle specific status filter page background and content reset
+            const statusFilterPage = document.getElementById('statusFilterPage');
+            if (pageId === 'statusFilterPage') {
+                document.getElementById('filteredStatusOrdersDisplay').innerHTML = `
+                    <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                        <i class="fas fa-hand-point-up"></i> בחר סטטוס מהתפריט הנפתח
+                    </p>
+                `;
+                statusFilterPage.style.backgroundImage = `url('https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png')`; // Generic avatar for status page
+                statusFilterPage.style.backgroundSize = 'cover';
+                statusFilterPage.style.backgroundPosition = 'center';
+                statusFilterPage.style.backgroundAttachment = 'fixed';
+                statusFilterPage.style.opacity = '0.5'; 
 
-                    document.body.classList.add('warehouse-page-active');
-                } else {
-                    warehousePage.style.backgroundImage = 'none';
-                    warehousePage.style.opacity = '1'; 
-                    document.body.classList.remove('warehouse-page-active');
-                    const warehouseOrdersDisplay = document.getElementById('warehouseOrdersDisplay');
-                    if(warehouseOrdersDisplay) warehouseOrdersDisplay.dataset.activeWarehouse = ''; // Clear active warehouse
-                }
+                document.body.classList.add('status-page-active'); // Use new class
             } else {
-                console.warn("Warning: Element with ID 'warehousePage' not found.");
+                if (statusFilterPage) {
+                    statusFilterPage.style.backgroundImage = 'none';
+                    statusFilterPage.style.opacity = '1'; 
+                }
+                document.body.classList.remove('status-page-active');
+                document.querySelectorAll('.nav-button.status-button').forEach(btn => btn.classList.remove('active'));
             }
 
-            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
-
-
-            if (pageId === 'hakmatPage') {
-                const hakmatOrders = allOrders.filter(order => order.assignedDriver === 'חכמת');
-                renderOrders(hakmatOrders, "hakmatOnlyTimeline", "חכמת");
-            } else if (pageId === 'aliPage') {
-                const aliOrders = allOrders.filter(order => order.assignedDriver === 'עלי');
-                renderOrders(aliOrders, "aliOnlyTimeline", "עלי");
+            // Specific rendering based on page
+            if (pageId === 'pendingOrdersPage') {
+                renderOrders(allOrders, "pendingOnlyTimeline", STATUS_PENDING);
+            } else if (pageId === 'readyOrdersPage') {
+                renderOrders(allOrders, "readyOnlyTimeline", STATUS_READY);
             }
+            // Main page is rendered by initializeApp
         }
 
 
-        // Event listener for top/bottom nav buttons (excluding warehouse button initially)
-        document.querySelectorAll('.nav-button:not(.warehouse-button)').forEach(button => {
+        // Event listener for top/bottom nav buttons (excluding status filter button initially)
+        document.querySelectorAll('.nav-button:not(.status-button)').forEach(button => {
             button.onclick = () => {
                 const pageId = button.dataset.pageId;
                 const navId = button.dataset.navId;
@@ -3615,511 +2130,75 @@
             };
         });
 
-        // Event listener for the warehouse button
-        document.querySelectorAll('.nav-button.warehouse-button').forEach(button => {
+        // Event listener for the status filter button
+        document.querySelectorAll('.nav-button.status-button').forEach(button => {
             button.onclick = (event) => {
                 event.stopPropagation(); 
-                activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                
+                button.classList.toggle('active');
+
+                if (button.classList.contains('active')) {
+                    activatePageAndNav('statusFilterPage', 'status-filter-nav-button');
+                } else {
+                    const activePage = document.querySelector('.page-content.active');
+                    if (activePage && activePage.id === 'statusFilterPage') {
+                        activatePageAndNav('mainPage', 'main-nav-button');
+                    }
+                }
             };
         });
 
-        // Event listener for dropdown items (Student Warehouse, Carpenter Warehouse)
+        // Event listener for dropdown items (various statuses)
         document.querySelectorAll('.dropdown-item').forEach(item => {
             item.onclick = (event) => {
                 event.stopPropagation(); 
-                const warehouseType = item.dataset.warehouseType;
-                showWarehouseOrders(warehouseType);
+                const statusType = item.dataset.statusType;
+                showOrdersByStatus(statusType);
             };
         });
 
 
         /**
-         * Displays orders filtered by warehouse type.
-         * This function is called when a specific warehouse type is selected from the dropdown.
-         * @param {string} warehouseType The type of warehouse to filter by (e.g., 'מחסן התלמיד', 'מחסן החרש').
+         * Displays orders filtered by status type.
+         * @param {string} statusType The type of status to filter by.
          */
-        function showWarehouseOrders(warehouseType) {
-            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
-            activatePageAndNav('warehousePage', 'warehouse-nav-button');
+        function showOrdersByStatus(statusType) {
+            document.querySelectorAll('.nav-button.status-button').forEach(btn => btn.classList.remove('active'));
 
-            const warehouseDisplayContainer = document.getElementById('warehouseOrdersDisplay');
-            if (!warehouseDisplayContainer) {
-                console.error("Error: Warehouse orders display container not found.");
-                return;
-            }
-            warehouseDisplayContainer.dataset.activeWarehouse = warehouseType; // Store active warehouse type
+            activatePageAndNav('statusFilterPage', 'status-filter-nav-button');
 
-            let avatarUrl = '';
-            if (warehouseType === 'מחסן התלמיד') {
-                avatarUrl = STUDENT_WAREHOUSE_AVATAR_URL;
-            } else if (warehouseType === 'מחסן החרש') {
-                avatarUrl = CARPENTER_WAREHOUSE_AVATAR_URL;
-            }
+            const statusDisplayContainer = document.getElementById('filteredStatusOrdersDisplay');
+            let avatarUrl = 'https://placehold.co/60x60/3498db/ffffff?text=S'; // Default avatar
 
-            warehouseDisplayContainer.innerHTML = `
-                <div class="driver-section-title">
-                    <img src="${avatarUrl}" alt="Avatar for ${warehouseType}" class="driver-avatar">
-                    מחסן: ${warehouseType}
+            // You can add specific avatars for each status if desired
+            if (statusType === STATUS_PENDING) avatarUrl = 'https://placehold.co/60x60/FFDAB9/2c3e50?text=P';
+            else if (statusType === STATUS_READY) avatarUrl = 'https://placehold.co/60x60/98FB98/2c3e50?text=R';
+            else if (statusType === STATUS_ON_THE_WAY) avatarUrl = 'https://placehold.co/60x60/87CEEB/2c3e50?text=O';
+            else if (statusType === STATUS_DELIVERED) avatarUrl = 'https://placehold.co/60x60/A9A9A9/2c3e50?text=D';
+
+
+            statusDisplayContainer.innerHTML = `
+                <div class="section-title">
+                    <img src="${avatarUrl}" alt="Avatar for ${statusType}" class="section-avatar">
+                    הזמנות בסטטוס: ${statusType}
                 </div>
-                <div id="filteredWarehouseTimeline" class="timeline-grid"></div>
+                <div id="filteredStatusTimeline" class="timeline-grid"></div>
             `;
 
-            const warehousePage = document.getElementById('warehousePage');
-            if (warehousePage) {
-                warehousePage.style.backgroundImage = `url(${avatarUrl})`; 
-                warehousePage.style.backgroundSize = 'cover';
-                warehousePage.style.backgroundPosition = 'center';
-                warehousePage.style.backgroundAttachment = 'fixed';
-                warehousePage.style.opacity = '0.5'; 
-                warehousePage.style.transition = 'opacity 0.5s ease-in-out, background-image 0.5s ease-in-out'; 
-            } else {
-                console.warn("Warning: Element with ID 'warehousePage' not found when trying to set background.");
-            }
+            const statusFilterPage = document.getElementById('statusFilterPage');
+            statusFilterPage.style.backgroundImage = `url(${avatarUrl})`; // Set the dynamic image
+            statusFilterPage.style.backgroundSize = 'cover';
+            statusFilterPage.style.backgroundPosition = 'center';
+            statusFilterPage.style.backgroundAttachment = 'fixed';
+            statusFilterPage.style.opacity = '0.5'; 
 
-            document.body.classList.add('warehouse-page-active');
+            document.body.classList.add('status-page-active');
 
-            const filteredOrders = allOrders.filter(order => 
-                order.warehouse && order.warehouse.includes(warehouseType)
-            );
-            
-            filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
-
-            renderOrders(filteredOrders, "filteredWarehouseTimeline", null);
+            renderOrders(allOrders, "filteredStatusTimeline", statusType);
         }
 
-        /**
-         * Fills the free text message area with a selected predefined template, replacing placeholders.
-         */
-        function fillMessageFromTemplate() {
-            const selectElement = document.getElementById('predefinedMessageSelect');
-            const freeTextMessageArea = document.getElementById('freeTextMessage');
-            const llmResponseMessage = document.getElementById('llmResponseMessage');
-            const llmResponseContainer = document.getElementById('llmResponseContainer');
-            const llmLoader = document.getElementById('llmLoader');
-            const customerContactNameInput = document.getElementById('customerContactName');
-            const orderIdInput = document.getElementById('orderIdInput');
-            const directWazeLinkInput = document.getElementById('directWazeLinkInput');
-            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
-            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
-
-
-            if (!selectElement || !freeTextMessageArea || !llmResponseMessage || !llmResponseContainer || !llmLoader || !customerContactNameInput || !orderIdInput || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput) {
-                console.error("Error: One or more required elements for fillMessageFromTemplate not found.");
-                return;
-            }
-
-            const selectedTemplateKey = selectElement.value;
-
-            if (selectedTemplateKey && predefinedMessages[selectedTemplateKey]) {
-                let message = predefinedMessages[selectedTemplateKey];
-
-                // Replace placeholders with current order details and new estimated fields
-                if (currentOrderDetails) {
-                    message = message.replace(/\[שם לקוח\]/g, customerContactNameInput.value || currentOrderDetails.customer || 'לקוח יקר');
-                    message = message.replace(/\[מספר הזמנה\]/g, orderIdInput.value || (currentOrderDetails.orderId || 'לא ידוע'));
-                    message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
-                    message = message.replace(/\[שם נהג\]/g, currentOrderDetails.assignedDriver || 'הנהג'); 
-                    message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
-                    message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן'); 
-                    message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
-                    message = message.replace(/\[מספר הזמנה1\]/g, (currentOrderDetails.orderId || orderIdInput.value) || 'הזמנה זו');
-                    message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
-                    message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
-                    // This specific placeholder needs to extract minutes if time is like "HH:MM", otherwise a default.
-                    message = message.replace(/\[זמן משוער\]/g, estimatedArrivalTimeInput.value ? estimatedArrivalTimeInput.value.split(':')[1] ? `${parseInt(estimatedArrivalTimeInput.value.split(':')[1])} דקות` : 'זמן קצר' : 'זמן קצר');
-                    message = message.replace(/\[קישור Waze\]/g, directWazeLinkInput.value || 'קישור למפה'); 
-
-                    message = message.replace(/\[כתובת יעד משוערת\]/g, estimatedArrivalAddressInput.value || (currentOrderDetails.address || 'הכתובת'));
-                    message = message.replace(/\[שעת הגעה משוערת\]/g, estimatedArrivalTimeInput.value || (currentOrderDetails.time || 'בקרוב'));
-                }
-
-                freeTextMessageArea.value = message;
-                llmResponseMessage.textContent = message; 
-                llmResponseContainer.classList.remove('loading');
-                llmLoader.classList.remove('visible');
-            } else {
-                freeTextMessageArea.value = '';
-                llmResponseMessage.textContent = 'בחר תבנית הודעה מהרשימה.';
-            }
-        }
-
-
-        /**
-         * Generates a customer message using Gemini API, applying emoji and styling.
-         * The message can come from a template or free text.
-         */
-        async function applyAIEmojiAndStyle() { 
-            const llmLoader = document.getElementById('llmLoader');
-            const llmResponseMessage = document.getElementById('llmResponseMessage');
-            const llmResponseContainer = document.getElementById('llmResponseContainer');
-            const freeTextMessageElement = document.getElementById('freeTextMessage');
-
-            if (!llmLoader || !llmResponseMessage || !llmResponseContainer || !freeTextMessageElement) {
-                console.error("Error: One or more required LLM elements not found.");
-                return;
-            }
-
-            const freeTextMessage = freeTextMessageElement.value;
-            
-            if (!freeTextMessage) {
-                llmResponseMessage.textContent = 'יש לכתוב הודעה בכתיבה חופשית כדי לעצב אותה.';
-                return;
-            }
-
-            llmResponseMessage.textContent = ''; 
-            llmLoader.classList.add('visible'); 
-            llmResponseContainer.classList.add('loading'); 
-
-            try {
-                let prompt = `אנא עצב מחדש את ההודעה הבאה בעברית, הוסף אימוג'י רלוונטיים כדי להפוך אותה לידידותית וברורה יותר, ושמור על הנימה המקצועית. `;
-                prompt += `ההודעה: "${freeTextMessage}".`;
-                prompt += `\n\nדוגמה רצויה: שלום [שם], ההזמנה שלך 📦 בדרך אליך! נהג יגיע 🚚 בערך ב-14:30. תודה 🙏!`;
-
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    llmResponseMessage.textContent = text;
-                    freeTextMessageElement.value = text; 
-                } else {
-                    llmResponseMessage.textContent = 'שגיאה: לא התקבלה תגובה מה-LLM. נסה שוב.';
-                    console.error("Unexpected LLM response structure:", result);
-                }
-            } catch (error) {
-                llmResponseMessage.textContent = 'שגיאה: אירעה תקלה ביצירת ההודעה. אנא נסה שוב מאוחר יותר.';
-                console.error("Error calling Gemini API:", error);
-            } finally {
-                llmLoader.classList.remove('visible'); 
-                llmResponseContainer.classList.remove('loading'); 
-            }
-        }
-
-        /**
-         * Displays the Waze link in a popup modal.
-         */
-        function showWazePopupWrapper() {
-            const wazePopupLink = document.getElementById('wazePopupLink');
-            const wazeOpenLink = document.getElementById('wazeOpenLink');
-            const wazePopupModal = document.getElementById('wazePopupModal');
-            const wazePopupAddress = document.getElementById('wazePopupAddress'); 
-            const wazePopupEta = document.getElementById('wazePopupEta'); 
-            const directWazeLinkInput = document.getElementById('directWazeLinkInput'); 
-            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
-            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
-
-
-            if (!wazePopupLink || !wazeOpenLink || !wazePopupModal || !wazePopupAddress || !wazePopupEta || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput) {
-                console.error("Error: One or more Waze popup elements not found.");
-                return;
-            }
-
-            const wazeLinkToUse = directWazeLinkInput.value; 
-
-            if (wazeLinkToUse) {
-                wazePopupLink.textContent = wazeLinkToUse;
-                wazeOpenLink.href = wazeLinkToUse;
-                wazePopupAddress.textContent = estimatedArrivalAddressInput.value || 'לא נמצא';
-                wazePopupEta.textContent = estimatedArrivalTimeInput.value || 'לא נמצא';
-                wazePopupModal.classList.add('visible');
-            } else {
-                showToast("אין קישור Waze זמין עבור הזמנה זו.", 'error'); 
-            }
-        }
-
-        /**
-         * Sends a WhatsApp message to the customer using the input fields in the modal.
-         */
-        function sendWhatsAppCustomerMessage() {
-            const customerPhoneNumberInput = document.getElementById('customerPhoneNumberInput');
-            const llmResponseMessage = document.getElementById('llmResponseMessage');
-            const directWazeLinkInput = document.getElementById('directWazeLinkInput'); 
-            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
-            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
-            const customerContactNameInput = document.getElementById('customerContactName');
-            const orderIdInput = document.getElementById('orderIdInput');
-
-            if (!customerPhoneNumberInput || !llmResponseMessage || !directWazeLinkInput || !estimatedArrivalAddressInput || !estimatedArrivalTimeInput || !customerContactNameInput || !orderIdInput) {
-                console.error("Error: One or more required elements for sending customer message not found.");
-                return;
-            }
-
-            const phoneNumber = customerPhoneNumberInput.value;
-            let message = llmResponseMessage.textContent; 
-            const wazeLink = directWazeLinkInput.value;
-            const estimatedAddress = estimatedArrivalAddressInput.value;
-            const estimatedTime = estimatedArrivalTimeInput.value;
-            const customerName = customerContactNameInput.value;
-            const orderId = orderIdInput.value;
-
-            if (!phoneNumber) {
-                showToast('אנא הזן מספר טלפון של הלקוח.', 'error');
-                return;
-            }
-            if (!message || message === 'לחץ על הכפתור "צור הודעת לקוח" או מלא תבנית.') {
-                showToast('אנא צור/בחר הודעה לפני השליחה.', 'error');
-                return;
-            }
-
-            message = message.replace(/\[שם לקוח\]/g, customerName || 'לקוח יקר');
-            message = message.replace(/\[מספר הזמנה\]/g, orderId || 'לא ידוע');
-            message = message.replace(/\[שעה\]/g, currentOrderDetails.time || 'בקרוב'); 
-            message = message.replace(/\[שם נהג\]/g, currentOrderDetails.assignedDriver || 'הנהג'); 
-            message = message.replace(/\[כתובת\]/g, currentOrderDetails.address || 'הכתובת'); 
-            message = message.replace(/\[מחסן\]/g, currentOrderDetails.warehouse || 'המחסן');
-            message = message.replace(/\[שעות פעילות\]/g, '08:00-17:00'); 
-            message = message.replace(/\[מספר הזמנה1\]/g, orderId || 'הזמנה זו');
-            message = message.replace(/\[מספר הזמנה2\]/g, 'הזמנה נוספת'); 
-            message = message.replace(/\[סיבה, למשל: עומס\/בעיית מלאי\]/g, 'עומס חריג'); 
-            message = message.replace(/\[זמן משוער\]/g, estimatedTime.split(':')[1] ? `${parseInt(estimatedTime.split(':')[1])} דקות` : 'זמן קצר'); 
-            message = message.replace(/\[קישור Waze\]/g, wazeLink || 'קישור למפה');
-            message = message.replace(/\[כתובת יעד משוערת\]/g, estimatedAddress || 'הכתובת');
-            message = message.replace(/\[שעת הגעה משוערת\]/g, estimatedTime || 'בקרוב');
-
-            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-            window.open(url, "_blank");
-        }
-
-
-        /**
-         * Sends a WhatsApp message for the current order to a specific driver.
-         * @param {string} driverType 'hakmat' or 'ali'
-         */
-        function sendOrderToDriver(driverType) {
-            let driverPhoneNumber;
-            let driverName;
-
-            if (driverType === 'hakmat') {
-                driverPhoneNumber = '972532316985'; // Hakmat's phone number
-                driverName = 'חכמת';
-            } else if (driverType === 'ali') {
-                driverPhoneNumber = '9725475188'; // Ali's phone number
-                driverName = 'עלי';
-            } else {
-                showToast('נהג לא חוקי.', 'error');
-                return;
-            }
-
-            if (!currentOrderDetails) {
-                showToast('אנא בחר הזמנה לשליחה.', 'error');
-                return;
-            }
-            const orderIdInput = document.getElementById('orderIdInput');
-            const customerContactNameInput = document.getElementById('customerContactName');
-            const freeTextMessageElement = document.getElementById('freeTextMessage');
-            const workTypeInput = document.getElementById('workTypeInput'); 
-            const directWazeLinkInput = document.getElementById('directWazeLinkInput');
-            const estimatedArrivalAddressInput = document.getElementById('estimatedArrivalAddressInput'); 
-            const estimatedArrivalTimeInput = document.getElementById('estimatedArrivalTimeInput');     
-
-            const orderId = orderIdInput ? orderIdInput.value : (currentOrderDetails.orderId || 'לא ידוע');
-            const customerName = customerContactNameInput ? customerContactNameInput.value : (currentOrderDetails.customer || 'לקוח יקר');
-            const messageText = freeTextMessageElement ? freeTextMessageElement.value : ''; 
-            const workType = workTypeInput ? workTypeInput.value : ''; 
-            const wazeLinkForDriver = directWazeLinkInput.value; 
-            const estimatedAddressForDriver = estimatedArrivalAddressInput.value; 
-            const estimatedTimeForDriver = estimatedArrivalTimeInput.value;     
-
-            let message = `*הודעת הזמנה לנהג ${driverName}*\n`;
-            message += `מספר הזמנה: ${orderId}\n`;
-            message += `לקוח: ${customerName}\n`;
-            message += `כתובת מקורית: ${currentOrderDetails.address || 'לא ידוע'}\n`;
-            if (estimatedAddressForDriver && estimatedAddressForDriver !== (currentOrderDetails.address || '')) {
-                message += `כתובת הגעה משוערת: ${estimatedAddressForDriver}\n`;
-            }
-            message += `שעה מקורית: ${currentOrderDetails.time || 'לא ידוע'}\n`;
-            if (estimatedTimeForDriver && estimatedTimeForDriver !== (currentOrderDetails.time || '')) {
-                message += `שעת הגעה משוערת: ${estimatedTimeForDriver}\n`;
-            }
-            message += `סטטוס: ${currentOrderDetails.status || 'לא ידוע'}\n`;
-            message += `מחסן: ${currentOrderDetails.warehouse || 'לא ידוע'}\n`;
-            if (wazeLinkForDriver) {
-                message += `קישור Waze: ${wazeLinkForDriver}\n`;
-            }
-            if (workType) { 
-                message += `*סוג עבודה/הערות:*\n${workType}\n`;
-            }
-            if (messageText) { 
-                message += `\n*הודעה/הערות נוספות:*\n${messageText}`;
-            }
-
-            const url = `https://wa.me/${driverPhoneNumber}?text=${encodeURIComponent(message)}`;
-            window.open(url, "_blank");
-        }
-
-        /**
-         * Shows the customer message password modal.
-         */
-        function showCustomerMessagePasswordModal() {
-            const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
-            if (customerMessagePasswordInput) customerMessagePasswordInput.value = ''; 
-            
-            const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
-            if (customerMessagePasswordError) customerMessagePasswordError.style.display = 'none'; 
-            
-            const customerMessagePasswordModal = document.getElementById('customerMessagePasswordModal');
-            if (customerMessagePasswordModal) customerMessagePasswordModal.classList.add('visible');
-            else console.error("Error: Element with ID 'customerMessagePasswordModal' not found.");
-        }
-
-        /**
-         * Checks password for customer message section.
-         */
-        function checkCustomerMessagePassword() {
-            const customerMessagePasswordInput = document.getElementById('customerMessagePasswordInput');
-            const customerMessagePasswordError = document.getElementById('customerMessagePasswordError');
-            const customerMessagingSectionWrapper = document.getElementById('customerMessagingSectionWrapper');
-            const customerMessagePasswordModal = document.getElementById('customerMessagePasswordModal');
-
-            if (!customerMessagePasswordInput || !customerMessagePasswordError || !customerMessagingSectionWrapper || !customerMessagePasswordModal) {
-                console.error("Error: One or more required customer message password elements not found.");
-                return;
-            }
-
-            const inputPassword = customerMessagePasswordInput.value;
-            if (inputPassword === CUSTOMER_MESSAGE_PASSWORD) {
-                customerMessagingSectionWrapper.style.display = 'flex'; 
-                closeModal('customerMessagePasswordModal');
-            } else {
-                customerMessagePasswordError.textContent = 'סיסמה שגויה. נסה שוב.';
-                customerMessagePasswordError.style.display = 'block'; 
-            }
-        }
-
-        /**
-         * Shows the new order creation modal.
-         */
-        function showNewOrderModal() {
-            // Clear previous form data
-            document.getElementById('newOrderDate').value = '';
-            document.getElementById('newOrderTime').value = '';
-            document.getElementById('newOrderCustomer').value = '';
-            document.getElementById('newOrderAddress').value = '';
-            document.getElementById('newOrderCity').value = '';
-            document.getElementById('newOrderWarehouse').value = '';
-            document.getElementById('newOrderStatus').value = 'ממתין';
-            document.getElementById('newOrderWazeLink').value = '';
-            document.getElementById('newOrderAssignedDriver').value = '';
-
-            // Set current date as default for new order
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-            const day = String(today.getDate()).padStart(2, '0');
-            document.getElementById('newOrderDate').value = `${year}-${month}-${day}`;
-
-
-            const newOrderModal = document.getElementById('newOrderModal');
-            if (newOrderModal) {
-                newOrderModal.classList.add('visible');
-            }
-        }
-
-        /**
-         * Submits the new order form data to Firestore.
-         */
-        async function submitNewOrder() {
-            const newOrderDate = document.getElementById('newOrderDate').value;
-            const newOrderTime = document.getElementById('newOrderTime').value;
-            const newOrderCustomer = document.getElementById('newOrderCustomer').value;
-            const newOrderAddress = document.getElementById('newOrderAddress').value;
-            const newOrderCity = document.getElementById('newOrderCity').value;
-            const newOrderWarehouse = document.getElementById('newOrderWarehouse').value;
-            const newOrderStatus = document.getElementById('newOrderStatus').value;
-            const newOrderWazeLink = document.getElementById('newOrderWazeLink').value;
-            const newOrderAssignedDriver = document.getElementById('newOrderAssignedDriver').value;
-
-            if (!newOrderDate || !newOrderTime || !newOrderCustomer || !newOrderAddress || !newOrderWarehouse) {
-                showToast("יש למלא את כל השדות החובה (תאריך, שעה, לקוח, כתובת, מחסן).", "error");
-                return;
-            }
-
-            const orderData = {
-                date: newOrderDate,
-                time: newOrderTime,
-                customer: newOrderCustomer,
-                address: newOrderAddress,
-                city: newOrderCity,
-                warehouse: newOrderWarehouse,
-                status: newOrderStatus,
-                wazeLink: newOrderWazeLink || null,
-                assignedDriver: newOrderAssignedDriver || null,
-                orderId: 'ORD' + Date.now().toString().slice(-6), // Simple unique ID
-                timestamp: new Date().toISOString() // Add timestamp for history/sorting
-            };
-
-            await addNewOrder(orderData);
-        }
-
-        /**
-         * Shows a toast notification.
-         * @param {string} message The message to display.
-         * @param {string} type 'success' or 'error'
-         */
-        function showToast(message, type = 'success') {
-            const toastContainer = document.getElementById('toastContainer');
-            if (!toastContainer) {
-                console.error("Toast container not found.");
-                return;
-            }
-
-            const toast = document.createElement('div');
-            toast.classList.add('toast-notification');
-            if (type === 'error') {
-                toast.classList.add('error');
-            }
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
-            
-            toastContainer.appendChild(toast);
-
-            // Show the toast
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-
-            // Hide and remove the toast after a delay
-            setTimeout(() => {
-                toast.classList.remove('show');
-                toast.addEventListener('transitionend', () => toast.remove());
-            }, 5000); // 5 seconds
-        }
-
-
-        // Initialize the app when the DOM is fully loaded, but start with login screen
-        document.addEventListener('DOMContentLoaded', () => {
-            // Ensure Firebase variables are available from the module script
-            db = window.db;
-            firebaseApp = window.firebaseApp;
-            auth = window.auth;
-            appId = window.appId;
-
-            // Only proceed with app initialization after successful login
-            // The initial screen is always the login page.
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('loginPage').style.display = 'flex';
-
-            // Set current date as default for new order date input in the modal
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-            const day = String(today.getDate()).padStart(2, '0');
-            const newOrderDateInput = document.getElementById('newOrderDate');
-            if (newOrderDateInput) {
-                newOrderDateInput.value = `${year}-${month}-${day}`;
-            }
-        });
+        // Initialize the app when the DOM is fully loaded by fetching config first
+        document.addEventListener('DOMContentLoaded', fetchConfig);
 
     </script>
 </body>
