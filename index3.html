@@ -1,0 +1,1136 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
+import Chart from 'chart.js/auto'; // Import Chart.js
+
+// Firebase Config and App ID (provided by Canvas environment)
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Google Maps Static API Key (replace with your actual key if needed, or leave empty for Canvas to provide)
+// IMPORTANT: For security, in a production environment, this key should be managed server-side.
+const GOOGLE_MAPS_STATIC_API_KEY = ''; // Leave empty, Canvas will handle it
+
+// WhatsApp Password for sharing (for demo purposes)
+const WHATSAPP_PASSWORD = "1125";
+
+// Avatar image URLs for drivers and warehouses
+const ALI_AVATAR_URL = "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg";
+const HAKMAT_AVATAR_URL = "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg";
+const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+
+// Helper function to parse time for sorting
+const parseTimeForSorting = (timeStr) => {
+    if (!timeStr) return new Date(0);
+    if (timeStr.includes("ביחד")) {
+        const date = new Date();
+        date.setHours(7, 0, 0, 0); // Treat "ביחד" as 07:00 for sorting
+        return date;
+    }
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+};
+
+// --- Main App Component ---
+const App = () => {
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [isAuthReady, setIsAuthReady] = useState(false); // State to track auth readiness
+
+    const [allOrders, setAllOrders] = useState([]);
+    const [drivers, setDrivers] = useState([]);
+    const [activePage, setActivePage] = useState('mainPage');
+    const [activeWarehouseType, setActiveWarehouseType] = useState(null);
+
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
+    const [isCityMapModalOpen, setIsCityMapModalOpen] = useState(false);
+    const [selectedCity, setSelectedCity] = useState(null);
+
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+
+    const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
+    const [orderToEdit, setOrderToEdit] = useState(null); // Null for add, object for edit
+
+    const chartInstances = useRef({}); // To store Chart.js instances
+
+    // Initialize Firebase and set up auth listener
+    useEffect(() => {
+        if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+            console.error("Firebase config is missing or empty.");
+            return;
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+        const firebaseAuth = getAuth(app);
+
+        setDb(firestore);
+        setAuth(firebaseAuth);
+
+        // Sign in anonymously if no custom token, otherwise use custom token
+        const signIn = async () => {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                } else {
+                    await signInAnonymously(firebaseAuth);
+                }
+                console.log("Firebase signed in successfully.");
+            } catch (error) {
+                console.error("Firebase authentication error:", error);
+            } finally {
+                setIsAuthReady(true);
+            }
+        };
+
+        const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+            if (user) {
+                setUserId(user.uid);
+            } else {
+                setUserId(null);
+            }
+            setIsAuthReady(true); // Ensure auth state is ready after initial check
+        });
+
+        signIn(); // Call sign-in immediately
+
+        return () => unsubscribe();
+    }, []);
+
+    // Fetch initial drivers data and set up realtime listeners for orders
+    useEffect(() => {
+        if (!db || !auth || !isAuthReady || !userId) {
+            console.log("Firebase not ready or user not authenticated yet.");
+            return;
+        }
+
+        const fetchDrivers = async () => {
+            try {
+                const driversColRef = collection(db, `artifacts/${appId}/public/data/drivers`);
+                const driversSnapshot = await getDocs(driversColRef);
+                const fetchedDrivers = driversSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setDrivers(fetchedDrivers);
+                // If no drivers exist, add default ones (for first run)
+                if (fetchedDrivers.length === 0) {
+                    await addDoc(driversColRef, { id: 'ali', name: 'עלי', avatarUrl: ALI_AVATAR_URL });
+                    await addDoc(driversColRef, { id: 'hakmat', name: 'חכמת', avatarUrl: HAKMAT_AVATAR_URL });
+                    // Refetch after adding defaults
+                    const updatedDriversSnapshot = await getDocs(driversColRef);
+                    setDrivers(updatedDriversSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                }
+            } catch (error) {
+                console.error("Error fetching drivers:", error);
+            }
+        };
+
+        fetchDrivers();
+
+        // Setup real-time listener for orders
+        const ordersColRef = collection(db, `artifacts/${appId}/public/data/orders`);
+        // Using orderBy is commented out as per instructions, but would be ideal for server-side sorting.
+        // For now, sorting will happen client-side.
+        const q = query(ordersColRef); // Removed orderBy(field) due to indexing concerns
+
+        const unsubscribeOrders = onSnapshot(q, (snapshot) => {
+            const fetchedOrders = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                // Ensure correct parsing of date and time if they are stored as strings
+                date: doc.data().date || '',
+                time: doc.data().time || '',
+                customer: doc.data().customer || '',
+                address: doc.data().address || '',
+                city: doc.data().city || '',
+                warehouse: doc.data().warehouse || '',
+                status: doc.data().status || '',
+                driverId: doc.data().driverId || '',
+            })).sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time)); // Client-side sort
+            setAllOrders(fetchedOrders);
+        }, (error) => {
+            console.error("Error listening to orders:", error);
+            // Optionally display a user-friendly error message
+        });
+
+        return () => {
+            unsubscribeOrders();
+            // Destroy chart instances on component unmount
+            Object.values(chartInstances.current).forEach(chart => chart.destroy());
+            chartInstances.current = {};
+        };
+    }, [db, auth, isAuthReady, userId]); // Re-run effect if db, auth, or userId changes
+
+    // --- Time and Date Display ---
+    const [currentTime, setCurrentTime] = useState('');
+    const [currentDate, setCurrentDate] = useState('');
+
+    useEffect(() => {
+        const updateDateTime = () => {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const formattedTime = now.toLocaleTimeString('he-IL', timeOptions);
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let formattedDate = now.toLocaleDateString('he-IL', dateOptions);
+            formattedDate = formattedDate.replace('יום ', ''); // Remove "יום " prefix
+            setCurrentTime(formattedTime);
+            setCurrentDate(formattedDate);
+        };
+
+        const intervalId = setInterval(updateDateTime, 1000);
+        updateDateTime(); // Initial call
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // --- Order Data Processing & Counts ---
+    const getFilteredOrders = useCallback((driverId = null, warehouseType = null) => {
+        let filtered = allOrders;
+        if (driverId) {
+            filtered = filtered.filter(order => order.driverId === driverId);
+        }
+        if (warehouseType) {
+            filtered = filtered.filter(order => order.warehouse && order.warehouse.includes(warehouseType));
+        }
+        return filtered.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+    }, [allOrders]);
+
+    const aliOrders = getFilteredOrders('ali');
+    const hakmatOrders = getFilteredOrders('hakmat');
+
+    const totalWarehouseOrderCount = allOrders.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
+    const studentWarehouseCount = allOrders.filter(order => order.warehouse && order.warehouse.includes("התלמיד")).length;
+    const carpenterWarehouseCount = allOrders.filter(order => order.warehouse && order.warehouse.includes("החרש")).length;
+
+    const morningOrdersCount = allOrders.filter(order => {
+        const orderTime = parseTimeForSorting(order.time);
+        const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+        const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+        return (orderTime >= sixAM && orderTime <= nineAM) || order.time.includes("ביחד");
+    }).length;
+
+    const aliMorningOrders = aliOrders.filter(order => {
+        const orderTime = parseTimeForSorting(order.time);
+        const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+        const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+        return (orderTime >= sixAM && orderTime <= nineAM) || order.time.includes("ביחד");
+    });
+    const hakmatMorningOrders = hakmatOrders.filter(order => {
+        const orderTime = parseTimeForSorting(order.time);
+        const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+        const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+        return (orderTime >= sixAM && orderTime <= nineAM) || order.time.includes("ביחד");
+    });
+
+    // --- Chart Rendering ---
+    const renderCharts = useCallback(() => {
+        // Destroy existing chart instances
+        if (chartInstances.current.aliChart) chartInstances.current.aliChart.destroy();
+        if (chartInstances.current.hakmatChart) chartInstances.current.hakmatChart.destroy();
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 1500, easing: 'easeOutBounce' },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'כמות הזמנות' } },
+                x: { title: { display: true, text: 'טווח שעות' } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title: (context) => `הזמנות בין 06:00-09:00`,
+                        label: (context) => {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) label += `${new Intl.NumberFormat('he-IL').format(context.parsed.y)} הזמנות`;
+                            return label;
+                        },
+                        footer: (context) => {
+                            const chartId = context.chart.canvas.id;
+                            if (chartId === 'aliChart') return 'עבור נהג: עלי';
+                            if (chartId === 'hakmatChart') return 'עבור נהג: חכמת';
+                            return '';
+                        }
+                    }
+                }
+            }
+        };
+
+        const aliCtx = document.getElementById('aliChart');
+        if (aliCtx) {
+            chartInstances.current.aliChart = new Chart(aliCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['הזמנות בוקר'],
+                    datasets: [{
+                        label: 'כמות הזמנות',
+                        data: [aliMorningOrders.length],
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        const hakmatCtx = document.getElementById('hakmatChart');
+        if (hakmatCtx) {
+            chartInstances.current.hakmatChart = new Chart(hakmatCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['הזמנות בוקר'],
+                    datasets: [{
+                        label: 'כמות הזמנות',
+                        data: [hakmatMorningOrders.length],
+                        backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+    }, [aliMorningOrders, hakmatMorningOrders]);
+
+    // Re-render charts when order data changes
+    useEffect(() => {
+        renderCharts();
+    }, [allOrders, renderCharts]); // Ensure charts update with data changes
+
+    // --- Modals Logic ---
+    const openOrderDetailsModal = (order) => {
+        setSelectedOrder(order);
+        setIsOrderModalOpen(true);
+    };
+
+    const openCityMapModal = (city) => {
+        setSelectedCity(city);
+        setIsCityMapModalOpen(true);
+    };
+
+    const openPasswordModal = () => {
+        setPasswordError('');
+        setIsPasswordModalOpen(true);
+    };
+
+    const checkPasswordAndShare = () => {
+        const inputPassword = document.getElementById('passwordInput').value;
+        if (inputPassword === WHATSAPP_PASSWORD) {
+            setIsPasswordModalOpen(false);
+            shareToWhatsAppConfirmed();
+        } else {
+            setPasswordError('סיסמה שגויה. נסה שוב.');
+        }
+    };
+
+    const openAddOrderModal = () => {
+        setOrderToEdit(null); // No order to edit, so it's an add operation
+        setIsAddEditModalOpen(true);
+    };
+
+    const openEditOrderModal = (order) => {
+        setOrderToEdit(order); // Set the order to be edited
+        setIsAddEditModalOpen(true);
+    };
+
+    // --- WhatsApp Share Logic ---
+    const formatDriverWhatsAppData = (ordersData, driverName) => {
+        if (!ordersData || ordersData.length === 0) {
+            return `📝 *${driverName} - דוח בוקר*\nאין הזמנות זמינות.`;
+        }
+        const sortedData = [...ordersData].sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+        let message = `📝 *${driverName} - דוח בוקר*\n`;
+        sortedData.forEach((order) => {
+            message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
+            message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
+            message += `-----\n`;
+        });
+        return message.trim();
+    };
+
+    const shareToWhatsAppConfirmed = () => {
+        const aliDataFormatted = formatDriverWhatsAppData(aliOrders, "עלי");
+        const hakmatDataFormatted = formatDriverWhatsAppData(hakmatOrders, "חכמת");
+        const link = "🔗 https://did.li/berOf"; // Your link
+
+        let fullMessage = `*סיכום הזמנות*\n`;
+        fullMessage += `🚚 עלי: ${aliOrders.length} הזמנות\n`;
+        fullMessage += `🚛 חכמת: ${hakmatOrders.length} הזמנות\n`;
+        fullMessage += `📦 סה"כ מחסן: ${totalWarehouseOrderCount} הזמנות\n`;
+        fullMessage += `🏫 מחסן התלמיד: ${studentWarehouseCount} הזמנות\n`;
+        fullMessage += `🔨 מחסן החרש: ${carpenterWarehouseCount} הזמנות\n`;
+        fullMessage += `☀️ הזמנות 06:00-09:00: ${morningOrdersCount} הזמנות\n\n`;
+        fullMessage += `*--------------------*\n`;
+        fullMessage += `*דוחות בוקר מפורטים*\n\n`;
+        fullMessage += `${aliDataFormatted}\n\n`;
+        fullMessage += `${hakmatDataFormatted}\n\n`;
+        fullMessage += `${link}`;
+
+        const phoneNumber = "972508860896"; // Pre-set phone number
+        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(fullMessage)}`;
+        window.open(url, "_blank");
+    };
+
+    // --- Navigation Logic ---
+    const activatePageAndNav = (pageId, navButtonId, warehouseType = null) => {
+        setActivePage(pageId);
+        setActiveWarehouseType(warehouseType);
+
+        // Manage body background class
+        const body = document.body;
+        if (pageId === 'warehousePage') {
+            body.classList.add('warehouse-page-active');
+        } else {
+            body.classList.remove('warehouse-page-active');
+        }
+    };
+
+    const getWarehouseAvatarUrl = (type) => {
+        if (type === 'התלמיד') return STUDENT_WAREHOUSE_AVATAR_URL;
+        if (type === 'החרש') return CARPENTER_WAREHOUSE_AVATAR_URL;
+        return '';
+    };
+
+    // --- Firebase Actions (Add, Update, Delete) ---
+    const addOrder = async (orderData) => {
+        if (!db) { console.error("Firestore DB not initialized."); return; }
+        try {
+            const ordersColRef = collection(db, `artifacts/${appId}/public/data/orders`);
+            await addDoc(ordersColRef, { ...orderData, createdAt: new Date(), updatedAt: new Date() });
+            console.log("Order added successfully!");
+            setIsAddEditModalOpen(false); // Close modal on success
+        } catch (error) {
+            console.error("Error adding order:", error);
+            alert("שגיאה בהוספת ההזמנה. אנא נסה שוב.");
+        }
+    };
+
+    const updateOrder = async (orderId, updatedData) => {
+        if (!db) { console.error("Firestore DB not initialized."); return; }
+        try {
+            const orderDocRef = doc(db, `artifacts/${appId}/public/data/orders`, orderId);
+            await updateDoc(orderDocRef, { ...updatedData, updatedAt: new Date() });
+            console.log("Order updated successfully!");
+            setIsAddEditModalOpen(false); // Close modal on success
+        } catch (error) {
+            console.error("Error updating order:", error);
+            alert("שגיאה בעדכון ההזמנה. אנא נסה שוב.");
+        }
+    };
+
+    const deleteOrder = async (orderId) => {
+        if (!db) { console.error("Firestore DB not initialized."); return; }
+        if (!window.confirm("האם אתה בטוח שברצונך למחוק הזמנה זו?")) { // Use browser confirm for simplicity for now
+            return;
+        }
+        try {
+            const orderDocRef = doc(db, `artifacts/${appId}/public/data/orders`, orderId);
+            await deleteDoc(orderDocRef);
+            console.log("Order deleted successfully!");
+            setIsOrderModalOpen(false); // Close details modal after deletion
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            alert("שגיאה במחיקת ההזמנה. אנא נסה שוב.");
+        }
+    };
+
+    // --- Order Card Component ---
+    const OrderCard = ({ order, driverName, onOrderClick, onEdit, onDelete }) => {
+        const timeDisplay = order.time && order.time.includes("ביחד") ?
+            `${order.time} <span class="biachad-indicator">ביחד</span>` :
+            (order.time || "לא ידוע");
+
+        return (
+            <div
+                className={`order-card relative flex flex-col gap-2 p-4 rounded-2xl shadow-xl transition-all duration-300 transform cursor-pointer overflow-hidden ${driverName === "עלי" ? 'bg-gradient-to-br from-blue-300 to-blue-500 border border-blue-400 hover:border-blue-600' : 'bg-gradient-to-br from-orange-300 to-orange-500 border border-orange-400 hover:border-orange-600'}`}
+                onClick={() => onOrderClick(order)}
+            >
+                <div className="flex items-center gap-2 text-xl font-bold text-gray-800 border-b border-dashed border-gray-300 pb-2 mb-2">
+                    <i className="far fa-clock text-red-500 text-lg"></i>
+                    <span dangerouslySetInnerHTML={{ __html: timeDisplay }}></span>
+                </div>
+                <div className="text-right">
+                    <p className="flex items-start gap-2 text-gray-700 text-base">
+                        <i className="far fa-calendar-alt text-green-500 text-base mt-1"></i>
+                        <strong>תאריך:</strong> {order.date || "לא ידוע"}
+                    </p>
+                    <p className="flex items-start gap-2 text-gray-700 text-base">
+                        <i className="fas fa-user text-green-500 text-base mt-1"></i>
+                        <strong>לקוח:</strong> {order.customer || "לא ידוע"}
+                    </p>
+                    <p className="flex items-start gap-2 text-gray-700 text-base">
+                        <i className="fas fa-map-marker-alt text-green-500 text-base mt-1"></i>
+                        <strong>כתובת:</strong>
+                        <span
+                            className="text-blue-600 underline cursor-pointer hover:text-red-500 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); openCityMapModal(order.city); }}
+                        >
+                            {order.address || "לא ידוע"}
+                        </span>
+                    </p>
+                    <p className="flex items-start gap-2 text-gray-700 text-base">
+                        <i className="fas fa-warehouse text-green-500 text-base mt-1"></i>
+                        <strong>מחסן:</strong> {order.warehouse || "לא ידוע"}
+                    </p>
+                    <p className="flex items-start gap-2 text-gray-700 text-base">
+                        <i className="fas fa-info-circle text-green-500 text-base mt-1"></i>
+                        <strong>סטטוס:</strong> {order.status || "לא ידוע"}
+                    </p>
+                </div>
+                <div className="absolute left-2 top-2 flex gap-1">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(order); }}
+                        className="bg-blue-600 text-white p-2 rounded-full shadow-md hover:bg-blue-700 transition-colors text-sm"
+                        aria-label="ערוך הזמנה"
+                    >
+                        <i className="fas fa-edit"></i>
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(order.id); }}
+                        className="bg-red-600 text-white p-2 rounded-full shadow-md hover:bg-red-700 transition-colors text-sm"
+                        aria-label="מחק הזמנה"
+                    >
+                        <i className="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // --- Render Orders (generic) ---
+    const renderOrders = (orders, timelineId, driverName = null) => {
+        if (!orders || orders.length === 0) {
+            return (
+                <p className="text-center mt-8 text-xl text-gray-700">אין הזמנות זמינות עבור נהג זה/מחסן זה.</p>
+            );
+        }
+        return (
+            <div id={timelineId} className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5">
+                {orders.map(order => (
+                    <OrderCard
+                        key={order.id}
+                        order={order}
+                        driverName={driverName}
+                        onOrderClick={openOrderDetailsModal}
+                        onEdit={openEditOrderModal}
+                        onDelete={deleteOrder}
+                    />
+                ))}
+            </div>
+        );
+    };
+
+    // --- Order Add/Edit Form Modal Component ---
+    const AddEditOrderModal = ({ isOpen, onClose, orderToEdit, drivers, onSave }) => {
+        const [formData, setFormData] = useState({
+            date: '',
+            time: '',
+            customer: '',
+            address: '',
+            city: '',
+            warehouse: '',
+            status: '',
+            driverId: '',
+        });
+        const [formErrors, setFormErrors] = useState({});
+
+        useEffect(() => {
+            if (orderToEdit) {
+                // Pre-fill form for editing
+                setFormData({
+                    date: orderToEdit.date || '',
+                    time: orderToEdit.time || '',
+                    customer: orderToEdit.customer || '',
+                    address: orderToEdit.address || '',
+                    city: orderToEdit.city || (orderToEdit.address ? orderToEdit.address.split(',').pop().trim() : ''),
+                    warehouse: orderToEdit.warehouse || '',
+                    status: orderToEdit.status || '',
+                    driverId: orderToEdit.driverId || '',
+                });
+            } else {
+                // Reset form for adding
+                setFormData({
+                    date: new Date().toISOString().slice(0, 10), // Current date
+                    time: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false }), // Current time
+                    customer: '',
+                    address: '',
+                    city: '',
+                    warehouse: '',
+                    status: 'בתהליך',
+                    driverId: drivers.length > 0 ? drivers[0].id : '', // Default to first driver
+                });
+            }
+            setFormErrors({}); // Clear errors
+        }, [orderToEdit, isOpen, drivers]); // Re-run when modal opens or orderToEdit changes
+
+        const handleChange = (e) => {
+            const { name, value } = e.target;
+            setFormData(prev => ({ ...prev, [name]: value }));
+        };
+
+        const validateForm = () => {
+            const errors = {};
+            if (!formData.customer.trim()) errors.customer = "שם לקוח נדרש";
+            if (!formData.address.trim()) errors.address = "כתובת נדרשת";
+            if (!formData.date.trim()) errors.date = "תאריך נדרש";
+            if (!formData.time.trim()) errors.time = "שעה נדרשת";
+            if (!formData.driverId.trim()) errors.driverId = "נהג נדרש";
+            setFormErrors(errors);
+            return Object.keys(errors).length === 0;
+        };
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            if (!validateForm()) {
+                console.log("Form validation failed", formErrors);
+                return;
+            }
+            onSave(orderToEdit ? orderToEdit.id : null, formData);
+        };
+
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-[1000]">
+                <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-lg w-full relative border-4 border-blue-500 overflow-y-auto max-h-[90vh]">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 left-4 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl transform transition-all duration-200 hover:rotate-90 hover:scale-110"
+                    >
+                        &times;
+                    </button>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-blue-500 pb-3 text-right">
+                        {orderToEdit ? 'ערוך הזמנה' : 'הוסף הזמנה חדשה'}
+                    </h2>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 text-right">
+                        <div>
+                            <label htmlFor="customer" className="block text-gray-700 text-lg font-semibold mb-1">לקוח:</label>
+                            <input
+                                type="text"
+                                id="customer"
+                                name="customer"
+                                value={formData.customer}
+                                onChange={handleChange}
+                                className={`w-full p-3 border-2 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${formErrors.customer ? 'border-red-500' : 'border-gray-300'}`}
+                            />
+                            {formErrors.customer && <p className="text-red-500 text-sm mt-1">{formErrors.customer}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="address" className="block text-gray-700 text-lg font-semibold mb-1">כתובת:</label>
+                            <input
+                                type="text"
+                                id="address"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                className={`w-full p-3 border-2 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${formErrors.address ? 'border-red-500' : 'border-gray-300'}`}
+                            />
+                            {formErrors.address && <p className="text-red-500 text-sm mt-1">{formErrors.address}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="city" className="block text-gray-700 text-lg font-semibold mb-1">עיר:</label>
+                            <input
+                                type="text"
+                                id="city"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                className="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="date" className="block text-gray-700 text-lg font-semibold mb-1">תאריך:</label>
+                                <input
+                                    type="date"
+                                    id="date"
+                                    name="date"
+                                    value={formData.date}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border-2 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${formErrors.date ? 'border-red-500' : 'border-gray-300'}`}
+                                />
+                                {formErrors.date && <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="time" className="block text-gray-700 text-lg font-semibold mb-1">שעה:</label>
+                                <input
+                                    type="time"
+                                    id="time"
+                                    name="time"
+                                    value={formData.time}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border-2 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${formErrors.time ? 'border-red-500' : 'border-gray-300'}`}
+                                />
+                                {formErrors.time && <p className="text-red-500 text-sm mt-1">{formErrors.time}</p>}
+                            </div>
+                        </div>
+                        <div>
+                            <label htmlFor="warehouse" className="block text-gray-700 text-lg font-semibold mb-1">מחסן:</label>
+                            <select
+                                id="warehouse"
+                                name="warehouse"
+                                value={formData.warehouse}
+                                onChange={handleChange}
+                                className="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            >
+                                <option value="">בחר מחסן</option>
+                                <option value="התלמיד">מחסן התלמיד</option>
+                                <option value="החרש">מחסן החרש</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="status" className="block text-gray-700 text-lg font-semibold mb-1">סטטוס:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                className="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            >
+                                <option value="בתהליך">בתהליך</option>
+                                <option value="בוצע">בוצע</option>
+                                <option value="נדחה">נדחה</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="driverId" className="block text-gray-700 text-lg font-semibold mb-1">שויך לנהג:</label>
+                            <select
+                                id="driverId"
+                                name="driverId"
+                                value={formData.driverId}
+                                onChange={handleChange}
+                                className={`w-full p-3 border-2 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${formErrors.driverId ? 'border-red-500' : 'border-gray-300'}`}
+                            >
+                                <option value="">בחר נהג</option>
+                                {drivers.map(driver => (
+                                    <option key={driver.id} value={driver.id}>{driver.name}</option>
+                                ))}
+                            </select>
+                            {formErrors.driverId && <p className="text-red-500 text-sm mt-1">{formErrors.driverId}</p>}
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full bg-green-600 text-white p-4 rounded-xl text-xl font-bold mt-6 shadow-lg hover:bg-green-700 transition-colors"
+                        >
+                            {orderToEdit ? 'שמור שינויים' : 'הוסף הזמנה'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    };
+
+    // --- Conditional Rendering of Pages ---
+    const renderPageContent = () => {
+        switch (activePage) {
+            case 'mainPage':
+                return (
+                    <div id="mainPage" className="space-y-8 animate-fade-in">
+                        {/* Summary Counters Section 1: Driver and Total Warehouse */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                            <SummaryCard title="סה'כ הזמנות עלי" count={aliOrders.length} icon="fas fa-truck" bgColorClass="bg-gradient-to-br from-blue-400 to-blue-600" />
+                            <SummaryCard title="סה'כ הזמנות חכמת" count={hakmatOrders.length} icon="fas fa-truck" bgColorClass="bg-gradient-to-br from-green-400 to-green-600" />
+                            <SummaryCard title="סה'כ הזמנות מחסן" count={totalWarehouseOrderCount} icon="fas fa-warehouse" bgColorClass="bg-gradient-to-br from-purple-400 to-purple-600" />
+                        </div>
+
+                        {/* Summary Counters Section 2: Specific Warehouses and Morning Orders */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                            <SummaryCard title="מחסן התלמיד" count={studentWarehouseCount} icon="fas fa-boxes" bgColorClass="bg-gradient-to-br from-indigo-400 to-indigo-600" />
+                            <SummaryCard title="מחסן החרש" count={carpenterWarehouseCount} icon="fas fa-tools" bgColorClass="bg-gradient-to-br from-teal-400 to-teal-600" />
+                            <SummaryCard title="הזמנות 06:00-09:00" count={morningOrdersCount} icon="fas fa-sun" bgColorClass="bg-gradient-to-br from-yellow-400 to-yellow-600" />
+                        </div>
+
+                        {/* Charts Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                            <ChartCard
+                                title="הזמנות 06:00-09:00 - עלי"
+                                chartId="aliChart"
+                                customerList={aliMorningOrders.map(o => o.customer)}
+                            />
+                            <ChartCard
+                                title="הזמנות 06:00-09:00 - חכמת"
+                                chartId="hakmatChart"
+                                customerList={hakmatMorningOrders.map(o => o.customer)}
+                            />
+                        </div>
+
+                        {/* Driver Ali's section */}
+                        <DriverSection
+                            driverName="עלי"
+                            avatarUrl={ALI_AVATAR_URL}
+                            orders={aliOrders}
+                            renderOrders={renderOrders}
+                            timelineId="aliTimeline"
+                        />
+
+                        {/* Driver Hakmat's section */}
+                        <DriverSection
+                            driverName="חכמת"
+                            avatarUrl={HAKMAT_AVATAR_URL}
+                            orders={hakmatOrders}
+                            renderOrders={renderOrders}
+                            timelineId="hakmatTimeline"
+                        />
+                    </div>
+                );
+            case 'hakmatPage':
+                return (
+                    <div id="hakmatPage" className="animate-fade-in">
+                        <DriverSection
+                            driverName="חכמת"
+                            avatarUrl={HAKMAT_AVATAR_URL}
+                            orders={hakmatOrders}
+                            renderOrders={renderOrders}
+                            timelineId="hakmatOnlyTimeline"
+                        />
+                    </div>
+                );
+            case 'aliPage':
+                return (
+                    <div id="aliPage" className="animate-fade-in">
+                        <DriverSection
+                            driverName="עלי"
+                            avatarUrl={ALI_AVATAR_URL}
+                            orders={aliOrders}
+                            renderOrders={renderOrders}
+                            timelineId="aliOnlyTimeline"
+                        />
+                    </div>
+                );
+            case 'warehousePage':
+                const currentWarehouseOrders = activeWarehouseType
+                    ? allOrders.filter(order => order.warehouse && order.warehouse.includes(activeWarehouseType))
+                    : [];
+                const warehouseDisplayTitle = activeWarehouseType ? `מחסן: ${activeWarehouseType}` : `בחר מחסן מהתפריט הנפתח`;
+
+                return (
+                    <div
+                        id="warehousePage"
+                        className="animate-fade-in relative transition-all duration-500 ease-in-out"
+                        style={{
+                            backgroundImage: activeWarehouseType ? `url(${getWarehouseAvatarUrl(activeWarehouseType)})` : 'none',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundAttachment: 'fixed',
+                            opacity: activeWarehouseType ? '0.5' : '1',
+                        }}
+                    >
+                        <div id="warehouseOrdersDisplay" className="relative z-10 p-5">
+                            <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-800 py-3 px-8 rounded-full bg-gray-100 shadow-lg border-4 border-blue-500 max-w-fit mx-auto my-8 overflow-hidden relative">
+                                {activeWarehouseType && (
+                                    <img src={getWarehouseAvatarUrl(activeWarehouseType)} alt={`Avatar for ${activeWarehouseType}`} className="w-16 h-16 rounded-full object-cover border-4 border-blue-500 transition-transform duration-300 group-hover:scale-110" />
+                                )}
+                                {warehouseDisplayTitle}
+                                {/* Shine effect for title */}
+                                <span className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] transition-all duration-700 group-hover:left-[100%]"></span>
+                            </div>
+
+                            {activeWarehouseType ? (
+                                renderOrders(currentWarehouseOrders, "filteredWarehouseTimeline", null)
+                            ) : (
+                                <p className="text-center mt-12 text-2xl text-gray-700"><i className="fas fa-hand-point-up text-blue-500"></i> בחר מחסן מהתפריט הנפתח</p>
+                            )}
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    if (!isAuthReady) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-100">
+                <div className="text-3xl font-bold text-gray-700">טוען נתונים...</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 text-gray-800 relative pt-16 pb-20 font-rubik text-right">
+            {/* Top Navigation Bar */}
+            <nav className="fixed top-0 left-0 right-0 w-full flex justify-center items-center p-3 bg-gradient-to-r from-blue-500 to-green-500 shadow-lg rounded-b-2xl z-50">
+                <NavBar buttons={[
+                    { id: 'main-nav-button', pageId: 'mainPage', icon: 'fas fa-home', label: 'ראשי' },
+                    { id: 'hakmat-nav-button', pageId: 'hakmatPage', icon: 'fas fa-user-tie', label: 'חכמת' },
+                    { id: 'ali-nav-button', pageId: 'aliPage', icon: 'fas fa-user-astronaut', label: 'עלי' },
+                ]} activePage={activePage} activatePageAndNav={activatePageAndNav} isTopNav={true} />
+                 {/* Warehouse Dropdown */}
+                 <div className="relative group">
+                    <button
+                        className={`nav-button relative flex flex-col items-center justify-center p-3 text-white font-medium rounded-xl transition-all duration-300 shadow-md transform hover:translate-y-[-3px] hover:scale-[1.02] hover:shadow-lg ${activePage === 'warehousePage' ? 'bg-white bg-opacity-20 border-white border-opacity-50' : 'bg-transparent border-transparent'} bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 w-full max-w-[180px] mx-1 overflow-visible`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Toggle warehouse page only if it's currently selected, otherwise activate it
+                            if (activePage === 'warehousePage') {
+                                // If warehouse button is active, clicking it again should close dropdown and go to main
+                                activatePageAndNav('mainPage', 'main-nav-button');
+                            } else {
+                                activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                            }
+                        }}
+                    >
+                        <i className="fas fa-boxes text-lg mb-1"></i>
+                        מחסן
+                        <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/70 to-transparent skew-x-[-20deg] opacity-0 transition-all duration-700 group-hover:left-[100%] group-hover:opacity-100"></div>
+
+                        <div className={`dropdown-menu absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 rounded-lg shadow-xl min-w-[180px] py-2 opacity-0 invisible transition-all duration-300 ${activePage === 'warehousePage' ? 'opacity-100 visible -translate-y-1' : ''} z-50`}>
+                            <div
+                                className="dropdown-item px-4 py-2 text-white text-right hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); activatePageAndNav('warehousePage', 'warehouse-nav-button', 'התלמיד'); }}
+                            >
+                                <i className="fas fa-school"></i> מחסן התלמיד
+                            </div>
+                            <div
+                                className="dropdown-item px-4 py-2 text-white text-right hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); activatePageAndNav('warehousePage', 'warehouse-nav-button', 'החרש'); }}
+                            >
+                                <i className="fas fa-tools"></i> מחסן החרש
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </nav>
+
+            {/* Header Section */}
+            <header className="bg-gradient-to-br from-blue-500 to-green-500 text-white p-5 rounded-b-3xl shadow-xl mb-10 relative overflow-hidden min-h-[120px] flex flex-col justify-center items-center animate-gradient-shift">
+                <div className="relative z-10 px-5 w-full">
+                    <div className="flex flex-wrap justify-center items-center gap-5 mb-4">
+                        <div className="text-5xl font-extrabold text-shadow-lg">{currentTime}</div>
+                        <div className="text-3xl font-semibold text-shadow-lg">{currentDate}</div>
+                    </div>
+                    <h1 className="text-4xl font-extrabold text-shadow-lg">📋 דוח בוקר - סידור הובלות</h1>
+                </div>
+            </header>
+
+            {/* Main Container for Pages */}
+            <div className="container max-w-7xl mx-auto px-5 pb-20 relative z-10">
+                {userId && (
+                    <div className="text-center mb-6 text-gray-700 text-sm">
+                        מזהה משתמש: <span className="font-mono text-blue-600 text-sm break-all">{userId}</span>
+                    </div>
+                )}
+                {renderPageContent()}
+
+                {/* WhatsApp Share Button */}
+                <button
+                    className="share-button fixed bottom-28 left-1/2 transform -translate-x-1/2 bg-green-500 text-white py-4 px-8 rounded-full text-xl font-bold flex items-center justify-center gap-3 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-[90%] max-w-xs z-40 overflow-hidden relative group"
+                    onClick={openPasswordModal}
+                >
+                    <i className="fab fa-whatsapp text-2xl"></i>
+                    שתף לווצאפ
+                    <span className="absolute top-0 left-[-75%] w-1/2 h-full bg-white/40 transform -skew-x-12 transition-all duration-500 group-hover:left-[125%]"></span>
+                </button>
+
+                {/* Add New Order Button */}
+                <button
+                    className="fixed bottom-44 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white py-3 px-6 rounded-full text-lg font-bold flex items-center justify-center gap-2 shadow-lg transition-all duration-300 hover:scale-105 hover:bg-blue-600 w-[90%] max-w-xs z-40"
+                    onClick={openAddOrderModal}
+                >
+                    <i className="fas fa-plus-circle text-xl"></i>
+                    הוסף הזמנה חדשה
+                </button>
+            </div>
+
+            {/* Order Details Modal */}
+            {selectedOrder && (
+                <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="פרטי הזמנה מלאים">
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="far fa-calendar-alt text-blue-500"></i> תאריך:</strong> <span>{selectedOrder.date || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="far fa-clock text-blue-500"></i> שעה:</strong> <span>{selectedOrder.time || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="fas fa-user text-blue-500"></i> לקוח:</strong> <span>{selectedOrder.customer || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="fas fa-map-marker-alt text-blue-500"></i> כתובת:</strong> <span>{selectedOrder.address || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="fas fa-warehouse text-blue-500"></i> מחסן:</strong> <span>{selectedOrder.warehouse || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="fas fa-info-circle text-blue-500"></i> סטטוס:</strong> <span>{selectedOrder.status || 'אין נתונים'}</span></p>
+                    <p className="flex items-center gap-3 text-lg"><strong><i className="fas fa-truck-moving text-blue-500"></i> נהג:</strong> <span>{drivers.find(d => d.id === selectedOrder.driverId)?.name || 'לא שויך'}</span></p>
+                </Modal>
+            )}
+
+            {/* City Map Modal */}
+            <Modal isOpen={isCityMapModalOpen} onClose={() => setIsCityMapModalOpen(false)} title={`מפה של ${selectedCity || 'העיר לא ידועה'}`}>
+                <div id="cityMapDisplay" className="w-full h-96 bg-gray-200 rounded-xl flex justify-center items-center text-gray-600 text-xl overflow-hidden relative">
+                    {GOOGLE_MAPS_STATIC_API_KEY ? (
+                        <img
+                            src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(selectedCity || '')}&zoom=13&size=600x350&markers=color:red%7Clabel:A%7C${encodeURIComponent(selectedCity || '')}&key=${GOOGLE_MAPS_STATIC_API_KEY}`}
+                            alt={`מפה של ${selectedCity}`}
+                            className="w-full h-full object-cover rounded-xl"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "https://placehold.co/600x350/cccccc/333333?text=Map+Error";
+                            }}
+                        />
+                    ) : (
+                        <p className="p-4 bg-white bg-opacity-90 rounded-xl shadow-md">⚠ יש להזין מפתח Google Maps Static API תקף כדי להציג מפה.<br /> אנא עדכן את הקוד עם המפתח שלך.</p>
+                    )}
+                </div>
+            </Modal>
+
+            {/* Password Modal */}
+            <Modal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} title="הכנס סיסמה">
+                <input
+                    type="password"
+                    id="passwordInput"
+                    placeholder="הכנס סיסמה"
+                    className="w-full p-4 border-2 border-blue-400 rounded-xl text-xl text-center focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                    onKeyUp={(e) => { if (e.key === 'Enter') checkPasswordAndShare(); }}
+                />
+                <button
+                    onClick={checkPasswordAndShare}
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl text-xl font-bold shadow-md hover:bg-blue-700 transition-colors"
+                >
+                    אשר
+                </button>
+                {passwordError && <p className="text-red-600 text-base mt-3">{passwordError}</p>}
+            </Modal>
+
+            {/* Add/Edit Order Modal */}
+            <AddEditOrderModal
+                isOpen={isAddEditModalOpen}
+                onClose={() => setIsAddEditModalOpen(false)}
+                orderToEdit={orderToEdit}
+                drivers={drivers}
+                onSave={orderToEdit ? updateOrder : addOrder}
+            />
+            {/* Bottom Navigation Bar */}
+            <nav className="fixed bottom-0 left-0 right-0 w-full flex justify-center items-center p-3 bg-gradient-to-r from-blue-500 to-green-500 shadow-lg rounded-t-2xl z-50">
+                <NavBar buttons={[
+                    { id: 'main-nav-button', pageId: 'mainPage', icon: 'fas fa-home', label: 'ראשי' },
+                    { id: 'hakmat-nav-button', pageId: 'hakmatPage', icon: 'fas fa-user-tie', label: 'חכמת' },
+                    { id: 'ali-nav-button', pageId: 'aliPage', icon: 'fas fa-user-astronaut', label: 'עלי' },
+                ]} activePage={activePage} activatePageAndNav={activatePageAndNav} isTopNav={false} />
+                {/* Warehouse Dropdown (duplicated for bottom nav for responsiveness) */}
+                <div className="relative group">
+                    <button
+                        className={`nav-button relative flex flex-col items-center justify-center p-3 text-white font-medium rounded-xl transition-all duration-300 shadow-md transform hover:translate-y-[-3px] hover:scale-[1.02] hover:shadow-lg ${activePage === 'warehousePage' ? 'bg-white bg-opacity-20 border-white border-opacity-50' : 'bg-transparent border-transparent'} bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 w-full max-w-[180px] mx-1 overflow-visible`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (activePage === 'warehousePage') {
+                                activatePageAndNav('mainPage', 'main-nav-button');
+                            } else {
+                                activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                            }
+                        }}
+                    >
+                        <i className="fas fa-boxes text-lg mb-1"></i>
+                        מחסן
+                        <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/70 to-transparent skew-x-[-20deg] opacity-0 transition-all duration-700 group-hover:left-[100%] group-hover:opacity-100"></div>
+
+                        <div className={`dropdown-menu absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 rounded-lg shadow-xl min-w-[180px] py-2 opacity-0 invisible transition-all duration-300 ${activePage === 'warehousePage' ? 'opacity-100 visible -translate-y-1' : ''} z-50`}>
+                            <div
+                                className="dropdown-item px-4 py-2 text-white text-right hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); activatePageAndNav('warehousePage', 'warehouse-nav-button', 'התלמיד'); }}
+                            >
+                                <i className="fas fa-school"></i> מחסן התלמיד
+                            </div>
+                            <div
+                                className="dropdown-item px-4 py-2 text-white text-right hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); activatePageAndNav('warehousePage', 'warehouse-nav-button', 'החרש'); }}
+                            >
+                                <i className="fas fa-tools"></i> מחסן החרש
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    );
+};
+
+// --- Sub-Components (for better organization) ---
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-[1000] animate-fade-in">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-xl w-full relative border-4 border-blue-500 animate-slide-up overflow-y-auto max-h-[90vh] text-right">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 left-4 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl transform transition-all duration-200 hover:rotate-90 hover:scale-110"
+                >
+                    &times;
+                </button>
+                <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-blue-500 pb-3">{title}</h2>
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const SummaryCard = ({ title, count, icon, bgColorClass }) => (
+    <div className={`summary-card relative flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl transition-all duration-300 transform hover:translate-y-[-8px] hover:shadow-2xl bg-white bg-opacity-90 backdrop-blur-md border border-gray-200 overflow-hidden group`}>
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2 w-full text-center">{title}</h3>
+        <div className={`summary-count relative text-5xl font-extrabold text-white py-3 px-6 rounded-2xl shadow-lg ${bgColorClass} overflow-hidden`}>
+            {count}
+            <span className="absolute inset-0 bg-conic-gradient from-transparent via-white/70 to-transparent animate-spin-slow opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
+        </div>
+        <i className={`${icon} text-gray-600 text-5xl absolute opacity-10 left-5 bottom-5`}></i>
+    </div>
+);
+
+const ChartCard = ({ title, chartId, customerList }) => (
+    <div className="chart-card flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl transition-all duration-300 transform hover:translate-y-[-8px] hover:shadow-2xl bg-white bg-opacity-90 backdrop-blur-md border border-gray-200">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2 w-full text-center flex items-center justify-center gap-2">
+            <i className="fas fa-chart-bar text-blue-500"></i> {title}
+        </h3>
+        <div className="w-full max-w-md h-72 mb-4">
+            <canvas id={chartId}></canvas>
+        </div>
+        <div className="chart-customer-list bg-white bg-opacity-70 backdrop-blur-sm rounded-xl shadow-md p-4 mt-4 w-full text-right max-h-40 overflow-y-auto border border-gray-200">
+            <h4 className="text-lg font-bold text-gray-800 mb-2 border-b border-dashed border-gray-300 pb-2 flex items-center gap-2">
+                <i className="fas fa-users text-green-500"></i> לקוחות בבוקר:
+            </h4>
+            {customerList.length > 0 ? (
+                customerList.map((customer, index) => (
+                    <p key={index} className="text-gray-700 text-base py-1 flex items-center gap-2 transition-all duration-200 hover:text-blue-600 hover:translate-x-[-5px]">
+                        <i className="fas fa-arrow-left text-green-500 text-sm"></i> <strong>{customer || 'לקוח לא ידוע'}</strong>
+                    </p>
+                ))
+            ) : (
+                <p className="text-gray-600 text-base">אין לקוחות בטווח שעות זה.</p>
+            )}
+        </div>
+    </div>
+);
+
+const DriverSection = ({ driverName, avatarUrl, orders, renderOrders, timelineId }) => (
+    <div className="mb-10 group">
+        <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-800 py-3 px-8 rounded-full bg-gray-100 shadow-lg border-4 border-blue-500 max-w-fit mx-auto my-8 overflow-hidden relative">
+            <img src={avatarUrl} alt={`Avatar for ${driverName}`} className="w-16 h-16 rounded-full object-cover border-4 border-blue-500 transition-transform duration-300 group-hover:scale-110" />
+            נהג: {driverName}
+            {/* Shine effect for title */}
+            <span className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] transition-all duration-700 group-hover:left-[100%]"></span>
+        </div>
+        {renderOrders(orders, timelineId, driverName === "עלי" ? "עלי" : "חכמת")}
+    </div>
+);
+
+const NavBar = ({ buttons, activePage, activatePageAndNav, isTopNav }) => {
+    return (
+        <div className={`flex justify-around ${isTopNav ? 'w-full' : 'w-full'} max-w-screen-md mx-auto`}>
+            {buttons.map(button => (
+                <button
+                    key={button.id}
+                    className={`nav-button relative flex flex-col items-center justify-center p-3 text-white font-medium rounded-xl transition-all duration-300 shadow-md transform hover:translate-y-[-3px] hover:scale-[1.02] hover:shadow-lg ${activePage === button.pageId ? 'bg-white bg-opacity-20 border-white border-opacity-50' : 'bg-transparent border-transparent'} w-full max-w-[180px] mx-1 overflow-hidden group`}
+                    onClick={() => activatePageAndNav(button.pageId, button.id)}
+                >
+                    <i className={`${button.icon} text-lg mb-1`}></i>
+                    {button.label}
+                    <span className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/70 to-transparent skew-x-[-20deg] opacity-0 transition-all duration-700 group-hover:left-[100%] group-hover:opacity-100"></span>
+                </button>
+            ))}
+        </div>
+    );
+};
+
+export default App;
+
