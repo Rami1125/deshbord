@@ -80,13 +80,28 @@ const App = () => {
         const signIn = async () => {
             try {
                 if (initialAuthToken) {
-                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                    try {
+                        await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                        console.log("Firebase signed in with custom token successfully.");
+                    } catch (customTokenError) {
+                        console.error("Error signing in with custom token:", customTokenError);
+                        // If custom token fails, attempt anonymous sign-in as a fallback
+                        try {
+                            await signInAnonymously(firebaseAuth);
+                            console.log("Firebase signed in anonymously as fallback.");
+                        } catch (anonymousError) {
+                            console.error("Error signing in anonymously as fallback:", anonymousError);
+                        }
+                    }
                 } else {
+                    // No custom token provided, sign in anonymously directly
                     await signInAnonymously(firebaseAuth);
+                    console.log("Firebase signed in anonymously.");
                 }
-                console.log("Firebase signed in successfully.");
             } catch (error) {
-                console.error("Firebase authentication error:", error);
+                // This catch block will primarily handle errors from the outer signInAnonymously if custom token wasn't attempted,
+                // or if both failed.
+                console.error("General Firebase authentication error:", error);
             } finally {
                 setIsAuthReady(true);
             }
