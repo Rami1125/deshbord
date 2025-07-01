@@ -913,6 +913,24 @@
             font-size: 1.3rem; /* Slightly smaller icon to match reduced button height */
         }
 
+        /* New: Styling for avatar inside nav buttons */
+        .nav-button .button-avatar {
+            width: 30px; /* Smaller avatar for button */
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white; /* White border for contrast */
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 3px; /* Space between avatar and text */
+        }
+
+        .nav-button strong {
+            font-size: 1.1rem; /* Make text bolder and slightly larger */
+            font-weight: 700;
+            color: white; /* Ensure text is white */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3); /* Subtle text shadow */
+        }
+
         .nav-button.active {
             color: var(--accent-color); /* Active button color */
         }
@@ -1184,6 +1202,14 @@
                 margin-right: 20px;
                 box-sizing: border-box; 
             }
+            /* Adjust button avatar size for smaller screens */
+            .nav-button .button-avatar {
+                width: 25px;
+                height: 25px;
+            }
+            .nav-button strong {
+                font-size: 0.9rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1261,6 +1287,14 @@
             .share-button {
                 width: calc(100% - 20px); 
             }
+            /* Adjust button avatar size for smaller screens */
+            .nav-button .button-avatar {
+                width: 20px;
+                height: 20px;
+            }
+            .nav-button strong {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -1268,16 +1302,18 @@
     <!-- Top Navigation Bar -->
     <nav class="top-nav">
         <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
-            <i class="fas fa-home"></i> ראשי
+            <i class="fas fa-home"></i> <strong>ראשי</strong>
         </button>
         <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
-            <i class="fas fa-user-tie"></i> חכמת
+            <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Hakmat Avatar" class="button-avatar">
+            <strong>חכמת</strong>
         </button>
         <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
-            <i class="fas fa-user-astronaut"></i> עלי
+            <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Ali Avatar" class="button-avatar">
+            <strong>עלי</strong>
         </button>
         <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
-            <i class="fas fa-boxes"></i> מחסן
+            <i class="fas fa-boxes"></i> <strong>מחסן</strong>
             <div class="dropdown-menu">
                 <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
                 <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
@@ -1414,7 +1450,7 @@
             <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
             <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
             <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</b> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
         </div>
@@ -1445,16 +1481,18 @@
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
         <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button">
-            <i class="fas fa-home"></i> ראשי
+            <i class="fas fa-home"></i> <strong>ראשי</strong>
         </button>
         <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button">
-            <i class="fas fa-user-tie"></i> חכמת
+            <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Hakmat Avatar" class="button-avatar">
+            <strong>חכמת</strong>
         </button>
         <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button">
-            <i class="fas fa-user-astronaut"></i> עלי
+            <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Ali Avatar" class="button-avatar">
+            <strong>עלי</strong>
         </button>
         <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
-            <i class="fas fa-boxes"></i> מחסן
+            <i class="fas fa-boxes"></i> <strong>מחסן</strong>
             <div class="dropdown-menu">
                 <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
                 <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
@@ -1633,10 +1671,54 @@
             } catch (error) {
                 console.error("שגיאה בשליפת הנתונים:", error);
                 // Display user-friendly error message
-                alert("שגיאה בטעינת הנתונים מהגיליון. אנא ודא שמפתח ה-API תקין ושיש הרשאות גישה לגיליון.");
+                // Using a custom modal/message box instead of alert()
+                const errorMessage = "שגיאה בטעינת הנתונים מהגיליון. אנא ודא שמפתח ה-API תקין ושיש הרשאות גישה לגיליון.";
+                displayCustomMessage(errorMessage, 'error');
                 return [];
             }
         }
+
+        /**
+         * Displays a custom message box instead of alert().
+         * @param {string} message The message to display.
+         * @param {string} type The type of message (e.g., 'info', 'error').
+         */
+        function displayCustomMessage(message, type = 'info') {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.classList.add('modal-overlay');
+            modalOverlay.id = 'customMessageModal'; // Give it a unique ID
+
+            const modalContent = document.createElement('div');
+            modalContent.classList.add('modal-content');
+            modalContent.style.maxWidth = '400px';
+            modalContent.style.textAlign = 'center';
+
+            const closeButton = document.createElement('button');
+            closeButton.classList.add('modal-close-button');
+            closeButton.textContent = '×';
+            closeButton.onclick = () => closeModal('customMessageModal');
+
+            const messageHeading = document.createElement('h2');
+            messageHeading.textContent = type === 'error' ? 'שגיאה!' : 'הודעה';
+            messageHeading.style.color = type === 'error' ? 'var(--accent-color)' : 'var(--dark-color)';
+
+            const messageText = document.createElement('p');
+            messageText.textContent = message;
+            messageText.style.fontSize = '1.2rem';
+            messageText.style.marginBottom = '20px';
+
+            modalContent.appendChild(closeButton);
+            modalContent.appendChild(messageHeading);
+            modalContent.appendChild(messageText);
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            // Show the modal
+            setTimeout(() => {
+                modalOverlay.classList.add('visible');
+            }, 10);
+        }
+
 
         /**
          * Initializes the application by fetching all data and rendering initial views.
@@ -1911,6 +1993,13 @@
          */
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('visible');
+            // If it's a custom message modal, remove it from DOM after closing
+            if (modalId === 'customMessageModal') {
+                const modalElement = document.getElementById(modalId);
+                if (modalElement) {
+                    modalElement.remove();
+                }
+            }
         }
         
         /**
@@ -1953,7 +2042,7 @@
                 return timeA - timeB;
             });
 
-            let message = `📝 *${driverName} - דוח בוקר*\n`;
+            let message = `� *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
                 message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
@@ -2174,3 +2263,4 @@
     </script>
 </body>
 </html>
+�
