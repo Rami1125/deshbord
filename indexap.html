@@ -12,56 +12,76 @@
     <style>
         /* General styling for the application */
         :root {
-            --primary-color: #3498db; /* Blue */
-            --secondary-color: #2ecc71; /* Green */
-            --dark-color: #2c3e50; /* Dark blue-gray */
-            --light-color: #ecf0f1; /* Light gray */
-            --accent-color: #e74c3c; /* Red */
+            /* Updated color scheme: White and Light Blue */
+            --primary-color: #87CEEB; /* Sky Blue - Light Blue */
+            --secondary-color: #ADD8E6; /* Light Blue - Slightly lighter */
+            --dark-color: #2C3E50; /* Dark blue-gray for strong text contrast */
+            --light-color: #F8F8F8; /* Off-white */
+            --accent-color: #E74C3C; /* Red for alerts/accents */
             --text-color: #333; /* Dark text */
-            --shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
-            --card-bg: rgba(255, 255, 255, 0.98); /* Less transparent white for cards */
-            --modal-bg: rgba(255, 255, 255, 0.98); /* Near opaque white for modals */
-            --overlay-bg: rgba(0, 0, 0, 0.7); /* Darker overlay for modals */
-            --glass-bg: rgba(255, 255, 255, 0.7); /* Less transparent white for glass effect, adjusted from 0.5 */
-            --glass-border: rgba(255, 255, 255, 0.8); /* Subtle white border for glass effect, less transparent */
-            --glass-shadow: rgba(0, 0, 0, 0.2); /* Slightly stronger shadow for glass effect */
-            --glass-light-20: rgba(255, 255, 255, 0.2); /* 20% transparent white for new glass elements */
-            --glass-border-20: rgba(255, 255, 255, 0.3);
+            --shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+            --card-bg: rgba(255, 255, 255, 0.9); /* More opaque white for cards */
+            --modal-bg: rgba(255, 255, 255, 0.95); /* Almost opaque white for modals */
+            --overlay-bg: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay for modals */
+            --glass-bg: rgba(255, 255, 255, 0.8); /* More opaque glass effect */
+            --glass-border: rgba(135, 206, 235, 0.8); /* Light blue border for glass effect */
+            --glass-shadow: rgba(0, 0, 0, 0.15); /* Lighter shadow for glass effect */
+            --glass-light-20: rgba(173, 216, 230, 0.3); /* Light blue transparent for new glass elements */
+            --glass-border-20: rgba(173, 216, 230, 0.5); /* Light blue transparent border */
 
-            /* New driver specific colors for order cards with gradients */
-            --ali-card-bg-gradient: linear-gradient(135deg, rgba(173, 216, 230, 0.7), rgba(135, 206, 235, 0.7)); /* Light blue to Sky Blue */
+            /* Driver specific colors for order cards with gradients (adjusted to new theme) */
+            --ali-card-bg-gradient: linear-gradient(135deg, rgba(173, 216, 230, 0.8), rgba(135, 206, 235, 0.8)); /* Light blue to Sky Blue */
             --ali-card-border: rgba(173, 216, 230, 0.9);
             --ali-card-hover-border: #87CEEB; /* Sky Blue */
 
-            --hakmat-card-bg-gradient: linear-gradient(135deg, rgba(255, 223, 186, 0.7), rgba(255, 200, 100, 0.7)); /* Light orange to a more vibrant orange */
-            --hakmat-card-border: rgba(255, 223, 186, 0.9);
-            --hakmat-card-hover-border: #FFDAB9; /* Peach Puff */
+            --hakmat-card-bg-gradient: linear-gradient(135deg, rgba(224, 242, 241, 0.8), rgba(178, 235, 242, 0.8)); /* Very light teal/cyan */
+            --hakmat-card-border: rgba(224, 242, 241, 0.9);
+            --hakmat-card-hover-border: #B2EBF2; /* Light Cyan */
 
-            /* New warehouse specific colors for summary cards with gradients */
+            /* Warehouse specific colors for summary cards with gradients (kept distinct but adjusted) */
             --student-warehouse-bg-gradient: linear-gradient(135deg, rgba(147, 112, 219, 0.7), rgba(128, 0, 128, 0.7)); /* Medium Purple to Purple */
             --student-warehouse-border: rgba(147, 112, 219, 0.9);
-            --student-warehouse-text: white; /* Text color for better contrast on colored glass */
-            --student-warehouse-count: #DA70D6; /* Orchid */
-            --student-warehouse-hover-border: #8A2BE2; /* Blue Violet */
+            --student-warehouse-text: white;
+            --student-warehouse-count: #DA70D6;
+            --student-warehouse-hover-border: #8A2BE2;
 
             --carpenter-warehouse-bg-gradient: linear-gradient(135deg, rgba(60, 179, 113, 0.7), rgba(34, 139, 34, 0.7)); /* Medium Sea Green to Forest Green */
             --carpenter-warehouse-border: rgba(60, 179, 113, 0.9);
-            --carpenter-warehouse-text: white; /* Text color for better contrast on colored glass */
-            --carpenter-warehouse-count: #32CD32; /* Lime Green */
-            --carpenter-warehouse-hover-border: #2E8B57; /* Sea Green */
+            --carpenter-warehouse-text: white;
+            --carpenter-warehouse-count: #32CD32;
+            --carpenter-warehouse-hover-border: #2E8B57;
 
             --morning-orders-bg-gradient: linear-gradient(135deg, rgba(255, 165, 0, 0.7), rgba(255, 140, 0, 0.7)); /* Orange to Dark Orange */
             --morning-orders-border: rgba(255, 165, 0, 0.9);
-            --morning-orders-text: white; /* Text color for better contrast on colored glass */
-            --morning-orders-count: #FFD700; /* Gold */
-            --morning-orders-hover-border: #FF8C00; /* Dark Orange */
+            --morning-orders-text: white;
+            --morning-orders-count: #FFD700;
+            --morning-orders-hover-border: #FF8C00;
+
+            /* New operation type specific colors for summary cards */
+            --truck-delivery-bg-gradient: linear-gradient(135deg, rgba(100, 181, 246, 0.7), rgba(66, 165, 245, 0.7)); /* Blue 300 to Blue 400 */
+            --truck-delivery-border: rgba(100, 181, 246, 0.9);
+            --truck-delivery-text: white;
+            --truck-delivery-count: #2196F3; /* Bright Blue */
+            --truck-delivery-hover-border: #1976D2;
+
+            --crane-delivery-bg-gradient: linear-gradient(135deg, rgba(144, 202, 249, 0.7), rgba(100, 181, 246, 0.7)); /* Blue 200 to Blue 300 */
+            --crane-delivery-border: rgba(144, 202, 249, 0.9);
+            --crane-delivery-text: white;
+            --crane-delivery-count: #42A5F5; /* Medium Blue */
+            --crane-delivery-hover-border: #1E88E5;
+
+            --website-access-bg-gradient: linear-gradient(135deg, rgba(187, 222, 251, 0.7), rgba(144, 202, 249, 0.7)); /* Blue 100 to Blue 200 */
+            --website-access-border: rgba(187, 222, 251, 0.9);
+            --website-access-text: #333; /* Darker text for lighter background */
+            --website-access-count: #64B5F6; /* Light Blue */
+            --website-access-hover-border: #2196F3;
         }
         
         body {
             font-family: 'Rubik', Arial, sans-serif;
             text-align: center;
             direction: rtl; /* Right-to-left for Hebrew */
-            background-color: #f0f2f5; /* Light background for app feel */
+            background-color: var(--light-color); /* Light background for app feel */
             color: var(--text-color);
             margin: 0;
             padding: 0;
@@ -72,7 +92,7 @@
             overflow-x: hidden; /* Prevent horizontal scroll */
         }
 
-        /* Full page background image with transparency */
+        /* Full page background image with transparency and subtle animation */
         body::before {
             content: '';
             position: fixed;
@@ -87,6 +107,12 @@
             opacity: 0.7; /* Adjust background image transparency here */
             z-index: -1; /* Place behind other content */
             transition: opacity 0.5s ease-in-out, background-image 0.5s ease-in-out; /* Smooth transition */
+            animation: backgroundPan 30s linear infinite alternate; /* Subtle pan animation */
+        }
+
+        @keyframes backgroundPan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
         }
 
         /* New rule to hide body background when warehousePage is active */
@@ -528,6 +554,13 @@
             min-width: 90px; /* Align content */
         }
 
+        /* New: Styling for operation type in modal */
+        .modal-content p.operation-type-display {
+            font-weight: 700;
+            color: var(--primary-color); /* Highlight operation type */
+        }
+
+
         .modal-close-button {
             position: absolute;
             top: 20px;
@@ -713,7 +746,7 @@
             display: inline-block; /* Allows padding and background */
             padding: 10px 20px; /* Add padding */
             border-radius: 15px; /* Rounded corners */
-            background: linear-gradient(45deg, #4CAF50, #8BC34A); /* Green gradient background */
+            background-color: var(--primary-color); /* Solid light blue background */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow */
             margin-top: 10px; /* Space from heading */
             min-width: 120px; /* Ensure a minimum width for the background */
@@ -988,13 +1021,19 @@
         }
 
         /* Warehouse orders display */
-        #warehouseOrdersDisplay {
+        #warehouseOrdersDisplay, #truckDeliveryDisplay, #craneDeliveryDisplay, #websiteAccessDisplay {
             margin-top: 20px;
         }
-        #warehouseOrdersDisplay .driver-section-title {
+        #warehouseOrdersDisplay .driver-section-title, 
+        #truckDeliveryDisplay .driver-section-title, 
+        #craneDeliveryDisplay .driver-section-title, 
+        #websiteAccessDisplay .driver-section-title {
             margin-top: 0; /* Remove extra top margin */
         }
-        #warehouseOrdersDisplay .timeline-grid {
+        #warehouseOrdersDisplay .timeline-grid, 
+        #truckDeliveryDisplay .timeline-grid, 
+        #craneDeliveryDisplay .timeline-grid, 
+        #websiteAccessDisplay .timeline-grid {
             margin-bottom: 20px; /* Spacing below the grid */
         }
 
@@ -1043,6 +1082,53 @@
         .summary-card.morning-orders:hover {
             border-color: var(--morning-orders-hover-border);
         }
+
+        /* New Summary Card Styling for Operation Types */
+        .summary-card.truck-delivery {
+            background: var(--truck-delivery-bg-gradient);
+            border: 1px solid var(--truck-delivery-border);
+        }
+        .summary-card.truck-delivery h3 {
+            color: var(--truck-delivery-text);
+        }
+        .summary-card.truck-delivery .summary-count {
+            background-color: var(--truck-delivery-count);
+            color: white;
+        }
+        .summary-card.truck-delivery:hover {
+            border-color: var(--truck-delivery-hover-border);
+        }
+
+        .summary-card.crane-delivery {
+            background: var(--crane-delivery-bg-gradient);
+            border: 1px solid var(--crane-delivery-border);
+        }
+        .summary-card.crane-delivery h3 {
+            color: var(--crane-delivery-text);
+        }
+        .summary-card.crane-delivery .summary-count {
+            background-color: var(--crane-delivery-count);
+            color: white;
+        }
+        .summary-card.crane-delivery:hover {
+            border-color: var(--crane-delivery-hover-border);
+        }
+
+        .summary-card.website-access {
+            background: var(--website-access-bg-gradient);
+            border: 1px solid var(--website-access-border);
+        }
+        .summary-card.website-access h3 {
+            color: var(--website-access-text);
+        }
+        .summary-card.website-access .summary-count {
+            background-color: var(--website-access-count);
+            color: white;
+        }
+        .summary-card.website-access:hover {
+            border-color: var(--website-access-hover-border);
+        }
+
 
         /* Top Navigation Bar */
         .top-nav {
@@ -1319,6 +1405,15 @@
                 <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
             </div>
         </button>
+        <button class="nav-button" data-page-id="truckDeliveryPage" data-nav-id="truck-delivery-nav-button">
+            <i class="fas fa-truck-moving"></i> <strong>משאית</strong>
+        </button>
+        <button class="nav-button" data-page-id="craneDeliveryPage" data-nav-id="crane-delivery-nav-button">
+            <i class="fas fa-crane"></i> <strong>מנוף</strong>
+        </button>
+        <button class="nav-button" data-page-id="websiteAccessPage" data-nav-id="website-access-nav-button">
+            <i class="fas fa-globe"></i> <strong>אתר</strong>
+        </button>
     </nav>
 
     <div class="header">
@@ -1363,6 +1458,22 @@
                 <div class="summary-card morning-orders">
                     <h3><i class="fas fa-sun"></i> הזמנות 06:00-09:00</h3>
                     <div class="summary-count" id="morningOrdersCount">0</div>
+                </div>
+            </div>
+
+            <!-- New Summary Counters Section 3: Operation Types -->
+            <div class="summary-grid">
+                <div class="summary-card truck-delivery">
+                    <h3><i class="fas fa-truck-moving"></i> הובלת משאית</h3>
+                    <div class="summary-count" id="truckDeliveryCountDisplay">0</div>
+                </div>
+                <div class="summary-card crane-delivery">
+                    <h3><i class="fas fa-crane"></i> הובלת מנוף</h3>
+                    <div class="summary-count" id="craneDeliveryCountDisplay">0</div>
+                </div>
+                <div class="summary-card website-access">
+                    <h3><i class="fas fa-globe"></i> גישה לאתר</h3>
+                    <div class="summary-count" id="websiteAccessCountDisplay">0</div>
                 </div>
             </div>
 
@@ -1435,6 +1546,36 @@
                 <!-- Warehouse orders will be dynamically inserted here -->
             </div>
         </div>
+
+        <!-- Truck Delivery Page Content -->
+        <div id="truckDeliveryPage" class="page-content">
+            <div class="driver-section-title">
+                <i class="fas fa-truck-moving"></i> סוג פעולה: הובלת משאית
+            </div>
+            <div id="truckDeliveryTimeline" class="timeline-grid">
+                <!-- Orders for Truck Delivery will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Crane Delivery Page Content -->
+        <div id="craneDeliveryPage" class="page-content">
+            <div class="driver-section-title">
+                <i class="fas fa-crane"></i> סוג פעולה: הובלת מנוף
+            </div>
+            <div id="craneDeliveryTimeline" class="timeline-grid">
+                <!-- Orders for Crane Delivery will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Website Access Page Content -->
+        <div id="websiteAccessPage" class="page-content">
+            <div class="driver-section-title">
+                <i class="fas fa-globe"></i> סוג פעולה: גישה לאתר
+            </div>
+            <div id="websiteAccessTimeline" class="timeline-grid">
+                <!-- Orders for Website Access will be dynamically inserted here -->
+            </div>
+        </div>
         
         <!-- WhatsApp share button -->
         <button class="share-button" onclick="showPasswordModal()">
@@ -1452,6 +1593,7 @@
             <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
+            <p class="operation-type-display"><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> <span id="modalOperationType"></span></p>
             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
         </div>
     </div>
@@ -1498,6 +1640,15 @@
                 <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
             </div>
         </button>
+        <button class="nav-button" data-page-id="truckDeliveryPage" data-nav-id="truck-delivery-nav-button">
+            <i class="fas fa-truck-moving"></i> <strong>משאית</strong>
+        </button>
+        <button class="nav-button" data-page-id="craneDeliveryPage" data-nav-id="crane-delivery-nav-button">
+            <i class="fas fa-crane"></i> <strong>מנוף</strong>
+        </button>
+        <button class="nav-button" data-page-id="websiteAccessPage" data-nav-id="website-access-nav-button">
+            <i class="fas fa-globe"></i> <strong>אתר</strong>
+        </button>
     </nav>
 
     <script>
@@ -1534,9 +1685,9 @@
         // Google Maps Static API Key - IMPORTANT: Replace with your actual Google Maps Static API Key
         const GOOGLE_MAPS_STATIC_API_KEY = 'AIzaSyCd8lAxk7KfQvwuDGszaseiJXgc4eMfq-E'; 
 
-        // Updated ranges to include column H
-        const aliRange = 'Sheet2!B2:H10'; 
-        const hakmatRange = 'Sheet1!B2:H10'; 
+        // Updated ranges to include column H for operation type
+        const aliRange = 'Sheet2!B2:H'; 
+        const hakmatRange = 'Sheet1!B2:H'; 
 
         // Password for WhatsApp share button
         const WHATSAPP_PASSWORD = "1125";
@@ -1547,6 +1698,10 @@
         // New avatar URLs for warehouses
         const STUDENT_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
         const CARPENTER_WAREHOUSE_AVATAR_URL = "https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png";
+        // New avatar URLs for operation types (placeholders for now)
+        const TRUCK_DELIVERY_AVATAR_URL = "https://placehold.co/60x60/87CEEB/FFFFFF?text=🚚";
+        const CRANE_DELIVERY_AVATAR_URL = "https://placehold.co/60x60/ADD8E6/FFFFFF?text=🏗️";
+        const WEBSITE_ACCESS_AVATAR_URL = "https://placehold.co/60x60/F0F8FF/333333?text=🌐";
 
 
         let allAliOrders = []; // Stores all fetched Ali orders
@@ -1556,6 +1711,9 @@
         let studentWarehouseOrderCount = 0;
         let carpenterWarehouseOrderCount = 0;
         let morningOrdersCount = 0;
+        let truckDeliveryCount = 0; // New: Truck Delivery count
+        let craneDeliveryCount = 0; // New: Crane Delivery count
+        let websiteAccessCount = 0; // New: Website Access count
 
 
         /**
@@ -1621,6 +1779,7 @@
                             <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span class="city-link" data-city="${order.city}">${order.address || "לא ידוע"}</span></p>
                             <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || "לא ידוע"}</p>
+                            <p><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> ${order.operationType || "לא ידוע"}</p>
                             <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> ${order.status || "לא ידוע"}</p>
                         </div>
                         <div class="order-arrow"></div>
@@ -1658,12 +1817,19 @@
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data.values && data.values.length > 0) {
+                    // Assuming columns are: Date, Time, Warehouse, Status, Customer, Address, City (from H), Operation Type (from H)
+                    // The original code mapped row[6] to city. Now, it needs to be row[6] for operationType.
+                    // The city data was previously derived from address if not in H.
+                    // Let's re-evaluate the columns based on the new H range.
+                    // If range is B2:H, then B is index 0, H is index 6.
+                    // B: Date, C: Time, D: Warehouse, E: Status, F: Customer, G: Address, H: Operation Type
                     return data.values
-                        .filter(row => row.length >= 6 && row[1]) // Ensure row has enough data and a time
+                        .filter(row => row.length >= 7 && row[1]) // Ensure row has enough data (up to H) and a time
                         .map((row) => {
-                            const [date, time, warehouse, status, customer, address, cityFromColumnH] = row;
-                            const city = cityFromColumnH ? cityFromColumnH.trim() : (address ? address.split(',').pop().trim() : 'לא ידוע');
-                            return { date, time, warehouse, status, customer, address, city };
+                            const [date, time, warehouse, status, customer, address, operationType] = row;
+                            // City is not explicitly in the provided range B2:H, so we'll derive it from address as before
+                            const city = address ? address.split(',').pop().trim() : 'לא ידוע';
+                            return { date, time, warehouse, status, customer, address, city, operationType };
                         })
                         .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time)); // Sort by time
                 }
@@ -1750,6 +1916,9 @@
             studentWarehouseOrderCount = 0; 
             carpenterWarehouseOrderCount = 0; 
             morningOrdersCount = 0; 
+            truckDeliveryCount = 0; // Reset new counts
+            craneDeliveryCount = 0;
+            websiteAccessCount = 0;
 
             const sixAM = new Date();
             sixAM.setHours(6, 0, 0, 0);
@@ -1772,12 +1941,29 @@
                         carpenterWarehouseOrderCount++;
                     }
                 }
+                // New: Count by operation type
+                if (order.operationType) {
+                    if (order.operationType.includes("הובלת משאית")) {
+                        truckDeliveryCount++;
+                    }
+                    if (order.operationType.includes("הובלת מנוף")) {
+                        craneDeliveryCount++;
+                    }
+                    if (order.operationType.includes("גישה לאתר")) {
+                        websiteAccessCount++;
+                    }
+                }
             });
 
             // Update DOM elements for specific warehouse and morning order counts
             document.getElementById('studentWarehouseCount').textContent = studentWarehouseOrderCount;
             document.getElementById('carpenterWarehouseCount').textContent = carpenterWarehouseOrderCount;
             document.getElementById('morningOrdersCount').textContent = morningOrdersCount;
+            // Update DOM elements for new operation type counts
+            document.getElementById('truckDeliveryCountDisplay').textContent = truckDeliveryCount;
+            document.getElementById('craneDeliveryCountDisplay').textContent = craneDeliveryCount;
+            document.getElementById('websiteAccessCountDisplay').textContent = websiteAccessCount;
+
 
             // Calculate total warehouse orders (any order with a non-empty warehouse field)
             const totalWarehouseOrders = allOrdersCombined.filter(order => order.warehouse && order.warehouse.trim() !== '').length;
@@ -1953,6 +2139,7 @@
             document.getElementById('modalCustomer').textContent = order.customer || 'אין נתונים';
             document.getElementById('modalAddress').textContent = order.address || 'אין נתונים';
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'אין נתונים';
+            document.getElementById('modalOperationType').textContent = order.operationType || 'אין נתונים'; // New: Operation Type
             document.getElementById('modalStatus').textContent = order.status || 'אין נתונים';
 
             document.getElementById('orderDetailsModal').classList.add('visible');
@@ -2042,10 +2229,10 @@
                 return timeA - timeB;
             });
 
-            let message = `� *${driverName} - דוח בוקר*\n`;
+            let message = `📝 *${driverName} - דוח בוקר*\n`;
             sortedData.forEach((order) => {
                 message += `📅 ${order.date || ""} ⏰ ${order.time || ""} 🏠 ${order.warehouse || ""} 📄 ${order.status || ""}\n`;
-                message += `👤 ${order.customer || ""} 📍 ${order.address || ""}\n`;
+                message += `👤 ${order.customer || ""} 📍 ${order.address || ""} ⚙️ ${order.operationType || ""}\n`; // Added operationType
                 message += `-----\n`; // Shorter separator
             });
             return message.trim();
@@ -2067,6 +2254,10 @@
             const studentWarehouseCountDisplay = document.getElementById('studentWarehouseCount').textContent;
             const carpenterWarehouseCountDisplay = document.getElementById('carpenterWarehouseCount').textContent;
             const morningOrdersCountDisplay = document.getElementById('morningOrdersCount').textContent;
+            // New: Get operation type counts for WhatsApp message
+            const truckDeliveryCountDisplay = document.getElementById('truckDeliveryCountDisplay').textContent;
+            const craneDeliveryCountDisplay = document.getElementById('craneDeliveryCountDisplay').textContent;
+            const websiteAccessCountDisplay = document.getElementById('websiteAccessCountDisplay').textContent;
 
 
             let fullMessage = `*סיכום הזמנות*\n`;
@@ -2075,7 +2266,10 @@
             fullMessage += `📦 סה"כ מחסן: ${totalWarehouseOrders} הזמנות\n`; 
             fullMessage += `🏫 מחסן התלמיד: ${studentWarehouseCountDisplay} הזמנות\n`;
             fullMessage += `🔨 מחסן החרש: ${carpenterWarehouseCountDisplay} הזמנות\n`;
-            fullMessage += `☀️ הזמנות 06:00-09:00: ${morningOrdersCountDisplay} הזמנות\n\n`;
+            fullMessage += `☀️ הזמנות 06:00-09:00: ${morningOrdersCountDisplay} הזמנות\n`;
+            fullMessage += `🚛 הובלת משאית: ${truckDeliveryCountDisplay} הזמנות\n`; // New
+            fullMessage += `🏗️ הובלת מנוף: ${craneDeliveryCountDisplay} הזמנות\n`;     // New
+            fullMessage += `🌐 גישה לאתר: ${websiteAccessCountDisplay} הזמנות\n\n`;     // New
             fullMessage += `*--------------------*\n`;
             fullMessage += `*דוחות בוקר מפורטים*\n\n`;
             fullMessage += `${aliDataFormatted}\n\n`;
@@ -2123,41 +2317,98 @@
                 button.classList.add('active');
             });
 
-            // Handle specific warehouse page background and content reset
+            // Handle specific page backgrounds and content reset
             const warehousePage = document.getElementById('warehousePage');
+            const truckDeliveryPage = document.getElementById('truckDeliveryPage');
+            const craneDeliveryPage = document.getElementById('craneDeliveryPage');
+            const websiteAccessPage = document.getElementById('websiteAccessPage');
+
+            // Reset all specific page backgrounds
+            [warehousePage, truckDeliveryPage, craneDeliveryPage, websiteAccessPage].forEach(page => {
+                if (page) {
+                    page.style.backgroundImage = 'none';
+                    page.style.opacity = '1'; /* Reset opacity for the container */
+                }
+            });
+            document.body.classList.remove('warehouse-page-active'); // Reset global background hide
+
+            // Set specific background for active page if applicable
             if (pageId === 'warehousePage') {
-                // Initial message for warehouse page until a specific type is selected
                 document.getElementById('warehouseOrdersDisplay').innerHTML = `
                     <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
                         <i class="fas fa-hand-point-up"></i> בחר מחסן מהתפריט הנפתח
                     </p>
                 `;
-                // Set the specific background for warehouse page
                 warehousePage.style.backgroundImage = `url(${STUDENT_WAREHOUSE_AVATAR_URL})`; // Default to student warehouse image
                 warehousePage.style.backgroundSize = 'cover';
                 warehousePage.style.backgroundPosition = 'center';
                 warehousePage.style.backgroundAttachment = 'fixed';
-                warehousePage.style.opacity = '0.5'; /* Default opacity for its background image */
-
-                // When warehouse page is active, hide body's global background via class
+                warehousePage.style.opacity = '0.5';
                 document.body.classList.add('warehouse-page-active');
-            } else {
-                // If not on a warehouse page, ensure its specific background is cleared
-                if (warehousePage) {
-                    warehousePage.style.backgroundImage = 'none';
-                    warehousePage.style.opacity = '1'; /* Reset opacity for the container */
-                }
-                // Restore body's global background visibility
-                document.body.classList.remove('warehouse-page-active');
-                // Ensure dropdowns are closed if not already (important when switching away from warehouse page)
-                document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
+            } else if (pageId === 'truckDeliveryPage') {
+                document.getElementById('truckDeliveryTimeline').innerHTML = `
+                    <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                        <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+                    </p>
+                `;
+                truckDeliveryPage.style.backgroundImage = `url(${TRUCK_DELIVERY_AVATAR_URL})`;
+                truckDeliveryPage.style.backgroundSize = 'cover';
+                truckDeliveryPage.style.backgroundPosition = 'center';
+                truckDeliveryPage.style.backgroundAttachment = 'fixed';
+                truckDeliveryPage.style.opacity = '0.5';
+                document.body.classList.add('warehouse-page-active'); // Use this class to hide main background
+            } else if (pageId === 'craneDeliveryPage') {
+                document.getElementById('craneDeliveryTimeline').innerHTML = `
+                    <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                        <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+                    </p>
+                `;
+                craneDeliveryPage.style.backgroundImage = `url(${CRANE_DELIVERY_AVATAR_URL})`;
+                craneDeliveryPage.style.backgroundSize = 'cover';
+                craneDeliveryPage.style.backgroundPosition = 'center';
+                craneDeliveryPage.style.backgroundAttachment = 'fixed';
+                craneDeliveryPage.style.opacity = '0.5';
+                document.body.classList.add('warehouse-page-active');
+            } else if (pageId === 'websiteAccessPage') {
+                document.getElementById('websiteAccessTimeline').innerHTML = `
+                    <p style="text-align: center; margin-top: 50px; font-size: 1.5rem; color: var(--dark-color);">
+                        <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+                    </p>
+                `;
+                websiteAccessPage.style.backgroundImage = `url(${WEBSITE_ACCESS_AVATAR_URL})`;
+                websiteAccessPage.style.backgroundSize = 'cover';
+                websiteAccessPage.style.backgroundPosition = 'center';
+                websiteAccessPage.style.backgroundAttachment = 'fixed';
+                websiteAccessPage.style.opacity = '0.5';
+                document.body.classList.add('warehouse-page-active');
             }
+
+            // Ensure dropdowns are closed if not already (important when switching away from warehouse page)
+            document.querySelectorAll('.nav-button.warehouse-button').forEach(btn => btn.classList.remove('active'));
 
             // Specific rendering based on page
             if (pageId === 'hakmatPage') {
                 renderOrders(allHakmatOrders, "hakmatOnlyTimeline", "חכמת");
             } else if (pageId === 'aliPage') {
                 renderOrders(allAliOrders, "aliOnlyTimeline", "עלי");
+            } else if (pageId === 'truckDeliveryPage') {
+                const filteredOrders = [...allAliOrders, ...allHakmatOrders].filter(order => 
+                    order.operationType && order.operationType.includes("הובלת משאית")
+                );
+                filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                renderOrders(filteredOrders, "truckDeliveryTimeline", null);
+            } else if (pageId === 'craneDeliveryPage') {
+                const filteredOrders = [...allAliOrders, ...allHakmatOrders].filter(order => 
+                    order.operationType && order.operationType.includes("הובלת מנוף")
+                );
+                filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                renderOrders(filteredOrders, "craneDeliveryTimeline", null);
+            } else if (pageId === 'websiteAccessPage') {
+                const filteredOrders = [...allAliOrders, ...allHakmatOrders].filter(order => 
+                    order.operationType && order.operationType.includes("גישה לאתר")
+                );
+                filteredOrders.sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                renderOrders(filteredOrders, "websiteAccessTimeline", null);
             }
             // Main page is rendered by initializeApp
         }
@@ -2263,4 +2514,3 @@
     </script>
 </body>
 </html>
-�
