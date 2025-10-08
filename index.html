@@ -10,29 +10,43 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#2C3E50">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4A90E2/FFFFFF?text=GL">
-    <link rel="icon" href="https://placehold.co/32x32/4A90E2/FFFFFF?text=G" type="image/png">
+    <link rel="apple-touch-icon" href="[https://placehold.co/192x192/4A90E2/FFFFFF?text=GL](https://placehold.co/192x192/4A90E2/FFFFFF?text=GL)">
+    <link rel="icon" href="[https://placehold.co/32x32/4A90E2/FFFFFF?text=G](https://placehold.co/32x32/4A90E2/FFFFFF?text=G)" type="image/png">
     <link rel="manifest" href="manifest.json">
 
     <!-- Libraries -->
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="[https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap)" rel="stylesheet">
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
     
     <!-- OneSignal SDK for Push Notifications -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="[https://cdn.onesignal.com/sdks/OneSignalSDK.js](https://cdn.onesignal.com/sdks/OneSignalSDK.js)" async=""></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
 <script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-      notifyButton: {
-        enable: true,
-      },
-    });
-  });
-</script>
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+
+  OneSignalDeferred.push(async function(OneSignal) {
+
+    await OneSignal.init({
+
+      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+
+      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+
+      notifyButton: {
+
+        enable: true,
+
+      },
+
+    });
+
+  });
+    <!-- Leaflet Map Library -->
+    <link rel="stylesheet" href="[https://unpkg.com/leaflet@1.9.4/dist/leaflet.css](https://unpkg.com/leaflet@1.9.4/dist/leaflet.css)" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="[https://unpkg.com/leaflet@1.9.4/dist/leaflet.js](https://unpkg.com/leaflet@1.9.4/dist/leaflet.js)" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
         :root {
             --primary-color: #4A90E2; /* Bright Blue */
@@ -134,7 +148,8 @@
         .btn-primary { background-color: var(--primary-color); color: var(--white-color); }
         .btn-primary:hover { background-color: #3a7cc8; transform: translateY(-2px); }
         .btn-whatsapp { background-color: #25D366; color: var(--white-color); margin-top: 15px; }
-        
+        .btn-secondary { background-color: var(--secondary-color); color: var(--white-color); margin-bottom: 15px; }
+
         #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: var(--dark-color); color: var(--white-color); padding: 15px 25px; border-radius: 30px; box-shadow: var(--shadow); z-index: 2000; opacity: 0; visibility: hidden; transition: 0.3s ease; }
         #toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-10px); }
 
@@ -149,8 +164,19 @@
         .modal-header h2 { margin: 0; font-size: 1.3rem; }
         .modal-close { background: none; border: none; font-size: 1.8rem; cursor: pointer; }
         .modal-body { overflow-y: auto; }
-        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
         .history-item:last-child { border-bottom: none; }
+        .delete-btn { color: var(--danger-color); cursor: pointer; font-size: 1.2rem; padding: 5px; }
+        #map-container { height: 300px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .leaflet-popup-content .navigate-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 5px;
+        }
 
     </style>
 </head>
@@ -163,12 +189,15 @@
 
     <main>
         <div id="dashboardPage" class="page active content-padding">
+            <button id="show-map-btn" class="main-action-btn btn-secondary"><i class="fas fa-map-location-dot"></i>הצג מפה</button>
+            <div id="map-container" style="display:none;"></div>
+
             <div id="ali-section">
-                <div class="driver-section-title"> <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" class="driver-avatar"> <span>עלי</span> </div>
+                <div class="driver-section-title"> <img src="[https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg](https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg)" class="driver-avatar"> <span>עלי</span> </div>
                 <div id="ali-timeline"><div class="loader"><i class="fas fa-spinner"></i>טוען נתונים...</div></div>
             </div>
             <div id="hakmat-section">
-                <div class="driver-section-title"> <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" class="driver-avatar"> <span>חכמת</span> </div>
+                <div class="driver-section-title"> <img src="[https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg](https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg)" class="driver-avatar"> <span>חכמת</span> </div>
                 <div id="hakmat-timeline"><div class="loader"><i class="fas fa-spinner"></i>טוען נתונים...</div></div>
             </div>
         </div>
@@ -240,7 +269,8 @@
                 locations: [],
                 customers: new Map(),
                 activePage: 'dashboardPage',
-                isDataLoaded: false
+                isDataLoaded: false,
+                map: null,
             };
 
             // --- PWA & NOTIFICATIONS SETUP ---
@@ -291,6 +321,8 @@
                 orderAddress: document.getElementById('order-address'),
                 warehouseSelect: document.getElementById('warehouse-select'),
                 statusSelect: document.getElementById('status-select'),
+                showMapBtn: document.getElementById('show-map-btn'),
+                mapContainer: document.getElementById('map-container'),
             };
 
             // --- DATA FETCHING & PROCESSING ---
@@ -348,6 +380,11 @@
             function renderDashboard() {
                 renderTimeline(state.aliOrders, ui.aliTimeline);
                 renderTimeline(state.hakmatOrders, ui.hakmatTimeline);
+                if (state.map) {
+                    state.map.remove();
+                    state.map = null;
+                    ui.mapContainer.style.display = 'none';
+                }
             }
 
             function renderTimeline(orders, container) {
@@ -392,10 +429,16 @@
                         const dateB = new Date(b.date.split('/').reverse().join('-'));
                         return dateB - dateA;
                     });
-                    history.forEach(order => {
+                    history.forEach((order, index) => {
                         const item = document.createElement('div');
                         item.className = 'history-item';
-                        item.innerHTML = `<strong>תאריך:</strong> ${order.date}<br><strong>כתובת:</strong> ${order.address}<br><strong>סוג הובלה:</strong> ${order.operationType}`;
+                        item.innerHTML = `<div><strong>תאריך:</strong> ${order.date}<br><strong>כתובת:</strong> ${order.address}<br><strong>סוג הובלה:</strong> ${order.operationType}</div>`;
+                        
+                        const deleteBtn = document.createElement('i');
+                        deleteBtn.className = 'fas fa-trash delete-btn';
+                        deleteBtn.onclick = () => handleDeleteOrder(order, customerName);
+                        
+                        item.appendChild(deleteBtn);
                         ui.modalHistoryBody.appendChild(item);
                     });
                 } else {
@@ -491,8 +534,8 @@
                 try {
                     const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }, // Corrected header
-                        body: JSON.stringify(newOrder)
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({action: 'saveOrder', payload: newOrder})
                     });
 
                     const result = await response.json();
@@ -510,7 +553,7 @@
                     ui.citySelect.value = '';
                     ui.distanceDisplay.textContent = '';
                     
-                    await loadAllData(); // Refresh data
+                    await loadAllData();
                 } catch (error) {
                     console.error("Save failed:", error);
                     showToast("שגיאה בשליחת ההזמנה", "error");
@@ -549,6 +592,90 @@
                     btn.innerHTML = `<i class="fab fa-whatsapp"></i> שלח דוח בוקר (של מחר)`;
                 }
             }
+
+            async function handleDeleteOrder(orderToDelete, customerName) {
+                if (!confirm(`האם אתה בטוח שברצונך למחוק את ההזמנה של ${orderToDelete.customer} מתאריך ${orderToDelete.date}?`)) {
+                    return;
+                }
+
+                showToast("מוחק הזמנה...", "info");
+
+                try {
+                     const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({action: 'deleteOrder', payload: orderToDelete})
+                    });
+                    const result = await response.json();
+                    if (result.status !== 'success') {
+                      throw new Error(result.message || 'Unknown error from server');
+                    }
+
+                    showToast("ההזמנה נמחקה!", "success");
+                    
+                    // Optimistically update UI
+                    const customerOrders = state.customers.get(customerName);
+                    const updatedOrders = customerOrders.filter(o => !(o.date === orderToDelete.date && o.customer === orderToDelete.customer && o.address === orderToDelete.address));
+                    state.customers.set(customerName, updatedOrders);
+                    showCustomerHistory(customerName); // Re-render the modal
+                    await loadAllData(); // Full refresh from server
+
+                } catch (error) {
+                    console.error("Delete failed:", error);
+                    showToast("שגיאה במחיקת ההזמנה", "error");
+                }
+            }
+
+            function toggleMap() {
+                if (ui.mapContainer.style.display === 'none') {
+                    ui.mapContainer.style.display = 'block';
+                    initMap();
+                } else {
+                    if (state.map) {
+                        state.map.remove();
+                        state.map = null;
+                    }
+                    ui.mapContainer.style.display = 'none';
+                }
+            }
+
+            function initMap() {
+                if (state.map) return; // Map already initialized
+
+                // Center of Israel
+                state.map = L.map('map-container').setView([32.109333, 34.855499], 9);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(state.map);
+
+                const allTodaysOrders = [...state.aliOrders, ...state.hakmatOrders];
+                if (allTodaysOrders.length === 0) return;
+
+                const markerBounds = [];
+
+                allTodaysOrders.forEach(order => {
+                    const address = order.address;
+                    // Using OpenStreetMap's Nominatim for geocoding
+                    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lat = data[0].lat;
+                            const lon = data[0].lon;
+                            const marker = L.marker([lat, lon]).addTo(state.map);
+                            const popupContent = `<b>${order.customer}</b><br>${order.address}<br><a href="https://maps.google.com/?q=${encodeURIComponent(order.address)}" target="_blank" class="navigate-btn">נווט עם גוגל</a>`;
+                            marker.bindPopup(popupContent);
+                            markerBounds.push([lat, lon]);
+
+                            if (markerBounds.length === allTodaysOrders.length) {
+                                state.map.fitBounds(markerBounds, { padding: [50, 50] });
+                            }
+                        }
+                    }).catch(err => console.error("Geocoding error:", err));
+                });
+            }
             
             function getStatusColor(status) {
                 const colors = { 'סופקה': 'var(--success-color)', 'נדחתה': 'var(--danger-color)', 'התבטלה': 'var(--danger-color)', 'בטיפול': 'var(--warning-color)' };
@@ -571,6 +698,8 @@
             ui.customerSearch.addEventListener('input', renderCustomerList);
             ui.customerNameInput.addEventListener('input', handleCustomerInput);
             ui.modalCloseBtn.addEventListener('click', () => ui.customerHistoryModal.classList.remove('show'));
+            ui.showMapBtn.addEventListener('click', toggleMap);
+
             document.addEventListener('click', (e) => { // Hide suggestions if clicked outside
                 if (!ui.customerNameInput.contains(e.target) && !ui.customerSuggestions.contains(e.target)) {
                     ui.customerSuggestions.style.display = 'none';
