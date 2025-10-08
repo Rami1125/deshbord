@@ -9,46 +9,26 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#2C3E50">
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/pdrgskSr/sa.jpg">
-    <link rel="icon" href="https://i.postimg.cc/pdrgskSr/sa.jpg" type="image/jpeg">
+    <meta name="theme-color" content="#1A73E8">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/d1G4bWzG/1000158179.jpg">
+    <link rel="icon" href="https://i.postimg.cc/d1G4bWzG/1000158179.jpg" type="image/jpeg">
     <link rel="manifest" href="manifest.json">
 
     <!-- Libraries -->
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- OneSignal SDK for Push Notifications -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try {
-            await OneSignal.init({
-              appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-              safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-              notifyButton: {
-                enable: true,
-              },
-            });
-        } catch (e) {
-            console.error("Error initializing OneSignal:", e);
-        }
-      });
-    </script>
-
     <style>
         :root {
-            --primary-color: #4A90E2;
-            --secondary-color: #50E3C2;
-            --dark-color: #2C3E50;
-            --light-color: #F4F7F9;
-            --text-color: #333;
+            --primary-color: #1A73E8; /* Google Blue */
+            --secondary-color: #34A853; /* Google Green */
+            --dark-color: #202124; /* Google Dark Gray */
+            --light-color: #F8F9FA; /* Google Light Gray */
+            --text-color: #3C4043;
             --white-color: #FFFFFF;
-            --danger-color: #E74C3C;
-            --success-color: #2ECC71;
-            --warning-color: #F39C12;
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --danger-color: #EA4335; /* Google Red */
+            --warning-color: #FBBC04; /* Google Yellow */
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         html { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -65,82 +45,102 @@
             overscroll-behavior-y: contain;
         }
 
-        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page { display: none; animation: fadeIn 0.3s ease-out; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
-            color: var(--white-color);
+            background: var(--white-color);
+            color: var(--dark-color);
             padding: 15px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-bottom-left-radius: 25px;
-            border-bottom-right-radius: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 100;
         }
-        .header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
-        .header p { margin: 5px 0 0; font-size: 0.9rem; opacity: 0.9; }
+        .header h1 { margin: 0; font-size: 1.4rem; font-weight: 500; }
+        .header p { margin: 4px 0 0; font-size: 0.8rem; color: #5f6368; }
 
         .content-padding { padding: 15px; }
         
         .loader {
             text-align: center;
-            padding: 40px;
-            font-size: 1.2rem;
-            color: #888;
+            padding: 50px;
+            font-size: 1.1rem;
+            color: #5f6368;
         }
         .loader i {
-            font-size: 2rem;
+            font-size: 2.5rem;
+            color: var(--primary-color);
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             animation: spin 1.5s linear infinite;
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .order-card { 
+            background: var(--white-color); 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            box-shadow: var(--shadow);
+            border: 1px solid #DADCE0;
+            overflow: hidden;
         }
+        .order-card .card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 15px;
+            background-color: #F1F3F4;
+        }
+        .order-card .customer-name { font-weight: 500; font-size: 1.1rem; color: var(--dark-color); }
+        .order-card .order-time { font-weight: 500; font-size: 1rem; color: var(--primary-color); }
+        .order-card .card-body { padding: 15px; font-size: 0.95rem; }
+        .order-card .card-body p { margin: 10px 0; display: flex; align-items: center; gap: 12px; }
+        .order-card .card-body i { color: #5f6368; width: 20px; text-align: center; }
 
-        .order-card { background: var(--white-color); border-radius: 15px; margin-bottom: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 5px solid var(--primary-color); }
-        .order-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .order-card .customer-name { font-weight: 700; font-size: 1.1rem; color: var(--dark-color); }
-        .order-card .order-time { font-weight: 500; font-size: 1rem; background-color: var(--light-color); padding: 5px 10px; border-radius: 20px; color: var(--primary-color); }
-        .order-card .card-body p { margin: 8px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-        .order-card .card-body i { color: var(--primary-color); width: 20px; text-align: center; }
-
-        .driver-section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; color: var(--dark-color); display: flex; align-items: center; gap: 10px; }
+        .driver-section-title { 
+            font-size: 1.4rem; 
+            font-weight: 500; 
+            margin-bottom: 15px; 
+            color: var(--dark-color); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #DADCE0;
+        }
         .driver-avatar { 
-            width: 40px; 
-            height: 40px; 
+            width: 45px; 
+            height: 45px; 
             border-radius: 50%; 
             object-fit: cover; 
             border: 2px solid var(--primary-color);
             flex-shrink: 0;
         }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--white-color); box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 10px 0; border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 1000; }
-        .nav-button { background: none; border: none; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 0.75rem; font-family: 'Rubik', sans-serif; transition: color 0.2s ease, transform 0.2s ease; flex-grow: 1; }
-        .nav-button i { font-size: 1.5rem; }
-        .nav-button.active { color: var(--primary-color); transform: translateY(-3px); }
-        .nav-button.special { transform: translateY(-20px); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--white-color); width: 60px; height: 60px; border-radius: 50%; box-shadow: var(--shadow); flex-grow: 0; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--white-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.08); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #DADCE0; z-index: 1000; }
+        .nav-button { background: none; border: none; color: #5f6368; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem; font-family: 'Rubik', sans-serif; transition: all 0.2s ease; flex-grow: 1; }
+        .nav-button i { font-size: 1.4rem; }
+        .nav-button.active { color: var(--primary-color); }
+        .nav-button.special { transform: translateY(-20px); background: var(--primary-color); color: var(--white-color); width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4); flex-grow: 0; }
         
-        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: var(--dark-color); color: var(--white-color); padding: 15px 25px; border-radius: 30px; box-shadow: var(--shadow); z-index: 2000; opacity: 0; visibility: hidden; transition: 0.3s ease; }
+        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: var(--dark-color); color: var(--white-color); padding: 12px 20px; border-radius: 8px; box-shadow: var(--shadow); z-index: 2000; opacity: 0; visibility: hidden; transition: all 0.4s ease; font-size: 0.9rem; }
         #toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-10px); }
 
     </style>
 </head>
 <body>
     <header class="header">
-        <h1 id="header-title">📋 דוח בוקר</h1>
+        <h1><img src="https://i.postimg.cc/d1G4bWzG/1000158179.jpg" alt="Logo" style="height: 24px; vertical-align: middle; border-radius: 4px;"> סידור ח.סבן</h1>
         <p id="header-date"></p>
     </header>
 
     <main>
         <div id="dashboardPage" class="page active content-padding">
-            <div id="ali-section">
+            <div id="ali-section" style="margin-bottom: 30px;">
                 <div class="driver-section-title"> <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" class="driver-avatar"> <span>עלי</span> </div>
                 <div id="ali-timeline"><div class="loader"><i class="fas fa-spinner"></i>טוען נתונים...</div></div>
             </div>
@@ -151,18 +151,15 @@
         </div>
         
         <div id="customersPage" class="page content-padding">
-             <input type="search" id="customer-search" class="search-bar" placeholder="🔍 חפש לקוח...">
-            <div id="customer-list"></div>
+             <!-- Customer page content will go here -->
+             <p>דף לקוחות בבנייה</p>
         </div>
 
         <div id="adminPage" class="page content-padding">
-            <!-- Form HTML can be added here -->
+            <!-- Admin form content will go here -->
+            <p>דף ניהול בבנייה</p>
         </div>
     </main>
-    
-    <div id="customerHistoryModal" class="modal">
-        <!-- Modal HTML can be added here -->
-    </div>
 
     <nav class="bottom-nav">
         <button class="nav-button active" data-page="dashboardPage"> <i class="fas fa-clipboard-list"></i> <span>דשבורד</span> </button>
@@ -174,13 +171,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHszyq4YxLLQmGSATggvW4YxNWAP5JMtgEEQ46zidkC1KqP-xAmIET-nDD0BhD7KQx/exec';
+            // This is the local endpoint for our Cloudflare Worker proxy.
+            // All API requests will go through this path.
+            const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyHszyq4YxLLQmGSATggvW4YxNWAP5JMtgEEQ46zidkC1KqP-xAmIET-nDD0BhD7KQx/exec';
 
             // --- PWA SETUP ---
             function initializePWA() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw.js')
-                     .then(() => console.log('Service Worker Registered'))
+                    navigator.serviceWorker.register('/sw.js') // Register the physical sw.js file
+                     .then(reg => console.log('Service Worker Registered:', reg.scope))
                      .catch(e => console.error('SW Registration Failed:', e));
                 }
             }
@@ -188,7 +187,8 @@
             // --- DATA FETCHING ---
             async function loadAllData() {
                  try {
-                    const response = await fetch(`${SCRIPT_URL}?action=getAllData`);
+                    // We now fetch from our own domain's API endpoint, not directly from Google.
+                    const response = await fetch(API_ENDPOINT);
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const data = await response.json();
                     
@@ -196,40 +196,39 @@
                     
                     const aliTimeline = document.getElementById('ali-timeline');
                     const hakmatTimeline = document.getElementById('hakmat-timeline');
-                    aliTimeline.innerHTML = ''; 
-                    hakmatTimeline.innerHTML = '';
                     
-                    if (data.aliData.length > 0) {
-                        data.aliData.forEach(order => aliTimeline.appendChild(createOrderCard(order)));
-                    } else {
-                        aliTimeline.innerHTML = '<p>אין הזמנות להיום.</p>';
-                    }
-
-                    if (data.hakmatData.length > 0) {
-                        data.hakmatData.forEach(order => hakmatTimeline.appendChild(createOrderCard(order)));
-                    } else {
-                        hakmatTimeline.innerHTML = '<p>אין הזמנות להיום.</p>';
-                    }
-
+                    renderTimeline(data.aliData, aliTimeline);
+                    renderTimeline(data.hakmatData, hakmatTimeline);
 
                 } catch (error) {
-                    console.error('Error fetching data from script:', error);
-                    document.getElementById('ali-timeline').innerHTML = '<p style="color:red;">לא ניתן היה לטעון נתונים. ודא שפרסמת את הסקריפט מחדש.</p>';
+                    console.error('Error fetching data via proxy:', error);
+                    const errorMsg = '<p style="color:red; text-align:center;">שגיאת תקשורת. לא ניתן היה לטעון נתונים מהשרת. אנא בדוק את חיבור האינטרנט וודא שהגדרות ה-Worker נכונות.</p>';
+                    document.getElementById('ali-timeline').innerHTML = errorMsg;
                     document.getElementById('hakmat-timeline').innerHTML = '';
+                }
+            }
+            
+            function renderTimeline(orders, container) {
+                if (orders && orders.length > 0) {
+                    container.innerHTML = '';
+                    orders.forEach(order => container.appendChild(createOrderCard(order)));
+                } else {
+                    container.innerHTML = '<p style="text-align:center; color: #5f6368;">אין הזמנות להיום.</p>';
                 }
             }
 
             function createOrderCard(order) {
                 const card = document.createElement('div');
                 card.className = 'order-card';
+                // Using the actual headers from your sheet: 'לקוח', 'שעה', 'כתובת', 'מחסן'
                 card.innerHTML = `
                     <div class="card-header">
-                        <span class="customer-name">${order.customer || ''}</span>
-                        <span class="order-time">${order.time || 'ביחד'}</span>
+                        <span class="customer-name">${order['לקוח'] || 'לא צוין'}</span>
+                        <span class="order-time">${order['שעה'] || 'ביחד'}</span>
                     </div>
                     <div class="card-body">
-                        <p><i class="fas fa-map-marker-alt"></i> ${order.address || ''}</p>
-                        <p><i class="fas fa-warehouse"></i> ${order.warehouse || ''}</p>
+                        <p><i class="fas fa-map-marker-alt"></i> ${order['כתובת'] || 'לא צוין'}</p>
+                        <p><i class="fas fa-warehouse"></i> ${order['מחסן'] || 'לא צוין'}</p>
                     </div>`;
                 return card;
             }
@@ -237,19 +236,22 @@
             // --- UI CONTROL ---
             function switchPage(pageId) {
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                document.getElementById(pageId).classList.add('active');
-                document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+                const page = document.getElementById(pageId);
+                if(page) page.classList.add('active');
+                
+                document.querySelectorAll('.nav-button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.page === pageId)
+                });
             }
             
             document.querySelectorAll('.nav-button').forEach(b => {
                 b.addEventListener('click', () => switchPage(b.dataset.page));
             });
 
-
             function init() {
                 initializePWA();
                 loadAllData();
-                setInterval(loadAllData, 60000); // Refresh every minute
+                setInterval(loadAllData, 90000); // Refresh every 1.5 minutes
                 document.getElementById('header-date').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
             }
 
