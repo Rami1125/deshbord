@@ -9,7 +9,7 @@
  */
 
 // IMPORTANT: Paste the URL of your Google Apps Script Web App here.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7pSjWbCigYmXGTcAY7H9rj0WyNsLYQW99hIxwiKM_Zmn9H944kSM9RI5_p0jLtFzq/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHszyq4YxLLQmGSATggvW4YxNWAP5JMtgEEQ46zidkC1KqP-xAmIET-nDD0BhD7KQx/exec';
 
 export default {
   async fetch(request, env, ctx) {
