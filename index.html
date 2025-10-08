@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>סידור ח.סבן</title>
+    <title>Glass Logistics PWA</title>
     
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -20,19 +20,7 @@
     
     <!-- OneSignal SDK for Push Notifications -->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-      notifyButton: {
-        enable: true,
-      },
-    });
-  });
-</script>
+
     <style>
         :root {
             --primary-color: #4A90E2; /* Bright Blue */
@@ -225,12 +213,13 @@
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- CONFIGURATION ---
-            // Remember to replace 'https://script.google.com/macros/s/AKfycbyHlr3SR-Aj9rCh4jXrOfmStSSzYQwKUGYf_ffdsRtiQATQNYJKBwy-4c_Fa6grJNYE/exec' if you use push notifications
-            const ONESIGNAL_APP_ID = 'acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3'; 
-            const WHATSAPP_NUMBER = "972508860896";
+            // Step 1: Paste your OneSignal App ID here.
+            const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID_HERE'; 
             
-            // !!! PASTE THE WEB APP URL YOU GET FROM GOOGLE APPS SCRIPT HERE
-            const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; 
+            // Step 2: Paste the Web App URL you get from Google Apps Script here.
+            const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+            const WHATSAPP_NUMBER = "972508860896";
 
             // --- STATE ---
             let state = {
@@ -253,7 +242,7 @@
             }
 
             function initializeOneSignal() {
-                if (ONESIGNAL_APP_ID === 'YOUR_ONESIGNAL_APP_ID') {
+                if (ONESIGNAL_APP_ID.includes('YOUR_ONESIGNAL_APP_ID')) {
                     console.warn("OneSignal App ID is not set.");
                     return;
                 }
@@ -294,7 +283,7 @@
 
             // --- DATA FETCHING & PROCESSING ---
             async function loadAllData() {
-                if (SCRIPT_URL.includes('YOUR_APPS_SCRIPT_URL_HERE')) {
+                if (SCRIPT_URL.includes('YOUR_APPS_SCRIPT_URL')) {
                     showToast("יש להגדיר כתובת סקריפט", "error");
                     ui.aliTimeline.innerHTML = '<p style="color:red;">שגיאת תצורה. יש להגדיר את כתובת הסקריפט בקוד.</p>';
                     ui.hakmatTimeline.innerHTML = '';
