@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Glass Logistics PWA</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2C3E50">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/8z9LqJ1p/glass-logo.png">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
+        &quot;short_name&quot;: &quot;GlassApp&quot;,
+        &quot;name&quot;: &quot;Glass Logistics PWA&quot;,
+        &quot;icons&quot;: [
+            { &quot;src&quot;: &quot;https://i.postimg.cc/8z9LqJ1p/glass-logo.png&quot;, &quot;type&quot;: &quot;image/png&quot;, &quot;sizes&quot;: &quot;192x192&quot; },
+            { &quot;src&quot;: &quot;https://i.postimg.cc/8z9LqJ1p/glass-logo.png&quot;, &quot;type&quot;: &quot;image/png&quot;, &quot;sizes&quot;: &quot;512x512&quot; }
+        ],
+        &quot;start_url&quot;: &quot;.&quot;,
+        &quot;display&quot;: &quot;standalone&quot;,
+        &quot;background_color&quot;: &quot;#F8F8F8&quot;,
+        &quot;theme_color&quot;: &quot;#2C3E50&quot;
+    }">
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- OneSignal SDK for Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+
+    <style>
+        :root {
+            --primary-color: #4A90E2; /* Bright Blue */
+            --secondary-color: #50E3C2; /* Aqua Green */
+            --dark-color: #2C3E50; /* Dark Slate Blue */
+            --light-color: #F4F7F9; /* Very light gray */
+            --text-color: #333;
+            --white-color: #FFFFFF;
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --warning-color: #F39C12;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        html {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0 0 80px 0; /* Space for bottom nav */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+            padding: 15px;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: var(--white-color);
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Order Card */
+        .order-card {
+            background: var(--white-color);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .order-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .order-card .customer-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--dark-color);
+        }
+        .order-card .order-time {
+            font-weight: 500;
+            font-size: 1.1rem;
+            background-color: var(--light-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: var(--primary-color);
+        }
+        .order-card .card-body p {
+            margin: 8px 0;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .order-card .card-body i {
+            color: var(--primary-color);
+            width: 20px;
+            text-align: center;
+        }
+        .order-card .card-footer {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .order-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: var(--white-color);
+            font-weight: 500;
+        }
+        .travel-info {
+            color: #777;
+        }
+
+        /* Driver Section */
+        .driver-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 25px 0 15px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .driver-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--white-color);
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            z-index: 1000;
+        }
+        .nav-button {
+            background: none;
+            border: none;
+            color: #aaa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            font-family: 'Rubik', sans-serif;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .nav-button i {
+            font-size: 1.5rem;
+        }
+        .nav-button.active {
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        .nav-button.special {
+            transform: translateY(-20px);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white-color);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+        }
+        .nav-button.special.active {
+            color: var(--white-color);
+        }
+
+        /* Admin Page Form */
+        .form-container {
+            background: var(--white-color);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Rubik', sans-serif;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        .main-action-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+        }
+        .btn-primary:hover {
+            background-color: #3a7cc8;
+            transform: translateY(-2px);
+        }
+        .btn-whatsapp {
+            background-color: #25D366;
+            color: var(--white-color);
+            margin-top: 15px;
+        }
+        .btn-whatsapp:hover {
+            background-color: #1EBE57;
+            transform: translateY(-2px);
+        }
+        
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark-color);
+            color: var(--white-color);
+            padding: 15px 25px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        }
+        #toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1 id="header-title">📋 דוח בוקר</h1>
+        <p id="header-date"></p>
+    </header>
+
+    <main>
+        <!-- Page 1: Dashboard -->
+        <div id="dashboardPage" class="page active">
+            <!-- Summary cards can be added here -->
+            <div id="ali-section">
+                <div class="driver-section-title">
+                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" class="driver-avatar">
+                    <span>עלי</span>
+                </div>
+                <div id="ali-timeline"></div>
+            </div>
+            <div id="hakmat-section">
+                <div class="driver-section-title">
+                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" class="driver-avatar">
+                    <span>חכמת</span>
+                </div>
+                <div id="hakmat-timeline"></div>
+            </div>
+        </div>
+
+        <!-- Page 2: Admin / Create Order -->
+        <div id="adminPage" class="page">
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="driver-select">נהג</label>
+                    <select id="driver-select">
+                        <option value="עלי">עלי</option>
+                        <option value="חכמת">חכמת</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="order-date">תאריך</label>
+                    <input type="date" id="order-date">
+                </div>
+                <div class="form-group">
+                    <label for="order-time">שעה</label>
+                    <input type="time" id="order-time">
+                </div>
+                <div class="form-group">
+                    <label for="customer-name">לקוח</label>
+                    <input type="text" id="customer-name" placeholder="שם הלקוח">
+                </div>
+                <div class="form-group">
+                    <label for="order-address">כתובת</label>
+                    <input type="text" id="order-address" placeholder="עיר, רחוב, מספר">
+                </div>
+                <div class="form-group">
+                    <label for="warehouse-select">מחסן</label>
+                    <select id="warehouse-select">
+                        <option value="התלמיד">התלמיד</option>
+                        <option value="החרש">החרש</option>
+                        <option value="אחר">אחר</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="operation-select">סוג פעולה</label>
+                    <select id="operation-select">
+                        <option value="הובלת משאית">הובלת משאית</option>
+                        <option value="הובלת מנוף">הובלת מנוף</option>
+                        <option value="גישה לאתר">גישה לאתר</option>
+                         <option value="אחר">אחר</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="status-select">סטטוס</label>
+                    <select id="status-select">
+                        <option value="מתכונן ליציאה">מתכונן ליציאה</option>
+                        <option value="בטיפול">בטיפול</option>
+                        <option value="סופקה">סופקה</option>
+                        <option value="נדחתה">נדחתה</option>
+                        <option value="התבטלה">התבטלה</option>
+                    </select>
+                </div>
+
+                <button id="save-order-btn" class="main-action-btn btn-primary">
+                    <i class="fas fa-save"></i> שמור הזמנה
+                </button>
+                 <p style="text-align:center; font-size: 0.8rem; color: #888; margin-top: 15px;">
+                    לחיצה על "שמור" כרגע מדמה שמירה. לחיבור מלא נדרש קישור ל-Google Form או צד שרת.
+                </p>
+            </div>
+             <div class="form-container" style="margin-top: 25px;">
+                 <h2 style="text-align:center; margin-top:0;">הפקת דוח בוקר</h2>
+                 <button id="whatsapp-share-btn" class="main-action-btn btn-whatsapp">
+                    <i class="fab fa-whatsapp"></i> שלח דוח בוקר (של מחר)
+                </button>
+             </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-button active" data-page="dashboardPage">
+            <i class="fas fa-clipboard-list"></i>
+            <span>דשבורד</span>
+        </button>
+        <button class="nav-button special" data-page="adminPage">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="nav-button" data-page="#">
+            <i class="fas fa-cog"></i>
+            <span>הגדרות</span>
+        </button>
+    </nav>
+    
+    <div id="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- CONFIGURATION ---
+            const SHEET_ID = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; 
+            const API_KEY = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Important: For production, move this to a server
+            const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID'; // TODO: Replace with your OneSignal App ID
+
+            const RANGES = {
+                ali: 'Sheet2!B2:H',
+                hakmat: 'Sheet1!B2:H',
+                maps: 'maps!A2:C' // Assuming city, distance, time
+            };
+            
+            // --- STATE ---
+            let state = {
+                aliOrders: [],
+                hakmatOrders: [],
+                mapData: new Map(), // Use a Map for efficient city lookups
+                activePage: 'dashboardPage'
+            };
+
+            // --- PWA & NOTIFICATIONS SETUP ---
+            function initializePWA() {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('data:text/javascript,' +
+                        'const CACHE_NAME = "glass-logistics-cache-v1";' +
+                        'const urlsToCache = ["/", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"];' +
+                        'self.addEventListener("install", event => {' +
+                        '  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));' +
+                        '});' +
+                        'self.addEventListener("fetch", event => {' +
+                        '  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));' +
+                        '});'
+                    ).then(() => console.log('Service Worker Registered'))
+                     .catch(error => console.error('Service Worker Registration Failed:', error));
+                }
+            }
+
+            function initializeOneSignal() {
+                window.OneSignal = window.OneSignal || [];
+                OneSignal.push(function() {
+                    OneSignal.init({
+                        appId: ONESIGNAL_APP_ID,
+                    });
+                });
+                
+                if (ONESIGNAL_APP_ID === 'YOUR_ONESIGNAL_APP_ID') {
+                    console.warn("OneSignal is not configured. Please replace 'YOUR_ONESIGNAL_APP_ID'.");
+                    showToast("מערכת ההתראות אינה מוגדרת", "warning");
+                }
+            }
+
+
+            // --- UI ELEMENTS ---
+            const ui = {
+                headerTitle: document.getElementById('header-title'),
+                headerDate: document.getElementById('header-date'),
+                pages: document.querySelectorAll('.page'),
+                navButtons: document.querySelectorAll('.nav-button'),
+                aliTimeline: document.getElementById('ali-timeline'),
+                hakmatTimeline: document.getElementById('hakmat-timeline'),
+                whatsappShareBtn: document.getElementById('whatsapp-share-btn'),
+                saveOrderBtn: document.getElementById('save-order-btn'),
+                orderDateInput: document.getElementById('order-date'),
+                toast: document.getElementById('toast'),
+            };
+
+            // --- DATA FETCHING ---
+            async function fetchData(range) {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    return data.values || [];
+                } catch (error) {
+                    console.error("Error fetching data for range", range, error);
+                    showToast("שגיאה בטעינת הנתונים", "error");
+                    return [];
+                }
+            }
+
+            async function loadAllData() {
+                const [aliData, hakmatData, mapRawData] = await Promise.all([
+                    fetchData(RANGES.ali),
+                    fetchData(RANGES.hakmat),
+                    fetchData(RANGES.maps)
+                ]);
+
+                // B: Date, C: Time, D: Warehouse, E: Status, F: Customer, G: Address, H: Operation Type
+                state.aliOrders = parseOrderData(aliData).sort(sortByTime);
+                state.hakmatOrders = parseOrderData(hakmatData).sort(sortByTime);
+                
+                mapRawData.forEach(row => {
+                    const [city, distance, time] = row;
+                    if (city) state.mapData.set(city.trim(), { distance, time });
+                });
+                
+                renderDashboard();
+            }
+
+            function parseOrderData(data) {
+                return data.map(row => ({
+                    date: row[0] || '',
+                    time: row[1] || '',
+                    warehouse: row[2] || '',
+                    status: row[3] || '',
+                    customer: row[4] || '',
+                    address: row[5] || '',
+                    operationType: row[6] || 'לא צוין',
+                    city: (row[5] || '').split(',')[0].trim()
+                }));
+            }
+            
+            function sortByTime(a, b) {
+                return (a.time || "23:59").localeCompare(b.time || "23:59");
+            }
+
+
+            // --- RENDERING ---
+            function renderDashboard() {
+                renderTimeline(state.aliOrders, ui.aliTimeline);
+                renderTimeline(state.hakmatOrders, ui.hakmatTimeline);
+            }
+
+            function renderTimeline(orders, container) {
+                if (!container) return;
+                container.innerHTML = '';
+                if (orders.length === 0) {
+                    container.innerHTML = '<p>אין הזמנות להיום.</p>';
+                    return;
+                }
+                orders.forEach(order => {
+                    const card = createOrderCard(order);
+                    container.appendChild(card);
+                });
+            }
+
+            function createOrderCard(order) {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+
+                const travelData = state.mapData.get(order.city) || { time: 'N/A' };
+                const statusColor = getStatusColor(order.status);
+                
+                card.style.borderLeftColor = statusColor;
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="customer-name">${order.customer}</span>
+                        <span class="order-time"><i class="far fa-clock"></i> ${order.time || 'ביחד'}</span>
+                    </div>
+                    <div class="card-body">
+                        <p><i class="fas fa-map-marker-alt"></i> ${order.address}</p>
+                        <p><i class="fas fa-warehouse"></i> ${order.warehouse}</p>
+                        <p><i class="fas fa-cogs"></i> ${order.operationType}</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="order-status" style="background-color: ${statusColor}">${order.status}</span>
+                        <span class="travel-info"><i class="fas fa-route"></i> ~${travelData.time} דק'</span>
+                    </div>
+                `;
+                return card;
+            }
+            
+            function getStatusColor(status) {
+                switch(status) {
+                    case 'סופקה': return 'var(--success-color)';
+                    case 'נדחתה':
+                    case 'התבטלה': return 'var(--danger-color)';
+                    case 'בטיפול': return 'var(--warning-color)';
+                    default: return 'var(--primary-color)';
+                }
+            }
+
+
+            // --- PAGE NAVIGATION ---
+            function switchPage(pageId) {
+                state.activePage = pageId;
+                ui.pages.forEach(page => {
+                    page.classList.toggle('active', page.id === pageId);
+                });
+                ui.navButtons.forEach(button => {
+                    button.classList.toggle('active', button.dataset.page === pageId);
+                });
+                ui.headerTitle.textContent = pageId === 'dashboardPage' ? '📋 דוח בוקר' : '📝 יצירת סידור עבודה';
+            }
+
+            // --- EVENT LISTENERS ---
+            ui.navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const pageId = button.dataset.page;
+                    if (pageId && pageId !== '#') {
+                        switchPage(pageId);
+                    }
+                });
+            });
+            
+            ui.whatsappShareBtn.addEventListener('click', generateAndShareWhatsAppReport);
+            ui.saveOrderBtn.addEventListener('click', handleSaveOrder);
+
+
+            // --- ACTIONS ---
+            function handleSaveOrder() {
+                // In a real app, this would send data to a server or Google Apps Script
+                // For now, we just show a confirmation.
+                const newOrder = {
+                    driver: document.getElementById('driver-select').value,
+                    customer: document.getElementById('customer-name').value,
+                    address: document.getElementById('order-address').value
+                };
+
+                if (!newOrder.customer || !newOrder.address) {
+                    showToast("נא למלא שם לקוח וכתובת", "warning");
+                    return;
+                }
+                
+                console.log("Simulating save for order:", newOrder);
+                showToast(`הזמנה עבור ${newOrder.customer} נשמרה (סימולציה)`);
+                // Optionally, clear the form or switch back to dashboard
+                // switchPage('dashboardPage');
+            }
+            
+            function generateAndShareWhatsAppReport() {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const reportDate = tomorrow.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                
+                // Filter orders for tomorrow
+                const tomorrowStr = tomorrow.toLocaleDateString('en-GB').split('/').reverse().join('-'); // YYYY-MM-DD format for comparison if needed
+                // Assuming date in sheet is DD/MM/YYYY
+                const tomorrowDMY = tomorrow.toLocaleDateString('en-GB');
+
+                const aliTomorrow = state.aliOrders.filter(o => o.date === tomorrowDMY);
+                const hakmatTomorrow = state.hakmatOrders.filter(o => o.date === tomorrowDMY);
+
+                if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) {
+                    showToast("אין הזמנות למחר", "info");
+                    return;
+                }
+                
+                let message = `*✨ דוח בוקר - ${reportDate} ✨*\n\n`;
+                message += generateSummary(aliTomorrow, hakmatTomorrow);
+                message += `*--------------------*\n`;
+                message += `*דוחות בוקר מפורטים*\n\n`;
+                
+                if(aliTomorrow.length > 0) {
+                    message += formatDriverReport(aliTomorrow, "עלי");
+                }
+                if(hakmatTomorrow.length > 0) {
+                    message += formatDriverReport(hakmatTomorrow, "חכמת");
+                }
+                
+                message += `🔗 https://did.li/berOf`;
+
+                const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                window.open(url, "_blank");
+            }
+            
+            function generateSummary(aliOrders, hakmatOrders) {
+                const allOrders = [...aliOrders, ...hakmatOrders];
+                let summary = `*סיכום הזמנות*\n`;
+                summary += `🚚 עלי: ${aliOrders.length} הזמנות\n`;
+                summary += `🚛 חכמת: ${hakmatOrders.length} הזמנות\n`;
+                
+                const warehouseOrders = allOrders.filter(o => o.warehouse);
+                summary += `📦 סה"כ מחסן: ${warehouseOrders.length} הזמנות\n`;
+                
+                const studentWarehouse = warehouseOrders.filter(o => o.warehouse === 'התלמיד').length;
+                summary += `🏫 מחסן התלמיד: ${studentWarehouse} הזמנות\n`;
+                
+                const carpenterWarehouse = warehouseOrders.filter(o => o.warehouse === 'החרש').length;
+                summary += `🔨 מחסן החרש: ${carpenterWarehouse} הזמנות\n`;
+
+                const morningOrders = allOrders.filter(o => {
+                    const time = o.time.split(':');
+                    return parseInt(time[0], 10) >= 6 && parseInt(time[0], 10) < 9;
+                }).length;
+                summary += `☀️ הזמנות 06:00-09:00: ${morningOrders} הזמנות\n\n`;
+                return summary;
+            }
+
+            function formatDriverReport(orders, driverName) {
+                let report = `📝 *${driverName} - דוח בוקר*\n`;
+                orders.forEach(order => {
+                    report += `📅 ${order.date} ⏰ ${order.time || 'ביחד'} 🏠 ${order.warehouse} 📄 ${order.status}\n`;
+                    report += `👤 ${order.customer} 📍 ${order.address}\n`;
+                    report += `-----\n`;
+                });
+                return report + '\n';
+            }
+
+
+            // --- UTILITIES ---
+            function updateDate() {
+                const now = new Date();
+                ui.headerDate.textContent = now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+            }
+            
+            function setTodaysDateInForm() {
+                const today = new Date().toISOString().split('T')[0];
+                ui.orderDateInput.value = today;
+            }
+
+            function showToast(message, type = "info") { // types: info, success, warning, error
+                ui.toast.textContent = message;
+                ui.toast.className = `show ${type}`;
+                setTimeout(() => {
+                    ui.toast.className = ui.toast.className.replace("show", "");
+                }, 3000);
+            }
+
+            // --- INITIALIZATION ---
+            function init() {
+                initializePWA();
+                initializeOneSignal();
+                updateDate();
+                setTodaysDateInForm();
+                loadAllData();
+
+                // Set up periodic refresh for real-time updates
+                setInterval(loadAllData, 60 * 1000); // Refresh every 60 seconds
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
