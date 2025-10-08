@@ -1,61 +1,49 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run "npm run dev" in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run "npm run deploy" to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+const CACHE_NAME = "glass-logistics-cache-v7"; // Changed version to force update
+const urlsToCache = [
+  '/',
+  'index.html',
+  'manifest.json',
+  'https://i.postimg.cc/pdrgskSr/sa.jpg', // New logo
+  'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg', // Ali avatar
+  'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg', // Hakmat avatar
+  'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+];
 
-// IMPORTANT: Paste the URL of your Google Apps Script Web App here.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHszyq4YxLLQmGSATggvW4YxNWAP5JMtgEEQ46zidkC1KqP-xAmIET-nDD0BhD7KQx/exec';
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log("Opened cache");
+        self.skipWaiting();
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+self.addEventListener("fetch", event => {
+  if (event.request.url.startsWith('https://script.google.com/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
+});
 
-    // Only proxy requests that start with /api
-    if (url.pathname.startsWith('/api')) {
-      // Construct the new URL to fetch from Google Apps Script
-      const newUrl = new URL(APPS_SCRIPT_URL);
-      newUrl.search = url.search; // Pass along any query parameters like ?action=getAllData
-
-      // Create a new request to the Google Apps Script URL
-      const newRequest = new Request(newUrl, {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-        redirect: 'follow'
-      });
-
-      try {
-        const response = await fetch(newRequest);
-        
-        // Create a new response that is mutable so we can add CORS headers
-        const newResponse = new Response(response.body, response);
-
-        // Add CORS headers to the response returned to the browser
-        // This allows your frontend to access the data from the worker
-        newResponse.headers.set('Access-Control-Allow-Origin', '*');
-        newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-
-        return newResponse;
-
-      } catch (e) {
-        return new Response(JSON.stringify({ error: true, details: 'Failed to connect to Google Script' }), {
-          status: 500,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*' 
-          },
-        });
-      }
-    }
-
-    // For all other requests, let Cloudflare Pages handle them as usual
-    return env.ASSETS.fetch(request);
-  },
-};
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
 
