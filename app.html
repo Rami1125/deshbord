@@ -48,7 +48,7 @@
 
         html {
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+            -webkit-tap-highlight-color: transparent;
         }
         *, *:before, *:after {
             box-sizing: inherit;
@@ -59,10 +59,10 @@
             background-color: var(--light-color);
             color: var(--text-color);
             margin: 0;
-            padding: 0 0 80px 0; /* Space for bottom nav */
+            padding: 0 0 80px 0;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+            overscroll-behavior-y: contain;
         }
 
         .page {
@@ -78,7 +78,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Header */
         .header {
             background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
             color: var(--white-color);
@@ -91,18 +90,9 @@
             top: 0;
             z-index: 100;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        .header p {
-            margin: 5px 0 0;
-            font-size: 1rem;
-            opacity: 0.9;
-        }
+        .header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .header p { margin: 5px 0 0; font-size: 1rem; opacity: 0.9; }
 
-        /* Order Card */
         .order-card {
             background: var(--white-color);
             border-radius: 15px;
@@ -112,211 +102,51 @@
             border-left: 5px solid var(--primary-color);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .order-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .order-card .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .order-card .customer-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: var(--dark-color);
-        }
-        .order-card .order-time {
-            font-weight: 500;
-            font-size: 1.1rem;
-            background-color: var(--light-color);
-            padding: 5px 10px;
-            border-radius: 20px;
-            color: var(--primary-color);
-        }
-        .order-card .card-body p {
-            margin: 8px 0;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .order-card .card-body i {
-            color: var(--primary-color);
-            width: 20px;
-            text-align: center;
-        }
-        .order-card .card-footer {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-        .order-status {
-            padding: 5px 12px;
-            border-radius: 20px;
-            color: var(--white-color);
-            font-weight: 500;
-        }
-        .travel-info {
-            color: #777;
-        }
+        .order-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .order-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .order-card .customer-name { font-weight: 700; font-size: 1.2rem; color: var(--dark-color); }
+        .order-card .order-time { font-weight: 500; font-size: 1.1rem; background-color: var(--light-color); padding: 5px 10px; border-radius: 20px; color: var(--primary-color); }
+        .order-card .card-body p { margin: 8px 0; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; }
+        .order-card .card-body i { color: var(--primary-color); width: 20px; text-align: center; }
+        .order-card .card-footer { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .order-status { padding: 5px 12px; border-radius: 20px; color: var(--white-color); font-weight: 500; }
+        .travel-info { color: #777; }
 
-        /* Driver Section */
-        .driver-section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 25px 0 15px;
-            color: var(--dark-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .driver-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--primary-color);
-        }
+        .driver-section-title { font-size: 1.5rem; font-weight: 700; margin: 25px 0 15px; color: var(--dark-color); display: flex; align-items: center; gap: 10px; }
+        .driver-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); }
 
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--white-color);
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            z-index: 1000;
-        }
-        .nav-button {
-            background: none;
-            border: none;
-            color: #aaa;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.75rem;
-            font-family: 'Rubik', sans-serif;
-            transition: color 0.2s ease, transform 0.2s ease;
-        }
-        .nav-button i {
-            font-size: 1.5rem;
-        }
-        .nav-button.active {
-            color: var(--primary-color);
-            transform: translateY(-3px);
-        }
-        .nav-button.special {
-            transform: translateY(-20px);
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: var(--white-color);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            box-shadow: var(--shadow);
-        }
-        .nav-button.special.active {
-            color: var(--white-color);
-        }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--white-color); box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 10px 0; border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 1000; }
+        .nav-button { background: none; border: none; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 0.75rem; font-family: 'Rubik', sans-serif; transition: color 0.2s ease, transform 0.2s ease; }
+        .nav-button i { font-size: 1.5rem; }
+        .nav-button.active { color: var(--primary-color); transform: translateY(-3px); }
+        .nav-button.special { transform: translateY(-20px); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--white-color); width: 60px; height: 60px; border-radius: 50%; box-shadow: var(--shadow); }
+        .nav-button.special.active { color: var(--white-color); }
 
-        /* Admin Page Form */
-        .form-container {
-            background: var(--white-color);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: var(--shadow);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--dark-color);
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: 'Rubik', sans-serif;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-        }
+        .form-container { background: var(--white-color); padding: 20px; border-radius: 15px; box-shadow: var(--shadow); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--dark-color); }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: 'Rubik', sans-serif; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); }
+        .form-group .distance-display { font-size: 0.9rem; color: #777; margin-top: 5px; }
 
-        .main-action-btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: var(--white-color);
-        }
-        .btn-primary:hover {
-            background-color: #3a7cc8;
-            transform: translateY(-2px);
-        }
-        .btn-whatsapp {
-            background-color: #25D366;
-            color: var(--white-color);
-            margin-top: 15px;
-        }
-        .btn-whatsapp:hover {
-            background-color: #1EBE57;
-            transform: translateY(-2px);
-        }
+        .main-action-btn { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s ease, transform 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background-color: var(--primary-color); color: var(--white-color); }
+        .btn-primary:hover { background-color: #3a7cc8; transform: translateY(-2px); }
+        .btn-whatsapp { background-color: #25D366; color: var(--white-color); margin-top: 15px; }
+        .btn-whatsapp:hover { background-color: #1EBE57; transform: translateY(-2px); }
         
-        /* Toast Notification */
-        #toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--dark-color);
-            color: var(--white-color);
-            padding: 15px 25px;
-            border-radius: 30px;
-            box-shadow: var(--shadow);
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
-        }
-        #toast.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-10px);
-        }
+        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: var(--dark-color); color: var(--white-color); padding: 15px 25px; border-radius: 30px; box-shadow: var(--shadow); z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease; }
+        #toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-10px); }
+
+        /* Planner Styles */
+        .planner-container { display: flex; flex-direction: column; gap: 5px; }
+        .time-slot { background-color: var(--white-color); border-radius: 10px; min-height: 80px; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; border: 2px dashed #e0e0e0; transition: background-color 0.3s ease; }
+        .time-slot.drag-over { background-color: #d4edff; border-color: var(--primary-color); }
+        .time-slot-header { width: 100%; display: flex; align-items: center; gap: 10px; color: #999; font-weight: 500; }
+        .time-slot-header i { font-size: 1.2rem; }
+        .planner-order { padding: 8px 12px; background: linear-gradient(135deg, var(--primary-color), #63a4ff); color: var(--white-color); border-radius: 8px; cursor: move; font-size: 0.9rem; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: opacity 0.2s ease; }
+        .planner-order strong { font-weight: 700; }
+        .planner-order.is-dragging { opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -329,7 +159,6 @@
     <main>
         <!-- Page 1: Dashboard -->
         <div id="dashboardPage" class="page active">
-            <!-- Summary cards can be added here -->
             <div id="ali-section">
                 <div class="driver-section-title">
                     <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" class="driver-avatar">
@@ -345,89 +174,45 @@
                 <div id="hakmat-timeline"></div>
             </div>
         </div>
+        
+        <!-- Page 2: Planner -->
+        <div id="plannerPage" class="page">
+            <h2 style="text-align:center;">תכנון יומי</h2>
+            <div class="planner-container" id="planner-container">
+                <!-- Time slots will be generated here -->
+            </div>
+        </div>
 
-        <!-- Page 2: Admin / Create Order -->
+        <!-- Page 3: Admin / Create Order -->
         <div id="adminPage" class="page">
             <div class="form-container">
+                <div class="form-group"> <label for="driver-select">נהג</label> <select id="driver-select"> <option value="עלי">עלי</option> <option value="חכמת">חכמת</option> </select> </div>
+                <div class="form-group"> <label for="order-date">תאריך</label> <input type="date" id="order-date"> </div>
+                <div class="form-group"> <label for="order-time">שעה</label> <input type="time" id="order-time"> </div>
+                <div class="form-group"> <label for="customer-name">לקוח</label> <input type="text" id="customer-name" placeholder="שם הלקוח"> </div>
                 <div class="form-group">
-                    <label for="driver-select">נהג</label>
-                    <select id="driver-select">
-                        <option value="עלי">עלי</option>
-                        <option value="חכמת">חכמת</option>
-                    </select>
+                    <label for="city-select">עיר</label>
+                    <select id="city-select"></select>
+                    <div class="distance-display" id="distance-display"></div>
                 </div>
-                 <div class="form-group">
-                    <label for="order-date">תאריך</label>
-                    <input type="date" id="order-date">
-                </div>
-                <div class="form-group">
-                    <label for="order-time">שעה</label>
-                    <input type="time" id="order-time">
-                </div>
-                <div class="form-group">
-                    <label for="customer-name">לקוח</label>
-                    <input type="text" id="customer-name" placeholder="שם הלקוח">
-                </div>
-                <div class="form-group">
-                    <label for="order-address">כתובת</label>
-                    <input type="text" id="order-address" placeholder="עיר, רחוב, מספר">
-                </div>
-                <div class="form-group">
-                    <label for="warehouse-select">מחסן</label>
-                    <select id="warehouse-select">
-                        <option value="התלמיד">התלמיד</option>
-                        <option value="החרש">החרש</option>
-                        <option value="אחר">אחר</option>
-                    </select>
-                </div>
-                 <div class="form-group">
-                    <label for="operation-select">סוג פעולה</label>
-                    <select id="operation-select">
-                        <option value="הובלת משאית">הובלת משאית</option>
-                        <option value="הובלת מנוף">הובלת מנוף</option>
-                        <option value="גישה לאתר">גישה לאתר</option>
-                         <option value="אחר">אחר</option>
-                    </select>
-                </div>
-                 <div class="form-group">
-                    <label for="status-select">סטטוס</label>
-                    <select id="status-select">
-                        <option value="מתכונן ליציאה">מתכונן ליציאה</option>
-                        <option value="בטיפול">בטיפול</option>
-                        <option value="סופקה">סופקה</option>
-                        <option value="נדחתה">נדחתה</option>
-                        <option value="התבטלה">התבטלה</option>
-                    </select>
-                </div>
-
-                <button id="save-order-btn" class="main-action-btn btn-primary">
-                    <i class="fas fa-save"></i> שמור הזמנה
-                </button>
-                 <p style="text-align:center; font-size: 0.8rem; color: #888; margin-top: 15px;">
-                    לחיצה על "שמור" כרגע מדמה שמירה. לחיבור מלא נדרש קישור ל-Google Form או צד שרת.
-                </p>
+                <div class="form-group"> <label for="order-address">כתובת (רחוב ומספר)</label> <input type="text" id="order-address" placeholder="רחוב, מספר"> </div>
+                <div class="form-group"> <label for="warehouse-select">מחסן העמסה</label> <select id="warehouse-select"> <option value="התלמיד">התלמיד</option> <option value="החרש">החרש</option> <option value="אחר">אחר</option> </select> </div>
+                <div class="form-group"> <label for="operation-select">סוג הובלה</label> <select id="operation-select"></select> </div>
+                <div class="form-group"> <label for="status-select">סטטוס</label> <select id="status-select"> <option value="מתכונן ליציאה">מתכונן ליציאה</option> <option value="בטיפול">בטיפול</option> <option value="סופקה">סופקה</option> <option value="נדחתה">נדחתה</option> <option value="התבטלה">התבטלה</option> </select> </div>
+                <button id="save-order-btn" class="main-action-btn btn-primary"> <i class="fas fa-save"></i> שמור הזמנה </button>
+                <p style="text-align:center; font-size: 0.8rem; color: #888; margin-top: 15px;"> לחיבור מלא נדרש קישור ל-Google Form או צד שרת. </p>
             </div>
-             <div class="form-container" style="margin-top: 25px;">
-                 <h2 style="text-align:center; margin-top:0;">הפקת דוח בוקר</h2>
-                 <button id="whatsapp-share-btn" class="main-action-btn btn-whatsapp">
-                    <i class="fab fa-whatsapp"></i> שלח דוח בוקר (של מחר)
-                </button>
-             </div>
+            <div class="form-container" style="margin-top: 25px;">
+                <h2 style="text-align:center; margin-top:0;">הפקת דוח בוקר</h2>
+                <button id="whatsapp-share-btn" class="main-action-btn btn-whatsapp"> <i class="fab fa-whatsapp"></i> שלח דוח בוקר (של מחר) </button>
+            </div>
         </div>
     </main>
 
     <nav class="bottom-nav">
-        <button class="nav-button active" data-page="dashboardPage">
-            <i class="fas fa-clipboard-list"></i>
-            <span>דשבורד</span>
-        </button>
-        <button class="nav-button special" data-page="adminPage">
-            <i class="fas fa-plus"></i>
-        </button>
-        <button class="nav-button" data-page="#">
-            <i class="fas fa-cog"></i>
-            <span>הגדרות</span>
-        </button>
+        <button class="nav-button active" data-page="dashboardPage"> <i class="fas fa-clipboard-list"></i> <span>דשבורד</span> </button>
+        <button class="nav-button" data-page="plannerPage"> <i class="fas fa-calendar-alt"></i> <span>תכנון יומי</span> </button>
+        <button class="nav-button special" data-page="adminPage"> <i class="fas fa-plus"></i> </button>
     </nav>
     
     <div id="toast"></div>
@@ -437,54 +222,50 @@
 
             // --- CONFIGURATION ---
             const SHEET_ID = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU'; 
-            const API_KEY = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // Important: For production, move this to a server
-            const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID'; // TODO: Replace with your OneSignal App ID
+            const API_KEY = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI';
+            const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID';
 
             const RANGES = {
                 ali: 'Sheet2!B2:H',
                 hakmat: 'Sheet1!B2:H',
-                maps: 'maps!A2:C' // Assuming city, distance, time
+                maps: 'maps!B2:E' // B:עיר, C:מרחק, D:זמן נסיעה, E:סוג הובלה
             };
             
             // --- STATE ---
             let state = {
                 aliOrders: [],
                 hakmatOrders: [],
-                mapData: new Map(), // Use a Map for efficient city lookups
-                activePage: 'dashboardPage'
+                locations: [],
+                activePage: 'dashboardPage',
+                draggedOrder: null,
             };
 
             // --- PWA & NOTIFICATIONS SETUP ---
             function initializePWA() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('data:text/javascript,' +
-                        'const CACHE_NAME = "glass-logistics-cache-v1";' +
-                        'const urlsToCache = ["/", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"];' +
-                        'self.addEventListener("install", event => {' +
-                        '  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));' +
-                        '});' +
-                        'self.addEventListener("fetch", event => {' +
-                        '  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));' +
-                        '});'
-                    ).then(() => console.log('Service Worker Registered'))
+                    const swContent = `
+                        const CACHE_NAME = "glass-logistics-cache-v1";
+                        const urlsToCache = ["/", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"];
+                        self.addEventListener("install", event => {
+                          event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+                        });
+                        self.addEventListener("fetch", event => {
+                          event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
+                        });`;
+                    navigator.serviceWorker.register(`data:text/javascript,${encodeURIComponent(swContent)}`)
+                     .then(() => console.log('Service Worker Registered'))
                      .catch(error => console.error('Service Worker Registration Failed:', error));
                 }
             }
 
             function initializeOneSignal() {
                 window.OneSignal = window.OneSignal || [];
-                OneSignal.push(function() {
-                    OneSignal.init({
-                        appId: ONESIGNAL_APP_ID,
-                    });
-                });
-                
+                OneSignal.push(function() { OneSignal.init({ appId: ONESIGNAL_APP_ID }); });
                 if (ONESIGNAL_APP_ID === 'YOUR_ONESIGNAL_APP_ID') {
-                    console.warn("OneSignal is not configured. Please replace 'YOUR_ONESIGNAL_APP_ID'.");
+                    console.warn("OneSignal is not configured.");
                     showToast("מערכת ההתראות אינה מוגדרת", "warning");
                 }
             }
-
 
             // --- UI ELEMENTS ---
             const ui = {
@@ -498,6 +279,11 @@
                 saveOrderBtn: document.getElementById('save-order-btn'),
                 orderDateInput: document.getElementById('order-date'),
                 toast: document.getElementById('toast'),
+                plannerContainer: document.getElementById('planner-container'),
+                citySelect: document.getElementById('city-select'),
+                operationSelect: document.getElementById('operation-select'),
+                distanceDisplay: document.getElementById('distance-display'),
+                adminForm: document.querySelector('#adminPage .form-container')
             };
 
             // --- DATA FETCHING ---
@@ -517,40 +303,30 @@
 
             async function loadAllData() {
                 const [aliData, hakmatData, mapRawData] = await Promise.all([
-                    fetchData(RANGES.ali),
-                    fetchData(RANGES.hakmat),
-                    fetchData(RANGES.maps)
+                    fetchData(RANGES.ali), fetchData(RANGES.hakmat), fetchData(RANGES.maps)
                 ]);
 
-                // B: Date, C: Time, D: Warehouse, E: Status, F: Customer, G: Address, H: Operation Type
-                state.aliOrders = parseOrderData(aliData).sort(sortByTime);
-                state.hakmatOrders = parseOrderData(hakmatData).sort(sortByTime);
+                state.aliOrders = parseOrderData(aliData, 'עלי').sort(sortByTime);
+                state.hakmatOrders = parseOrderData(hakmatData, 'חכמת').sort(sortByTime);
                 
-                mapRawData.forEach(row => {
-                    const [city, distance, time] = row;
-                    if (city) state.mapData.set(city.trim(), { distance, time });
-                });
-                
-                renderDashboard();
-            }
+                state.locations = mapRawData.map(row => ({ city: row[0], distance: row[1], travelTime: row[2], transportType: row[3] })).filter(loc => loc.city);
 
-            function parseOrderData(data) {
-                return data.map(row => ({
-                    date: row[0] || '',
-                    time: row[1] || '',
-                    warehouse: row[2] || '',
-                    status: row[3] || '',
-                    customer: row[4] || '',
-                    address: row[5] || '',
-                    operationType: row[6] || 'לא צוין',
-                    city: (row[5] || '').split(',')[0].trim()
+                renderDashboard();
+                renderPlanner();
+                populateFormOptions();
+            }
+            
+            function parseOrderData(data, driver) {
+                return data.map((row, index) => ({
+                    id: `${driver}-${index}`,
+                    driver: driver,
+                    date: row[0] || '', time: row[1] || '', warehouse: row[2] || '',
+                    status: row[3] || '', customer: row[4] || '', address: row[5] || '',
+                    operationType: row[6] || 'לא צוין', city: (row[5] || '').split(',')[0].trim()
                 }));
             }
             
-            function sortByTime(a, b) {
-                return (a.time || "23:59").localeCompare(b.time || "23:59");
-            }
-
+            function sortByTime(a, b) { return (a.time || "23:59").localeCompare(b.time || "23:59"); }
 
             // --- RENDERING ---
             function renderDashboard() {
@@ -560,201 +336,171 @@
 
             function renderTimeline(orders, container) {
                 if (!container) return;
-                container.innerHTML = '';
-                if (orders.length === 0) {
-                    container.innerHTML = '<p>אין הזמנות להיום.</p>';
-                    return;
-                }
-                orders.forEach(order => {
-                    const card = createOrderCard(order);
-                    container.appendChild(card);
-                });
+                container.innerHTML = orders.length > 0 ? '' : '<p>אין הזמנות להיום.</p>';
+                orders.forEach(order => container.appendChild(createOrderCard(order)));
             }
 
             function createOrderCard(order) {
                 const card = document.createElement('div');
                 card.className = 'order-card';
-
-                const travelData = state.mapData.get(order.city) || { time: 'N/A' };
+                const locationData = state.locations.find(l => l.city === order.city) || { travelTime: 'N/A' };
                 const statusColor = getStatusColor(order.status);
-                
                 card.style.borderLeftColor = statusColor;
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="customer-name">${order.customer}</span>
-                        <span class="order-time"><i class="far fa-clock"></i> ${order.time || 'ביחד'}</span>
-                    </div>
-                    <div class="card-body">
-                        <p><i class="fas fa-map-marker-alt"></i> ${order.address}</p>
-                        <p><i class="fas fa-warehouse"></i> ${order.warehouse}</p>
-                        <p><i class="fas fa-cogs"></i> ${order.operationType}</p>
-                    </div>
-                    <div class="card-footer">
-                        <span class="order-status" style="background-color: ${statusColor}">${order.status}</span>
-                        <span class="travel-info"><i class="fas fa-route"></i> ~${travelData.time} דק'</span>
-                    </div>
-                `;
+                card.innerHTML = `<div class="card-header"><span class="customer-name">${order.customer}</span><span class="order-time"><i class="far fa-clock"></i> ${order.time || 'ביחד'}</span></div><div class="card-body"><p><i class="fas fa-map-marker-alt"></i> ${order.address}</p><p><i class="fas fa-warehouse"></i> ${order.warehouse}</p><p><i class="fas fa-cogs"></i> ${order.operationType}</p></div><div class="card-footer"><span class="order-status" style="background-color: ${statusColor}">${order.status}</span><span class="travel-info"><i class="fas fa-route"></i> ~${locationData.travelTime} דק'</span></div>`;
                 return card;
             }
             
-            function getStatusColor(status) {
-                switch(status) {
-                    case 'סופקה': return 'var(--success-color)';
-                    case 'נדחתה':
-                    case 'התבטלה': return 'var(--danger-color)';
-                    case 'בטיפול': return 'var(--warning-color)';
-                    default: return 'var(--primary-color)';
+            function renderPlanner() {
+                ui.plannerContainer.innerHTML = '';
+                const allOrders = [...state.aliOrders, ...state.hakmatOrders];
+                
+                for (let hour = 6; hour <= 18; hour++) {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.dataset.hour = hour;
+                    const displayHour = hour.toString().padStart(2, '0');
+                    timeSlot.innerHTML = `<div class="time-slot-header"><i class="far fa-clock"></i> ${displayHour}:00</div>`;
+                    
+                    const ordersInSlot = allOrders.filter(o => o.time && parseInt(o.time.split(':')[0]) === hour);
+                    ordersInSlot.forEach(order => {
+                        const plannerOrder = document.createElement('div');
+                        plannerOrder.className = 'planner-order';
+                        plannerOrder.draggable = true;
+                        plannerOrder.dataset.orderId = order.id;
+                        plannerOrder.innerHTML = `<strong>${order.customer}</strong><span>(${order.driver}) - ${order.address}</span>`;
+                        plannerOrder.addEventListener('dragstart', handleDragStart);
+                        timeSlot.appendChild(plannerOrder);
+                    });
+                    
+                    timeSlot.addEventListener('dragover', handleDragOver);
+                    timeSlot.addEventListener('dragleave', handleDragLeave);
+                    timeSlot.addEventListener('drop', handleDrop);
+                    ui.plannerContainer.appendChild(timeSlot);
                 }
             }
 
+            // --- DRAG & DROP ---
+            function handleDragStart(e) {
+                state.draggedOrder = e.target;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', e.target.dataset.orderId);
+                setTimeout(() => e.target.classList.add('is-dragging'), 0);
+            }
+            function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+            function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+            function handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('drag-over');
+                const orderId = e.dataTransfer.getData('text/plain');
+                const targetHour = e.currentTarget.dataset.hour.padStart(2, '0');
 
-            // --- PAGE NAVIGATION ---
+                let orderToUpdate = state.aliOrders.find(o => o.id === orderId) || state.hakmatOrders.find(o => o.id === orderId);
+                if (orderToUpdate) {
+                    const minutes = orderToUpdate.time.split(':')[1] || '00';
+                    orderToUpdate.time = `${targetHour}:${minutes}`;
+                    showToast(`הזמנה ${orderToUpdate.customer} הועברה לשעה ${targetHour}:00`, "success");
+                    // In a real app, you'd save this change to the backend/sheet.
+                    // For now, re-render the views to reflect the change.
+                    renderDashboard();
+                    renderPlanner();
+                }
+                state.draggedOrder.classList.remove('is-dragging');
+                state.draggedOrder = null;
+            }
+
+            // --- FORM & UI LOGIC ---
+            function populateFormOptions() {
+                const cities = [...new Set(state.locations.map(l => l.city))].sort();
+                ui.citySelect.innerHTML = '<option value="">בחר עיר</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+
+                const transportTypes = [...new Set(state.locations.map(l => l.transportType).filter(Boolean))].sort();
+                ui.operationSelect.innerHTML = '<option value="">בחר סוג הובלה</option>' + transportTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+            }
+
+            function handleCityChange() {
+                const selectedCity = ui.citySelect.value;
+                const locationData = state.locations.find(l => l.city === selectedCity);
+                if (locationData) {
+                    ui.distanceDisplay.textContent = `מרחק: ${locationData.distance} ק"מ מהוד השרון`;
+                } else {
+                    ui.distanceDisplay.textContent = '';
+                }
+            }
+            
+            function handleFormKeydown(event) {
+                if (event.key === 'Enter') {
+                    const formElements = Array.from(ui.adminForm.querySelectorAll('input, select'));
+                    const currentIndex = formElements.indexOf(event.target);
+                    const nextElement = formElements[currentIndex + 1];
+                    if (nextElement) {
+                        event.preventDefault();
+                        nextElement.focus();
+                    }
+                }
+            }
+
+            function getStatusColor(status) {
+                const colors = { 'סופקה': 'var(--success-color)', 'נדחתה': 'var(--danger-color)', 'התבטלה': 'var(--danger-color)', 'בטיפול': 'var(--warning-color)' };
+                return colors[status] || 'var(--primary-color)';
+            }
+            
             function switchPage(pageId) {
                 state.activePage = pageId;
-                ui.pages.forEach(page => {
-                    page.classList.toggle('active', page.id === pageId);
-                });
-                ui.navButtons.forEach(button => {
-                    button.classList.toggle('active', button.dataset.page === pageId);
-                });
-                ui.headerTitle.textContent = pageId === 'dashboardPage' ? '📋 דוח בוקר' : '📝 יצירת סידור עבודה';
+                ui.pages.forEach(p => p.classList.toggle('active', p.id === pageId));
+                ui.navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+                const titles = { dashboardPage: '📋 דוח בוקר', adminPage: '📝 יצירת הזמנה', plannerPage: '📅 תכנון יומי' };
+                ui.headerTitle.textContent = titles[pageId] || 'Glass Logistics';
             }
 
             // --- EVENT LISTENERS ---
-            ui.navButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const pageId = button.dataset.page;
-                    if (pageId && pageId !== '#') {
-                        switchPage(pageId);
-                    }
-                });
-            });
-            
+            ui.navButtons.forEach(b => b.addEventListener('click', () => switchPage(b.dataset.page)));
             ui.whatsappShareBtn.addEventListener('click', generateAndShareWhatsAppReport);
-            ui.saveOrderBtn.addEventListener('click', handleSaveOrder);
+            ui.saveOrderBtn.addEventListener('click', () => showToast(`הזמנה נשמרה (סימולציה)`));
+            ui.citySelect.addEventListener('change', handleCityChange);
+            ui.adminForm.addEventListener('keydown', handleFormKeydown);
 
-
-            // --- ACTIONS ---
-            function handleSaveOrder() {
-                // In a real app, this would send data to a server or Google Apps Script
-                // For now, we just show a confirmation.
-                const newOrder = {
-                    driver: document.getElementById('driver-select').value,
-                    customer: document.getElementById('customer-name').value,
-                    address: document.getElementById('order-address').value
-                };
-
-                if (!newOrder.customer || !newOrder.address) {
-                    showToast("נא למלא שם לקוח וכתובת", "warning");
-                    return;
-                }
-                
-                console.log("Simulating save for order:", newOrder);
-                showToast(`הזמנה עבור ${newOrder.customer} נשמרה (סימולציה)`);
-                // Optionally, clear the form or switch back to dashboard
-                // switchPage('dashboardPage');
-            }
-            
+            // --- ACTIONS (WhatsApp, etc.) ---
             function generateAndShareWhatsAppReport() {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const reportDate = tomorrow.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                
-                // Filter orders for tomorrow
-                const tomorrowStr = tomorrow.toLocaleDateString('en-GB').split('/').reverse().join('-'); // YYYY-MM-DD format for comparison if needed
-                // Assuming date in sheet is DD/MM/YYYY
-                const tomorrowDMY = tomorrow.toLocaleDateString('en-GB');
-
-                const aliTomorrow = state.aliOrders.filter(o => o.date === tomorrowDMY);
-                const hakmatTomorrow = state.hakmatOrders.filter(o => o.date === tomorrowDMY);
-
-                if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) {
-                    showToast("אין הזמנות למחר", "info");
-                    return;
-                }
-                
-                let message = `*✨ דוח בוקר - ${reportDate} ✨*\n\n`;
-                message += generateSummary(aliTomorrow, hakmatTomorrow);
-                message += `*--------------------*\n`;
-                message += `*דוחות בוקר מפורטים*\n\n`;
-                
-                if(aliTomorrow.length > 0) {
-                    message += formatDriverReport(aliTomorrow, "עלי");
-                }
-                if(hakmatTomorrow.length > 0) {
-                    message += formatDriverReport(hakmatTomorrow, "חכמת");
-                }
-                
-                message += `🔗 https://did.li/berOf`;
-
-                const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                window.open(url, "_blank");
+                 const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+                 const reportDate = tomorrow.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                 const tomorrowDMY = tomorrow.toLocaleDateString('en-GB');
+                 const aliTomorrow = state.aliOrders.filter(o => o.date === tomorrowDMY);
+                 const hakmatTomorrow = state.hakmatOrders.filter(o => o.date === tomorrowDMY);
+                 if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) { showToast("אין הזמנות למחר", "info"); return; }
+                 let message = `*✨ דוח בוקר - ${reportDate} ✨*\n\n` + generateSummary(aliTomorrow, hakmatTomorrow) + `*--------------------*\n*דוחות בוקר מפורטים*\n\n`;
+                 if (aliTomorrow.length > 0) message += formatDriverReport(aliTomorrow, "עלי");
+                 if (hakmatTomorrow.length > 0) message += formatDriverReport(hakmatTomorrow, "חכמת");
+                 message += `🔗 https://did.li/berOf`;
+                 window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
             }
-            
             function generateSummary(aliOrders, hakmatOrders) {
-                const allOrders = [...aliOrders, ...hakmatOrders];
-                let summary = `*סיכום הזמנות*\n`;
-                summary += `🚚 עלי: ${aliOrders.length} הזמנות\n`;
-                summary += `🚛 חכמת: ${hakmatOrders.length} הזמנות\n`;
-                
-                const warehouseOrders = allOrders.filter(o => o.warehouse);
-                summary += `📦 סה"כ מחסן: ${warehouseOrders.length} הזמנות\n`;
-                
-                const studentWarehouse = warehouseOrders.filter(o => o.warehouse === 'התלמיד').length;
-                summary += `🏫 מחסן התלמיד: ${studentWarehouse} הזמנות\n`;
-                
-                const carpenterWarehouse = warehouseOrders.filter(o => o.warehouse === 'החרש').length;
-                summary += `🔨 מחסן החרש: ${carpenterWarehouse} הזמנות\n`;
-
-                const morningOrders = allOrders.filter(o => {
-                    const time = o.time.split(':');
-                    return parseInt(time[0], 10) >= 6 && parseInt(time[0], 10) < 9;
-                }).length;
-                summary += `☀️ הזמנות 06:00-09:00: ${morningOrders} הזמנות\n\n`;
+                const all = [...aliOrders, ...hakmatOrders];
+                let summary = `*סיכום הזמנות*\n🚚 עלי: ${aliOrders.length} הזמנות\n🚛 חכמת: ${hakmatOrders.length} הזמנות\n`;
+                const warehouse = all.filter(o => o.warehouse);
+                summary += `📦 סה"כ מחסן: ${warehouse.length} הזמנות\n`;
+                summary += `🏫 מחסן התלמיד: ${warehouse.filter(o=>o.warehouse==='התלמיד').length} הזמנות\n`;
+                summary += `🔨 מחסן החרש: ${warehouse.filter(o=>o.warehouse==='החרש').length} הזמנות\n`;
+                summary += `☀️ הזמנות 06:00-09:00: ${all.filter(o => o.time && parseInt(o.time.split(':')[0]) < 9).length} הזמנות\n\n`;
                 return summary;
             }
-
-            function formatDriverReport(orders, driverName) {
-                let report = `📝 *${driverName} - דוח בוקר*\n`;
-                orders.forEach(order => {
-                    report += `📅 ${order.date} ⏰ ${order.time || 'ביחד'} 🏠 ${order.warehouse} 📄 ${order.status}\n`;
-                    report += `👤 ${order.customer} 📍 ${order.address}\n`;
-                    report += `-----\n`;
+            function formatDriverReport(orders, driver) {
+                let report = `📝 *${driver} - דוח בוקר*\n`;
+                orders.forEach(o => {
+                    report += `📅 ${o.date} ⏰ ${o.time || 'ביחד'} 🏠 ${o.warehouse} 📄 ${o.status}\n👤 ${o.customer} 📍 ${o.address}\n-----\n`;
                 });
                 return report + '\n';
             }
+            function updateDate() { ui.headerDate.textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }); }
+            function setTodaysDateInForm() { ui.orderDateInput.value = new Date().toISOString().split('T')[0]; }
+            function showToast(message, type = "info") { ui.toast.textContent = message; ui.toast.className = `show ${type}`; setTimeout(() => { ui.toast.className = ui.toast.className.replace("show", ""); }, 3000); }
 
-
-            // --- UTILITIES ---
-            function updateDate() {
-                const now = new Date();
-                ui.headerDate.textContent = now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
-            }
-            
-            function setTodaysDateInForm() {
-                const today = new Date().toISOString().split('T')[0];
-                ui.orderDateInput.value = today;
-            }
-
-            function showToast(message, type = "info") { // types: info, success, warning, error
-                ui.toast.textContent = message;
-                ui.toast.className = `show ${type}`;
-                setTimeout(() => {
-                    ui.toast.className = ui.toast.className.replace("show", "");
-                }, 3000);
-            }
-
-            // --- INITIALIZATION ---
             function init() {
                 initializePWA();
                 initializeOneSignal();
                 updateDate();
                 setTodaysDateInForm();
                 loadAllData();
-
-                // Set up periodic refresh for real-time updates
-                setInterval(loadAllData, 60 * 1000); // Refresh every 60 seconds
+                setInterval(loadAllData, 60 * 1000);
             }
 
             init();
@@ -762,3 +508,4 @@
     </script>
 </body>
 </html>
+
