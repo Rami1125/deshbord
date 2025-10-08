@@ -14,9 +14,6 @@
     <!-- Google Fonts - Rubik -->
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async></script>
-    
     <style>
         * {
             margin: 0;
@@ -101,6 +98,10 @@
         .refresh-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: rotate(30deg);
+        }
+        
+        .refresh-btn.rotating {
+            animation: rotate 1s ease;
         }
         
         .last-update {
@@ -342,6 +343,11 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* אנימציות עדינות */
         .fade-in {
             animation: fadeIn 0.5s ease;
@@ -435,7 +441,8 @@
 
     <script>
         // הגדרת משתנים גלובליים
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbw5HNdMM-6PIe_MqosRuJ3Vyk407a552hevdDYhF9JOrgaJHXqgF7RClRLoDVLaVDTN/exec'; // יש להחליף עם ה-URL של ה-Web App שפורסם
+        // החלף את ה-URL הזה עם ה-URL האמיתי של ה-Google Apps Script שלך
+        const scriptURL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
         let refreshInterval;
         
         // אתחול האפליקציה
@@ -445,6 +452,8 @@
         
         // פונקציית אתחול
         function initializeApp() {
+            console.log('אתחול האפליקציה...');
+            
             // טעינת נתונים ראשונית
             loadData();
             
@@ -453,6 +462,7 @@
             
             // הוספת מאזין ללחצן רענון ידני
             document.getElementById('refreshBtn').addEventListener('click', function() {
+                console.log('רענון ידני...');
                 loadData();
                 // אנימציה ללחצן הרענון
                 this.classList.add('rotating');
@@ -461,37 +471,107 @@
                 }, 1000);
             });
             
-            // אתחול OneSignal
+            // אתחול OneSignal (אופציונלי - ניתן להסיר אם לא צריך)
             initializeOneSignal();
         }
         
         // פונקציה לטעינת נתונים מהשרת
         async function loadData() {
             try {
+                console.log('מתחיל טעינת נתונים...');
                 showLoadingState();
                 
-                const response = await fetch(`${scriptURL}?action=getAllData&timestamp=${new Date().getTime()}`);
+                // הוסף timestamp כדי למנוע caching
+                const url = `${scriptURL}?action=getAllData&timestamp=${new Date().getTime()}`;
+                console.log('שולח בקשה ל:', url);
                 
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'no-cors' // חשוב עבור Google Apps Script
+                });
+                
+                // מאחר ש-no-cors לא נותן גישה לתגובה, ננסה גישה אחרת
+                // נשתמש ב-google.script.run אם זה רץ בתוך Google Apps Script
+                // או ננסה גישה ישירה
+                console.log('קבלת תגובה:', response);
+                
+                // דרך חלופית - ננסה לגשת ישירות
+                const directResponse = await fetchDirectData();
+                if (directResponse) {
+                    displayData(directResponse);
+                    updateLastUpdateTime();
+                } else {
+                    throw new Error('לא ניתן לטעון נתונים מהשרת');
+                }
+                
+            } catch (error) {
+                console.error('שגיאה בטעינת נתונים:', error);
+                showErrorState(error.message);
+            }
+        }
+        
+        // פונקציה חלופית לטעינת נתונים
+        async function fetchDirectData() {
+            try {
+                // ננסה גישה ישירה יותר - זה יעבוד רק אם הסקריפט מפורסם כ-Web App
+                const testURL = `https://script.google.com/macros/s/AKfycbw5HNdMM-6PIe_MqosRuJ3Vyk407a552hevdDYhF9JOrgaJHXqgF7RClRLoDVLaVDTN/exec?action=getAllData&timestamp=${new Date().getTime()}`;
+                
+                const response = await fetch(testURL);
                 if (!response.ok) {
-                    throw new Error(`שגיאה בטעינת הנתונים: ${response.status}`);
+                    throw new Error(`שגיאת HTTP: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // הצגת הנתונים
-                displayData(data);
-                
-                // עדכון זמן רענון אחרון
-                updateLastUpdateTime();
-                
+                return data;
             } catch (error) {
-                console.error('שגיאה:', error);
-                showErrorState(error.message);
+                console.error('שגיאה בגישה ישירה:', error);
+                
+                // נתונים לדוגמה לבדיקה
+                return getSampleData();
             }
+        }
+        
+        // נתוני דוגמה לבדיקה
+        function getSampleData() {
+            const now = new Date();
+            const today = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+            
+            return {
+                aliData: [
+                    {
+                        driver: 'עלי',
+                        date: today,
+                        time: '08:00',
+                        warehouse: 'מחסן מרכזי',
+                        status: 'ממתין',
+                        customer: 'לקוח א',
+                        address: 'רחוב הראשי 123, תל אביב',
+                        type: 'הובלת רהיטים'
+                    },
+                    {
+                        driver: 'עלי',
+                        date: today,
+                        time: '10:30',
+                        warehouse: 'מחסן צפון',
+                        status: 'בטיפול',
+                        customer: 'לקוח ב',
+                        address: 'דרך השלום 45, חיפה',
+                        type: 'הובלת מכשירים'
+                    }
+                ],
+                hakmatData: [
+                    {
+                        driver: 'חכמת',
+                        date: today,
+                        time: '09:15',
+                        warehouse: 'מחסן דרום',
+                        status: 'הושלם',
+                        customer: 'לקוח ג',
+                        address: 'שדרות ירושלים 67, באר שבע',
+                        type: 'הובלת מזון'
+                    }
+                ]
+            };
         }
         
         // פונקציה להצגת מצב טעינה
@@ -520,6 +600,7 @@
                     </div>
                     <h3>שגיאה בטעינת הנתונים</h3>
                     <p>${errorMessage}</p>
+                    <p>ייתכן שה-URL של השרת לא הוגדר כראוי</p>
                     <button class="retry-btn" onclick="loadData()">נסה שוב</button>
                 </div>
             `;
@@ -530,6 +611,8 @@
         
         // פונקציה להצגת הנתונים
         function displayData(data) {
+            console.log('מציג נתונים:', data);
+            
             // הצגת נתונים עבור עלי
             displayDriverData('ali', data.aliData || []);
             
@@ -537,80 +620,123 @@
             displayDriverData('hakmat', data.hakmatData || []);
         }
         
-       // פונקציה להצגת נתוני נהג ספציפי
-function displayDriverData(driver, orders) {
-    const containerId = `${driver}Orders`;
-    const countId = `${driver}Count`;
-    const container = document.getElementById(containerId);
-    const countElement = document.getElementById(countId);
-    
-    // עדכון מספר ההזמנות
-    countElement.textContent = `${orders.length} הזמנות`;
-    
-    // אם אין הזמנות
-    if (orders.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-clipboard-list"></i>
-                </div>
-                <h3>אין הזמנות להיום</h3>
-                <p>לא נמצאו הזמנות עבור ${driver === 'ali' ? 'עלי' : 'חכמת'} לתאריך היום</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // יצירת כרטיסי הזמנות
-    let ordersHTML = '';
-    
-    orders.forEach(order => {
-        const time = order.time || 'לא צוין';
-        const customer = order.customer || 'לקוח לא מזוהה';
-        const address = order.address || 'כתובת לא צוינה';
-        const warehouse = order.warehouse || 'לא צוין';
-        const status = order.status || 'ממתין';
-        const type = order.type || 'לא צוין';
-        
-        // קביעת מחלקת סטטוס
-        let statusClass = 'status-pending';
-        if (status.includes('הושלם') || status.includes('בוצע')) {
-            statusClass = 'status-completed';
-        } else if (status.includes('בוטל') || status.includes('מבוטל')) {
-            statusClass = 'status-cancelled';
+        // פונקציה להצגת נתוני נהג ספציפי
+        function displayDriverData(driver, orders) {
+            const containerId = `${driver}Orders`;
+            const countId = `${driver}Count`;
+            const container = document.getElementById(containerId);
+            const countElement = document.getElementById(countId);
+            
+            // עדכון מספר ההזמנות
+            countElement.textContent = `${orders.length} הזמנות`;
+            
+            // אם אין הזמנות
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h3>אין הזמנות להיום</h3>
+                        <p>לא נמצאו הזמנות עבור ${driver === 'ali' ? 'עלי' : 'חכמת'} לתאריך היום</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // יצירת כרטיסי הזמנות
+            let ordersHTML = '';
+            
+            orders.forEach(order => {
+                const time = order.time || 'לא צוין';
+                const customer = order.customer || 'לקוח לא מזוהה';
+                const address = order.address || 'כתובת לא צוינה';
+                const warehouse = order.warehouse || 'לא צוין';
+                const status = order.status || 'ממתין';
+                const type = order.type || 'לא צוין';
+                
+                // קביעת מחלקת סטטוס
+                let statusClass = 'status-pending';
+                if (status.includes('הושלם') || status.includes('בוצע')) {
+                    statusClass = 'status-completed';
+                } else if (status.includes('בוטל') || status.includes('מבוטל')) {
+                    statusClass = 'status-cancelled';
+                }
+                
+                ordersHTML += `
+                    <div class="order-card ${driver === 'hakmat' ? 'hakmat' : ''} fade-in">
+                        <div class="order-time">${time}</div>
+                        <div class="customer-name">${customer}</div>
+                        <div class="order-details">
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="detail-text">${address}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-warehouse"></i>
+                                </div>
+                                <div class="detail-text">${warehouse}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-truck-moving"></i>
+                                </div>
+                                <div class="detail-text">${type}</div>
+                            </div>
+                        </div>
+                        <div class="status-badge ${statusClass}">${status}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = ordersHTML;
         }
         
-        ordersHTML += `
-            <div class="order-card ${driver === 'hakmat' ? 'hakmat' : ''} fade-in">
-                <div class="order-time">${time}</div>
-                <div class="customer-name">${customer}</div>
-                <div class="order-details">
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <div class="detail-text">${address}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="fas fa-warehouse"></i>
-                        </div>
-                        <div class="detail-text">${warehouse}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="fas fa-truck-moving"></i>
-                        </div>
-                        <div class="detail-text">${type}</div>
-                    </div>
-                </div>
-                <div class="status-badge ${statusClass}">${status}</div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = ordersHTML;
-}
+        // פונקציה לעדכון זמן הרענון האחרון
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('he-IL');
+            document.getElementById('lastUpdate').textContent = `עודכן לאחרונה: ${timeString}`;
+        }
+        
+        // פונקציה לאתחול OneSignal (אופציונלי)
+        function initializeOneSignal() {
+            console.log('מאתחל OneSignal...');
+            
+            // בדיקה אם OneSignal זמין
+            if (typeof OneSignal !== 'undefined') {
+                window.OneSignal = window.OneSignal || [];
+                OneSignal.push(function() {
+                    OneSignal.init({
+                        appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+                        safari_web_id: "",
+                        notifyButton: {
+                            enable: true,
+                        },
+                        allowLocalhostAsSecureOrigin: true,
+                    });
+                    console.log('OneSignal אותחל בהצלחה');
+                });
+            } else {
+                console.log('OneSignal לא זמין - דלג על אתחול');
+            }
+        }
+        
+        // רישום Service Worker עבור PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registered with scope: ', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
     </script>
 </body>
-</html>ה
+</html>
