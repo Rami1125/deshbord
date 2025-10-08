@@ -1,49 +1,66 @@
-const CACHE_NAME = "glass-logistics-cache-v7"; // Changed version to force update
+const CACHE_NAME = 'work-schedule-v1.2';
 const urlsToCache = [
   '/',
-  'index.html',
-  'manifest.json',
-  'https://i.postimg.cc/pdrgskSr/sa.jpg', // New logo
-  'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg', // Ali avatar
-  'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg', // Hakmat avatar
-  'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+  '/index2.html',
+  '/manifest.json',
+  // ניתן להוסיף כאן קבצים נוספים שיש לשמור ב-cache
 ];
 
-self.addEventListener("install", event => {
+// התקנת Service Worker
+self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log("Opened cache");
-        self.skipWaiting();
+      .then(function(cache) {
+        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-self.addEventListener("fetch", event => {
-  if (event.request.url.startsWith('https://script.google.com/')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
+// טיפול בבקשות
+self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
-  );
+      .then(function(response) {
+        // החזרת משאב ממטמון אם קיים, אחרת טעינה מהרשת
+        if (response) {
+          return response;
+        }
+        
+        return fetch(event.request).then(
+          function(response) {
+            // בדיקה שהתשובה תקינה
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // שמירת התשובה במטמון
+            var responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then(function(cache) {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
+    );
 });
 
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+// עדכון Service Worker
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then(function(cacheNames) {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+        cacheNames.map(function(cacheName) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
 });
-
