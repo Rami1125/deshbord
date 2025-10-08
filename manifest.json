@@ -1,0 +1,20 @@
+{
+    "short_name": "GlassApp",
+    "name": "Glass Logistics PWA",
+    "icons": [
+        {
+            "src": "https://i.postimg.cc/8z9LqJ1p/glass-logo.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "https://i.postimg.cc/8z9LqJ1p/glass-logo.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#F8F8F8",
+    "theme_color": "#2C3E50"
+}
