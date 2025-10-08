@@ -1,742 +1,338 @@
-<!DOCTYPE html>
+# קבצים לפרויקט PWA - ניהול סידור עבודה (ח.סבן)
+
+להלן הקבצים שנוצרו בהתאם לאפיון: `index2.html`, `apps_script2.gs`, בנוסף `manifest.json` ו-`sw.js` (נדרשים ל-PWA). כל הקודים נמצאים במדריך זה — ניתן להעתיק ולהדביק ישירות לפרויקט.
+
+---
+
+## index2.html
+
+```html
+<!doctype html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>סידור עבודה - ח.סבן</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts - Rubik -->
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Rubik', sans-serif;
-        }
-        
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --border-radius: 12px;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: var(--dark-color);
-            line-height: 1.6;
-            padding-bottom: 80px;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 15px 20px;
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo {
-            width: 40px;
-            height: 40px;
-            background-color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 10px;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        h1 {
-            font-size: 1.4rem;
-            font-weight: 500;
-        }
-        
-        .refresh-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .refresh-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: rotate(30deg);
-        }
-        
-        .refresh-btn.rotating {
-            animation: rotate 1s ease;
-        }
-        
-        .last-update {
-            text-align: center;
-            font-size: 0.8rem;
-            padding: 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            margin-top: 5px;
-        }
-        
-        .container {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .driver-section {
-            margin-bottom: 30px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .driver-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-        
-        .driver-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 15px;
-            color: white;
-            font-size: 1.2rem;
-        }
-        
-        .ali-icon {
-            background-color: var(--secondary-color);
-        }
-        
-        .hakmat-icon {
-            background-color: var(--accent-color);
-        }
-        
-        .driver-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-        
-        .order-count {
-            margin-right: auto;
-            background-color: var(--light-color);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        
-        .orders-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }
-        
-        .order-card {
-            background-color: white;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            box-shadow: var(--shadow);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border-right: 4px solid var(--secondary-color);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .order-card.hakmat {
-            border-right-color: var(--accent-color);
-        }
-        
-        .order-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .order-time {
-            position: absolute;
-            top: 0;
-            left: 0;
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 5px 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border-bottom-left-radius: var(--border-radius);
-        }
-        
-        .order-card.hakmat .order-time {
-            background-color: var(--accent-color);
-        }
-        
-        .customer-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-            padding-top: 5px;
-        }
-        
-        .order-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .detail-item {
-            display: flex;
-            align-items: flex-start;
-        }
-        
-        .detail-icon {
-            width: 20px;
-            margin-left: 10px;
-            color: var(--secondary-color);
-            text-align: center;
-        }
-        
-        .order-card.hakmat .detail-icon {
-            color: var(--accent-color);
-        }
-        
-        .detail-text {
-            flex: 1;
-            font-size: 0.95rem;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-top: 10px;
-        }
-        
-        .status-pending {
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .status-completed {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .status-cancelled {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .loading-container, .error-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            text-align: center;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--light-color);
-            border-top: 5px solid var(--secondary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .error-icon {
-            font-size: 3rem;
-            color: var(--danger-color);
-            margin-bottom: 20px;
-        }
-        
-        .retry-btn {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius);
-            font-weight: 500;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: background-color 0.3s ease;
-        }
-        
-        .retry-btn:hover {
-            background-color: var(--primary-color);
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 30px 20px;
-            color: #7f8c8d;
-        }
-        
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #bdc3c7;
-        }
-        
-        footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--primary-color);
-            color: white;
-            text-align: center;
-            padding: 10px;
-            font-size: 0.8rem;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* אנימציות עדינות */
-        .fade-in {
-            animation: fadeIn 0.5s ease;
-        }
-        
-        /* התאמות למובייל */
-        @media (max-width: 768px) {
-            .orders-container {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 1.2rem;
-            }
-            
-            .driver-name {
-                font-size: 1.1rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .driver-header {
-                padding: 8px 12px;
-            }
-            
-            .order-card {
-                padding: 12px;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ח.סבן — סידור עבודה יומי (PWA)</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    :root{--bg:#0b1220;--card:#0f172a;--accent:#06b6d4;--muted:#94a3b8;--glass: rgba(255,255,255,0.04)}
+    html,body{height:100%;margin:0;font-family:'Rubik',sans-serif;background:linear-gradient(180deg,#071024 0%, #081729 100%);color:#e6eef5}
+    header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:transparent}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo img{width:44px;height:44px;border-radius:8px;background:var(--glass);padding:6px}
+    h1{font-size:18px;margin:0}
+    main{padding:12px}
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .btn{background:linear-gradient(90deg,var(--accent),#0ea5a9);border:none;padding:8px 12px;border-radius:8px;color:#041022;font-weight:600;cursor:pointer}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.4);}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:880px){.grid{grid-template-columns:1fr 360px}}
+    .orders-list{display:flex;flex-direction:column;gap:8px}
+    .order{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid rgba(255,255,255,0.03)}
+    .order .meta{display:flex;flex-direction:column}
+    .order .time{font-weight:700}
+    .timeline{height:420px;overflow:auto;padding:6px;border-radius:10px}
+    .timeline-grid{position:relative;height:100%;border-radius:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+    .slot{height:48px;border-bottom:1px dashed rgba(255,255,255,0.02);display:flex;align-items:center;padding:6px;gap:8px}
+    .card-item{position:absolute;padding:8px;border-radius:8px;background:linear-gradient(90deg,#08303b,#064e57);min-width:160px;color:white;box-shadow:0 8px 20px rgba(2,6,23,0.6);cursor:grab}
+    .card-item.dragging{opacity:0.85;cursor:grabbing}
+    .pulse{animation:pulse 1s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,0.06)}50%{box-shadow:0 0 0 10px rgba(255,255,255,0.00)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0.06)}}
+    .logs{max-height:320px;overflow:auto}
+    .loader{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.12);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .status{color:var(--muted);font-size:13px}
+  </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <div class="logo-container">
-                <div class="logo">ח.ס</div>
-                <h1>סידור עבודה - נהגים</h1>
-            </div>
-            <button class="refresh-btn" id="refreshBtn">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-        <div class="last-update" id="lastUpdate">טוען נתונים...</div>
-    </header>
-    
-    <div class="container">
-        <!-- אזור עלי -->
-        <section class="driver-section" id="aliSection">
-            <div class="driver-header">
-                <div class="driver-icon ali-icon">
-                    <i class="fas fa-truck"></i>
-                </div>
-                <div class="driver-name">עלי</div>
-                <div class="order-count" id="aliCount">0 הזמנות</div>
-            </div>
-            <div class="orders-container" id="aliOrders">
-                <!-- כאן יוצגו ההזמנות של עלי -->
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <p>טוען נתונים...</p>
-                </div>
-            </div>
-        </section>
-        
-        <!-- אזור חכמת -->
-        <section class="driver-section" id="hakmatSection">
-            <div class="driver-header">
-                <div class="driver-icon hakmat-icon">
-                    <i class="fas fa-truck-loading"></i>
-                </div>
-                <div class="driver-name">חכמת</div>
-                <div class="order-count" id="hakmatCount">0 הזמנות</div>
-            </div>
-            <div class="orders-container" id="hakmatOrders">
-                <!-- כאן יוצגו ההזמנות של חכמת -->
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <p>טוען נתונים...</p>
-                </div>
-            </div>
-        </section>
+  <header>
+    <div class="logo">
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect rx='10' width='64' height='64' fill='%2306b6d4'/><text x='50%' y='55%' text-anchor='middle' font-size='28' fill='white' font-family='Rubik'>חס</text></svg>" alt="logo">
+      <div>
+        <h1>ח.סבן — סידור עבודה יומי</h1>
+        <div class="status" id="last-updated">טען טרם הריצה</div>
+      </div>
     </div>
-    
-    <footer>
-        <p>ח.סבן - אפליקציית ניהול סידור עבודה</p>
-    </footer>
+    <div style="flex:1"></div>
+    <button class="btn" id="btn-refresh">רענון ידני</button>
+  </header>
+  <main>
+    <div class="grid">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+          <strong>הזמנות היום</strong>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div id="loader" style="display:none" class="loader"></div>
+            <div class="status" id="status-text">—</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+          <div style="flex:1;min-width:220px" class="card">
+            <strong>רשימה מהירה</strong>
+            <div class="orders-list" id="orders-list"></div>
+          </div>
+          <div style="flex:2;min-width:320px" class="card">
+            <strong>תכנון יומי (ציר זמן)</strong>
+            <div class="timeline" id="timeline">
+              <div class="timeline-grid" id="timeline-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <script>
-        // הגדרת משתנים גלובליים
-        // החלף את ה-URL הזה עם ה-URL האמיתי של ה-Google Apps Script שלך
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbw5HNdMM-6PIe_MqosRuJ3Vyk407a552hevdDYhF9JOrgaJHXqgF7RClRLoDVLaVDTN/exec';
-        let refreshInterval;
-        
-        // אתחול האפליקציה
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
+      <div class="card">
+        <strong>יומן שינויים (אחרונים)</strong>
+        <div class="logs" id="logs"></div>
+        <hr style="opacity:0.06;margin:12px 0">
+        <strong>הגדרות</strong>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+          <label> OneSignal App ID: <input id="onesignal-id" value="acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3" style="width:100%"></label>
+          <label> Apps Script URL: <input id="apps-url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%"></label>
+          <button id="save-settings" class="btn">שמור הגדרות</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Configuration and state
+    const cfg = {
+      appsUrl: localStorage.getItem('appsUrl') || '',
+      onesignalId: localStorage.getItem('onesignalId') || 'acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3',
+      pollInterval: 60_000 // 1 minute
+    };
+
+    document.getElementById('onesignal-id').value = cfg.onesignalId;
+    document.getElementById('apps-url').value = cfg.appsUrl;
+
+    document.getElementById('save-settings').addEventListener('click', ()=>{
+      cfg.onesignalId = document.getElementById('onesignal-id').value.trim();
+      cfg.appsUrl = document.getElementById('apps-url').value.trim();
+      localStorage.setItem('onesignalId', cfg.onesignalId);
+      localStorage.setItem('appsUrl', cfg.appsUrl);
+      alert('ההגדרות נשמרו');
+      initOneSignal();
+      fetchAndRender();
+    })
+
+    document.getElementById('btn-refresh').addEventListener('click', ()=> fetchAndRender());
+
+    // Utilities
+    function showLoader(show, text){
+      document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
+      document.getElementById('status-text').textContent = text || '';
+    }
+
+    function formatTimeHM(t){
+      // t expected as "HH:MM"
+      return t;
+    }
+
+    // Fetching from Apps Script
+    async function fetchAll(){
+      if(!cfg.appsUrl) throw new Error('Apps Script URL לא מוגדר');
+      const url = new URL(cfg.appsUrl);
+      url.searchParams.set('action', 'getAllData');
+      const res = await fetch(url.toString(), {method:'GET'});
+      if(!res.ok) throw new Error('Fetch failed: '+res.status);
+      return res.json();
+    }
+
+    async function fetchLogs(){
+      if(!cfg.appsUrl) throw new Error('Apps Script URL לא מוגדר');
+      const url = new URL(cfg.appsUrl);
+      url.searchParams.set('action', 'getLogs');
+      const res = await fetch(url.toString(), {method:'GET'});
+      if(!res.ok) throw new Error('Fetch logs failed');
+      return res.json();
+    }
+
+    async function postUpdateOrderTime(orderId, newTime){
+      const res = await fetch(cfg.appsUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({action:'updateOrderTime', orderId, newTime})
+      });
+      return res.json();
+    }
+
+    // Rendering
+    let orders = [];
+    function renderList(){
+      const container = document.getElementById('orders-list');
+      container.innerHTML = '';
+      orders.forEach(o=>{
+        const el = document.createElement('div'); el.className='order';
+        el.innerHTML = `<div class='meta'><div>${o.נהג || '—'} • ${o.לקוח || '—'}</div><div class='time'>${o.שעה || '—'}</div></div><div style='min-width:80px;text-align:left;'>${o.מחסן||''}</div>`;
+        container.appendChild(el);
+      })
+    }
+
+    // Timeline implementation (06:00 - 18:00)
+    const timelineGrid = document.getElementById('timeline-grid');
+    function buildTimeline(){
+      timelineGrid.innerHTML = '';
+      const startHour = 6, endHour = 18; const slotHeight=48; // px per slot
+      for(let h=startHour; h<endHour; h++){
+        const slot = document.createElement('div'); slot.className='slot';
+        slot.dataset.hour = h; slot.style.height = slotHeight+'px';
+        slot.textContent = (h<10? '0'+h:h)+':00';
+        timelineGrid.appendChild(slot);
+      }
+    }
+
+    function renderTimeline(){
+      buildTimeline();
+      // place cards
+      orders.forEach((o,idx)=>{
+        if(!o.שעה) return;
+        const [hh,mm] = (o.שעה||'').split(':');
+        if(!hh) return;
+        const startHour = 6; const slotHeight=48;
+        const top = ((Number(hh)-startHour) * slotHeight) + (Number(mm||0)/60)*slotHeight;
+        const card = document.createElement('div'); card.className='card-item';
+        card.style.top = top + 'px';
+        card.style.left = (20 + (idx%2)*180) + 'px';
+        card.style.width = '220px';
+        card.dataset.orderId = o.מזהה || o.id || o['מזהה ייחודי'] || '';
+        card.innerHTML = `<div style='font-weight:700'>${o.לקוח||''}</div><div style='font-size:13px;margin-top:6px'>${o.כתובת||''}</div><div style='margin-top:8px;font-size:12px'>${o.שעה||''}</div>`;
+        enableDrag(card);
+        timelineGrid.appendChild(card);
+      })
+    }
+
+    // Drag & Drop mechanics (pointer events simple)
+    function enableDrag(card){
+      let offsetY=0, startY=0; card.addEventListener('pointerdown', e=>{
+        card.setPointerCapture(e.pointerId);
+        card.classList.add('dragging');
+        startY = e.clientY; offsetY = parseFloat(card.style.top || 0);
+        function move(ev){
+          const dy = ev.clientY - startY;
+          card.style.top = (offsetY + dy) + 'px';
+        }
+        function up(ev){
+          card.releasePointerCapture(e.pointerId);
+          card.classList.remove('dragging');
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+          // compute new time
+          const top = parseFloat(card.style.top);
+          const slotHeight = 48; const startHour = 6;
+          const hourFloat = top/slotHeight + startHour;
+          const hh = Math.floor(hourFloat);
+          const mm = Math.round((hourFloat - hh)*60/5)*5; // round to 5 min
+          const newTime = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+          // send update
+          postUpdateOrderTime(card.dataset.orderId, newTime)
+            .then(r=>{
+              if(r && r.success){
+                speakReminder(`הזמנה עבור ${r.client||''} עודכנה לשעה ${newTime}`);
+                fetchAndRender();
+              } else {
+                alert('עדכון נכשל'); fetchAndRender();
+              }
+            }).catch(err=>{alert('שגיאה בעדכון');fetchAndRender()});
+        }
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+      })
+    }
+
+    // Polling and orchestration
+    let pollTimer = null;
+    async function fetchAndRender(){
+      showLoader(true,'טוען...');
+      try{
+        const data = await fetchAll();
+        orders = (data && data.orders) || [];
+        renderList();
+        renderTimeline();
+        document.getElementById('last-updated').textContent = 'עודכן: ' + new Date().toLocaleString('he-IL');
+        const logs = await fetchLogs();
+        renderLogs(logs);
+        checkReminders();
+        showLoader(false,'עודכן');
+      }catch(err){
+        console.error(err);
+        showLoader(false,'שגיאה בטעינה');
+        document.getElementById('status-text').textContent = 'אירעה שגיאה';
+      }
+    }
+
+    function renderLogs(logs){
+      const el = document.getElementById('logs'); el.innerHTML='';
+      (logs||[]).forEach(l=>{
+        const d = document.createElement('div'); d.style.padding='8px'; d.style.borderBottom='1px solid rgba(255,255,255,0.03)';
+        d.innerHTML = `<div style='font-size:13px;color:var(--muted)'>${l[0]||''}</div><div style='font-weight:600'>${l[2]||''}</div>`;
+        el.appendChild(d);
+      })
+    }
+
+    // Reminders: visual and speech
+    function checkReminders(){
+      const now = new Date();
+      orders.forEach(o=>{
+        if(!o.שעה) return;
+        const [hh,mm]=o.שעה.split(':').map(Number);
+        const orderDate = new Date(); orderDate.setHours(hh,mm,0,0);
+        const diff = (orderDate - now)/60000; // minutes
+        const cardEl = document.querySelector(`[data-order-id='${o.מזהה||o.id||o['מזהה ייחודי']}']`);
+        if(cardEl){
+          cardEl.classList.remove('pulse');
+          if(diff<=15 && diff>=0){
+            cardEl.classList.add('pulse');
+            // speak
+            speakReminder(`תזכורת: הזמנה עבור ${o.לקוח||''} בשעה ${o.שעה}`);
+          }
+        }
+      })
+    }
+
+    // Speech
+    function speakReminder(text){
+      if(!('speechSynthesis' in window)) return;
+      const ut = new SpeechSynthesisUtterance(text);
+      ut.lang = 'he-IL';
+      speechSynthesis.cancel(); // prevent overlap
+      speechSynthesis.speak(ut);
+    }
+
+    // Initialize OneSignal (lightweight) — only loads SDK after user saved settings
+    function initOneSignal(){
+      const id = cfg.onesignalId;
+      if(!id) return;
+      // minimal integration: load OneSignal SDK script and init
+      if(window.OneSignalInitialized) return;
+      const s = document.createElement('script'); s.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.js'; s.async=true;
+      s.onload = ()=>{
+        window.OneSignal = window.OneSignal || [];
+        OneSignal.push(()=>{
+          OneSignal.init({appId: id, notifyButton:{enable:false}});
         });
-        
-        // פונקציית אתחול
-        function initializeApp() {
-            console.log('אתחול האפליקציה...');
-            
-            // טעינת נתונים ראשונית
-            loadData();
-            
-            // הגדרת רענון אוטומטי כל דקה
-            refreshInterval = setInterval(loadData, 60000);
-            
-            // הוספת מאזין ללחצן רענון ידני
-            document.getElementById('refreshBtn').addEventListener('click', function() {
-                console.log('רענון ידני...');
-                loadData();
-                // אנימציה ללחצן הרענון
-                this.classList.add('rotating');
-                setTimeout(() => {
-                    this.classList.remove('rotating');
-                }, 1000);
-            });
-            
-            // אתחול OneSignal (אופציונלי - ניתן להסיר אם לא צריך)
-            initializeOneSignal();
-        }
-        
-        // פונקציה לטעינת נתונים מהשרת
-        async function loadData() {
-            try {
-                console.log('מתחיל טעינת נתונים...');
-                showLoadingState();
-                
-                // הוסף timestamp כדי למנוע caching
-                const url = `${scriptURL}?action=getAllData&timestamp=${new Date().getTime()}`;
-                console.log('שולח בקשה ל:', url);
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors' // חשוב עבור Google Apps Script
-                });
-                
-                // מאחר ש-no-cors לא נותן גישה לתגובה, ננסה גישה אחרת
-                // נשתמש ב-google.script.run אם זה רץ בתוך Google Apps Script
-                // או ננסה גישה ישירה
-                console.log('קבלת תגובה:', response);
-                
-                // דרך חלופית - ננסה לגשת ישירות
-                const directResponse = await fetchDirectData();
-                if (directResponse) {
-                    displayData(directResponse);
-                    updateLastUpdateTime();
-                } else {
-                    throw new Error('לא ניתן לטעון נתונים מהשרת');
-                }
-                
-            } catch (error) {
-                console.error('שגיאה בטעינת נתונים:', error);
-                showErrorState(error.message);
-            }
-        }
-        
-        // פונקציה חלופית לטעינת נתונים
-        async function fetchDirectData() {
-            try {
-                // ננסה גישה ישירה יותר - זה יעבוד רק אם הסקריפט מפורסם כ-Web App
-                const testURL = `https://script.google.com/macros/s/AKfycbw5HNdMM-6PIe_MqosRuJ3Vyk407a552hevdDYhF9JOrgaJHXqgF7RClRLoDVLaVDTN/exec?action=getAllData&timestamp=${new Date().getTime()}`;
-                
-                const response = await fetch(testURL);
-                if (!response.ok) {
-                    throw new Error(`שגיאת HTTP: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('שגיאה בגישה ישירה:', error);
-                
-                // נתונים לדוגמה לבדיקה
-                return getSampleData();
-            }
-        }
-        
-        // נתוני דוגמה לבדיקה
-        function getSampleData() {
-            const now = new Date();
-            const today = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-            
-            return {
-                aliData: [
-                    {
-                        driver: 'עלי',
-                        date: today,
-                        time: '08:00',
-                        warehouse: 'מחסן מרכזי',
-                        status: 'ממתין',
-                        customer: 'לקוח א',
-                        address: 'רחוב הראשי 123, תל אביב',
-                        type: 'הובלת רהיטים'
-                    },
-                    {
-                        driver: 'עלי',
-                        date: today,
-                        time: '10:30',
-                        warehouse: 'מחסן צפון',
-                        status: 'בטיפול',
-                        customer: 'לקוח ב',
-                        address: 'דרך השלום 45, חיפה',
-                        type: 'הובלת מכשירים'
-                    }
-                ],
-                hakmatData: [
-                    {
-                        driver: 'חכמת',
-                        date: today,
-                        time: '09:15',
-                        warehouse: 'מחסן דרום',
-                        status: 'הושלם',
-                        customer: 'לקוח ג',
-                        address: 'שדרות ירושלים 67, באר שבע',
-                        type: 'הובלת מזון'
-                    }
-                ]
-            };
-        }
-        
-        // פונקציה להצגת מצב טעינה
-        function showLoadingState() {
-            document.getElementById('aliOrders').innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <p>טוען נתונים...</p>
-                </div>
-            `;
-            
-            document.getElementById('hakmatOrders').innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <p>טוען נתונים...</p>
-                </div>
-            `;
-        }
-        
-        // פונקציה להצגת מצב שגיאה
-        function showErrorState(errorMessage) {
-            const errorHTML = `
-                <div class="error-container">
-                    <div class="error-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h3>שגיאה בטעינת הנתונים</h3>
-                    <p>${errorMessage}</p>
-                    <p>ייתכן שה-URL של השרת לא הוגדר כראוי</p>
-                    <button class="retry-btn" onclick="loadData()">נסה שוב</button>
-                </div>
-            `;
-            
-            document.getElementById('aliOrders').innerHTML = errorHTML;
-            document.getElementById('hakmatOrders').innerHTML = errorHTML;
-        }
-        
-        // פונקציה להצגת הנתונים
-        function displayData(data) {
-            console.log('מציג נתונים:', data);
-            
-            // הצגת נתונים עבור עלי
-            displayDriverData('ali', data.aliData || []);
-            
-            // הצגת נתונים עבור חכמת
-            displayDriverData('hakmat', data.hakmatData || []);
-        }
-        
-        // פונקציה להצגת נתוני נהג ספציפי
-        function displayDriverData(driver, orders) {
-            const containerId = `${driver}Orders`;
-            const countId = `${driver}Count`;
-            const container = document.getElementById(containerId);
-            const countElement = document.getElementById(countId);
-            
-            // עדכון מספר ההזמנות
-            countElement.textContent = `${orders.length} הזמנות`;
-            
-            // אם אין הזמנות
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-clipboard-list"></i>
-                        </div>
-                        <h3>אין הזמנות להיום</h3>
-                        <p>לא נמצאו הזמנות עבור ${driver === 'ali' ? 'עלי' : 'חכמת'} לתאריך היום</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // יצירת כרטיסי הזמנות
-            let ordersHTML = '';
-            
-            orders.forEach(order => {
-                const time = order.time || 'לא צוין';
-                const customer = order.customer || 'לקוח לא מזוהה';
-                const address = order.address || 'כתובת לא צוינה';
-                const warehouse = order.warehouse || 'לא צוין';
-                const status = order.status || 'ממתין';
-                const type = order.type || 'לא צוין';
-                
-                // קביעת מחלקת סטטוס
-                let statusClass = 'status-pending';
-                if (status.includes('הושלם') || status.includes('בוצע')) {
-                    statusClass = 'status-completed';
-                } else if (status.includes('בוטל') || status.includes('מבוטל')) {
-                    statusClass = 'status-cancelled';
-                }
-                
-                ordersHTML += `
-                    <div class="order-card ${driver === 'hakmat' ? 'hakmat' : ''} fade-in">
-                        <div class="order-time">${time}</div>
-                        <div class="customer-name">${customer}</div>
-                        <div class="order-details">
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </div>
-                                <div class="detail-text">${address}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-warehouse"></i>
-                                </div>
-                                <div class="detail-text">${warehouse}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-truck-moving"></i>
-                                </div>
-                                <div class="detail-text">${type}</div>
-                            </div>
-                        </div>
-                        <div class="status-badge ${statusClass}">${status}</div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = ordersHTML;
-        }
-        
-        // פונקציה לעדכון זמן הרענון האחרון
-        function updateLastUpdateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('he-IL');
-            document.getElementById('lastUpdate').textContent = `עודכן לאחרונה: ${timeString}`;
-        }
-        
-        // פונקציה לאתחול OneSignal (אופציונלי)
-        function initializeOneSignal() {
-            console.log('מאתחל OneSignal...');
-            
-            // בדיקה אם OneSignal זמין
-            if (typeof OneSignal !== 'undefined') {
-                window.OneSignal = window.OneSignal || [];
-                OneSignal.push(function() {
-                    OneSignal.init({
-                        appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                        safari_web_id: "",
-                        notifyButton: {
-                            enable: true,
-                        },
-                        allowLocalhostAsSecureOrigin: true,
-                    });
-                    console.log('OneSignal אותחל בהצלחה');
-                });
-            } else {
-                console.log('OneSignal לא זמין - דלג על אתחול');
-            }
-        }
-        
-        // רישום Service Worker עבור PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker registered with scope: ', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('ServiceWorker registration failed: ', error);
-                    });
-            });
-        }
-    </script>
+        window.OneSignalInitialized = true;
+      };
+      document.head.appendChild(s);
+    }
+
+    // Boot
+    (function boot(){
+      try{ cfg.appsUrl = localStorage.getItem('appsUrl') || cfg.appsUrl; document.getElementById('apps-url').value = cfg.appsUrl;}catch(e){}
+      initOneSignal();
+      fetchAndRender();
+      if(pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(fetchAndRender, cfg.pollInterval);
+    })();
+
+    // PWA: service worker register
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').then(()=>console.log('sw registered')).catch(()=>console.log('sw fail'));
+    }
+
+    // small helper for demo: allow file drop to change appsUrl (not necessary in prod)
+  </script>
 </body>
 </html>
