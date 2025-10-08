@@ -1,8 +1,9 @@
-const CACHE_NAME = "glass-logistics-cache-v4";
+const CACHE_NAME = "glass-logistics-cache-v5"; // Changed version to force update
 const urlsToCache = [
   '/',
   'index.html',
   'manifest.json',
+  'https://i.postimg.cc/pdrgskSr/sa.jpg', // Added new logo to cache
   'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
@@ -20,14 +21,21 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("fetch", event => {
+  // Network first strategy for API calls to make sure data is fresh
+  if (event.request.url.startsWith('https://script.google.com/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response(JSON.stringify({error: "Offline"}), { headers: { 'Content-Type': 'application/json' } });
+      })
+    );
+    return;
+  }
+
+  // Cache first for other assets
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        return response || fetch(event.request);
       }
     )
   );
