@@ -537,118 +537,80 @@
             displayDriverData('hakmat', data.hakmatData || []);
         }
         
-        // פונקציה להצגת נתוני נהג ספציפי
-        function displayDriverData(driver, orders) {
-            const containerId = `${driver}Orders`;
-            const countId = `${driver}Count`;
-            const container = document.getElementById(containerId);
-            const countElement = document.getElementById(countId);
-            
-            // עדכון מספר ההזמנות
-            countElement.textContent = `${orders.length} הזמנות`;
-            
-            // אם אין הזמנות
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-clipboard-list"></i>
+       // פונקציה להצגת נתוני נהג ספציפי
+function displayDriverData(driver, orders) {
+    const containerId = `${driver}Orders`;
+    const countId = `${driver}Count`;
+    const container = document.getElementById(containerId);
+    const countElement = document.getElementById(countId);
+    
+    // עדכון מספר ההזמנות
+    countElement.textContent = `${orders.length} הזמנות`;
+    
+    // אם אין הזמנות
+    if (orders.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h3>אין הזמנות להיום</h3>
+                <p>לא נמצאו הזמנות עבור ${driver === 'ali' ? 'עלי' : 'חכמת'} לתאריך היום</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // יצירת כרטיסי הזמנות
+    let ordersHTML = '';
+    
+    orders.forEach(order => {
+        const time = order.time || 'לא צוין';
+        const customer = order.customer || 'לקוח לא מזוהה';
+        const address = order.address || 'כתובת לא צוינה';
+        const warehouse = order.warehouse || 'לא צוין';
+        const status = order.status || 'ממתין';
+        const type = order.type || 'לא צוין';
+        
+        // קביעת מחלקת סטטוס
+        let statusClass = 'status-pending';
+        if (status.includes('הושלם') || status.includes('בוצע')) {
+            statusClass = 'status-completed';
+        } else if (status.includes('בוטל') || status.includes('מבוטל')) {
+            statusClass = 'status-cancelled';
+        }
+        
+        ordersHTML += `
+            <div class="order-card ${driver === 'hakmat' ? 'hakmat' : ''} fade-in">
+                <div class="order-time">${time}</div>
+                <div class="customer-name">${customer}</div>
+                <div class="order-details">
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-map-marker-alt"></i>
                         </div>
-                        <h3>אין הזמנות להיום</h3>
-                        <p>לא נמצאו הזמנות עבור ${driver === 'ali' ? 'עלי' : 'חכמת'} לתאריך היום</p>
+                        <div class="detail-text">${address}</div>
                     </div>
-                `;
-                return;
-            }
-            
-            // יצירת כרטיסי הזמנות
-            let ordersHTML = '';
-            
-            orders.forEach(order => {
-                const time = order.שעה || 'לא צוין';
-                const customer = order.לקוח || 'לקוח לא מזוהה';
-                const address = order.כתובת || 'כתובת לא צוינה';
-                const warehouse = order.מחסן || 'לא צוין';
-                const status = order.סטטוס || 'ממתין';
-                const type = order.סוג הובלה || 'לא צוין';
-                
-                // קביעת מחלקת סטטוס
-                let statusClass = 'status-pending';
-                if (status.includes('הושלם') || status.includes('בוצע')) {
-                    statusClass = 'status-completed';
-                } else if (status.includes('בוטל') || status.includes('מבוטל')) {
-                    statusClass = 'status-cancelled';
-                }
-                
-                ordersHTML += `
-                    <div class="order-card ${driver === 'hakmat' ? 'hakmat' : ''} fade-in">
-                        <div class="order-time">${time}</div>
-                        <div class="customer-name">${customer}</div>
-                        <div class="order-details">
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </div>
-                                <div class="detail-text">${address}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-warehouse"></i>
-                                </div>
-                                <div class="detail-text">${warehouse}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon">
-                                    <i class="fas fa-truck-moving"></i>
-                                </div>
-                                <div class="detail-text">${type}</div>
-                            </div>
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-warehouse"></i>
                         </div>
-                        <div class="status-badge ${statusClass}">${status}</div>
+                        <div class="detail-text">${warehouse}</div>
                     </div>
-                `;
-            });
-            
-            container.innerHTML = ordersHTML;
-        }
-        
-        // פונקציה לעדכון זמן הרענון האחרון
-        function updateLastUpdateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('he-IL');
-            document.getElementById('lastUpdate').textContent = `עודכן לאחרונה: ${timeString}`;
-        }
-        
-        // פונקציה לאתחול OneSignal
-        function initializeOneSignal() {
-            // ודא ש-OneSignal זמין
-            if (typeof OneSignal !== 'undefined') {
-                window.OneSignal = window.OneSignal || [];
-                OneSignal.push(function() {
-                    OneSignal.init({
-                        appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                        safari_web_id: "",
-                        notifyButton: {
-                            enable: true,
-                        },
-                        allowLocalhostAsSecureOrigin: true,
-                    });
-                });
-            }
-        }
-        
-        // רישום Service Worker עבור PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker registered with scope: ', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('ServiceWorker registration failed: ', error);
-                    });
-            });
-        }
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-truck-moving"></i>
+                        </div>
+                        <div class="detail-text">${type}</div>
+                    </div>
+                </div>
+                <div class="status-badge ${statusClass}">${status}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = ordersHTML;
+}
     </script>
 </body>
 </html>ה
