@@ -1,21 +1,21 @@
 {
-    "short_name": "GlassApp",
-    "name": "סידור ח.סבן",
-    "icons": [
-        {
-            "src": "https://placehold.co/192x192/4A90E2/FFFFFF?text=GL",
-            "type": "image/png",
-            "sizes": "192x192"
-        },
-        {
-            "src": "https://placehold.co/512x512/4A90E2/FFFFFF?text=GL",
-            "type": "image/png",
-            "sizes": "512x512"
-        }
-    ],
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#F8F8F8",
-    "theme_color": "#2C3E50"
+  "short_name": "סידור סבן",
+  "name": "סידור עבודה ח.סבן",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/pdrgskSr/sa.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://i.postimg.cc/pdrgskSr/sa.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F4F7F9",
+  "theme_color": "#2C3E50"
 }
 
