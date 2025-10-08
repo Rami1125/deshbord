@@ -10,8 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#2C3E50">
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/8z9LqJ1p/glass-logo.png">
-    <link rel="icon" href="https://i.postimg.cc/8z9LqJ1p/glass-logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4A90E2/FFFFFF?text=GL">
+    <link rel="icon" href="https://placehold.co/32x32/4A90E2/FFFFFF?text=G" type="image/png">
     <link rel="manifest" href="manifest.json">
 
     <!-- Libraries -->
@@ -20,7 +20,19 @@
     
     <!-- OneSignal SDK for Push Notifications -->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-
+     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+      notifyButton: {
+        enable: true,
+      },
+    });
+  });
+</script>
     <style>
         :root {
             --primary-color: #4A90E2; /* Bright Blue */
@@ -213,12 +225,12 @@
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- CONFIGURATION ---
-            // Remember to replace 'YOUR_ONESIGNAL_APP_ID' if you use push notifications
-            const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID'; 
+            // Remember to replace 'https://script.google.com/macros/s/AKfycbyHlr3SR-Aj9rCh4jXrOfmStSSzYQwKUGYf_ffdsRtiQATQNYJKBwy-4c_Fa6grJNYE/exec' if you use push notifications
+            const ONESIGNAL_APP_ID = 'acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3'; 
             const WHATSAPP_NUMBER = "972508860896";
             
             // !!! PASTE THE WEB APP URL YOU GET FROM GOOGLE APPS SCRIPT HERE
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHlr3SR-Aj9rCh4jXrOfmStSSzYQwKUGYf_ffdsRtiQATQNYJKBwy-4c_Fa6grJNYE/exec'; 
+            const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; 
 
             // --- STATE ---
             let state = {
@@ -478,12 +490,14 @@
                 try {
                     const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        headers: { 'Content-Type': 'application/json' }, // Corrected header
                         body: JSON.stringify(newOrder)
                     });
-                    
-                    // Note: with 'no-cors' we cannot read the response, so we assume success
-                    // If the Apps Script is deployed correctly with CORS headers, we can parse the response.
+
+                    const result = await response.json();
+                    if (result.status !== 'success') {
+                      throw new Error(result.message || 'Unknown error from server');
+                    }
                     
                     showToast("ההזמנה נשמרה בהצלחה!", "success");
                     
