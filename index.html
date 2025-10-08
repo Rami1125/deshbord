@@ -124,11 +124,6 @@
         }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--white-color); box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 10px 0; border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 1000; }
-        .nav-button { background: none; border: none; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 0.75rem; font-family: 'Rubik', sans-serif; transition: color 0.2s ease, transform 0.2s ease; flex-grow: 1; }
-        .nav-button i { font-size: 1.5rem; }
-        .nav-button.active { color: var(--primary-color); transform: translateY(-3px); }
-        .nav-button.special { transform: translateY(-20px); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--white-color); width: 60px; height: 60px; border-radius: 50%; box-shadow: var(--shadow); flex-grow: 0; }
-        
         /* Add other styles as needed */
     </style>
 </head>
@@ -174,7 +169,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxt-Htl504dhDTN1cFZqw1foyKucz74Mz0v2Hy8tV85X0dtGUzLmnJ_spCFerv4O7wc/exec';
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRBPdPzYyWbjACoZNWVZ8im8_0MEaznMB5ShtDEjIoSTgJxfbduQ1b2cQi5tMBxxv8/exec';
 
             // --- PWA SETUP ---
             function initializePWA() {
@@ -205,14 +200,12 @@
                 } catch (error) {
                     console.error('Error fetching data from script:', error);
                     document.getElementById('ali-timeline').innerHTML = '<p style="color:red;">לא ניתן היה לטעון נתונים. ודא שפרסמת את הסקריפט מחדש.</p>';
-                    document.getElementById('hakmat-timeline').innerHTML = '';
                 }
             }
 
             function createOrderCard(order) {
                 const card = document.createElement('div');
                 card.className = 'order-card';
-                // This is a simplified version, you can add all the details like before
                 card.innerHTML = `<div class="card-header"><span class="customer-name">${order.customer}</span><span class="order-time">${order.time}</span></div>`;
                 return card;
             }
