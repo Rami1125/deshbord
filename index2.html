@@ -1,330 +1,735 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ח.סבן — סידור עבודה יומי (PWA)</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f172a">
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-  <style>
-    :root{--bg:#0b1220;--card:#0f172a;--accent:#06b6d4;--muted:#94a3b8;--glass: rgba(255,255,255,0.04)}
-    html,body{height:100%;margin:0;font-family:'Rubik',sans-serif;background:linear-gradient(180deg,#071024 0%, #081729 100%);color:#e6eef5}
-    header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:transparent}
-    .logo{display:flex;align-items:center;gap:10px}
-    .logo img{width:44px;height:44px;border-radius:8px;background:var(--glass);padding:6px}
-    h1{font-size:18px;margin:0}
-    main{padding:12px}
-    .controls{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-    .btn{background:linear-gradient(90deg,var(--accent),#0ea5a9);border:none;padding:8px 12px;border-radius:8px;color:#041022;font-weight:600;cursor:pointer}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.4);}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:880px){.grid{grid-template-columns:1fr 360px}}
-    .orders-list{display:flex;flex-direction:column;gap:8px}
-    .order{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid rgba(255,255,255,0.03)}
-    .order .meta{display:flex;flex-direction:column}
-    .order .time{font-weight:700}
-    .timeline{height:420px;overflow:auto;padding:6px;border-radius:10px}
-    .timeline-grid{position:relative;height:100%;border-radius:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .slot{height:48px;border-bottom:1px dashed rgba(255,255,255,0.02);display:flex;align-items:center;padding:6px;gap:8px}
-    .card-item{position:absolute;padding:8px;border-radius:8px;background:linear-gradient(90deg,#08303b,#064e57);min-width:160px;color:white;box-shadow:0 8px 20px rgba(2,6,23,0.6);cursor:grab}
-    .card-item.dragging{opacity:0.85;cursor:grabbing}
-    .pulse{animation:pulse 1s infinite}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,0.06)}50%{box-shadow:0 0 0 10px rgba(255,255,255,0.00)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0.06)}}
-    .logs{max-height:320px;overflow:auto}
-    .loader{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.12);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .status{color:var(--muted);font-size:13px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>📋 דוח בוקר - זכוכית מתקדמת</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4587de">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- External Libraries & Fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+    <!-- OneSignal SDK for Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+          safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+
+    <style>
+        /* General styling for the application */
+        :root {
+            --primary-color: #87CEEB; /* Sky Blue - Light Blue */
+            --secondary-color: #4587de; /* Light Blue - Slightly lighter */
+            --dark-color: #2C3E50; /* Dark blue-gray for strong text contrast */
+            --light-color: #F8F8F8; /* Off-white */
+            --accent-color: #E74C3C; /* Red for alerts/accents */
+            --text-color: #333; /* Dark text */
+            --shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+            --card-bg: rgba(255, 255, 255, 0.9); /* More opaque white for cards */
+            --modal-bg: rgba(255, 255, 255, 0.95); /* Almost opaque white for modals */
+            --overlay-bg: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay for modals */
+            --glass-bg: rgba(255, 255, 255, 0.8); /* More opaque glass effect */
+        }
+        
+        html, body {
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh */
+        }
+
+        body {
+            font-family: 'Rubik', Arial, sans-serif;
+            text-align: center;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Full page background image with transparency */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0; /* Initially hidden, will be faded in */
+            z-index: -1;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        body.loaded::before {
+            opacity: 0.7; /* Fade in after splash screen */
+        }
+        
+        /* Splash Screen Styling */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        #splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        #splash-screen img {
+            width: 150px;
+            height: 150px;
+            border-radius: 20%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        #splash-screen .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0,0,0,0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+
+        /* App container */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 0;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            border-radius: 0 0 30px 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 80px 15px 80px 15px; /* Top padding for header, bottom for nav */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            position: relative;
+        }
+        
+        /* Page transition styling */
+        .page-content {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            position: absolute;
+            width: calc(100% - 30px); /* Account for parent padding */
+            top: 80px;
+            right: 15px;
+            padding-bottom: 80px;
+        }
+
+        .page-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+            top: 0;
+            right: 0;
+        }
+        
+        /* The rest of your styles are excellent and have been kept, with minor tweaks for mobile feel */
+        /* Driver section title, order cards, modals, summary cards etc. */
+
+        .driver-section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 30px 0 25px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            background-color: var(--light-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .driver-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 10px 0;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .order-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 15px;
+            text-align: right;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .order-card.ali { background: linear-gradient(135deg, rgba(173, 216, 230, 0.8), rgba(135, 206, 235, 0.8)); }
+        .order-card.hakmat { background: linear-gradient(135deg, rgba(224, 242, 241, 0.8), rgba(178, 235, 242, 0.8)); }
+
+        .order-time {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            padding-bottom: 10px;
+        }
+        .order-details p {
+            margin: 4px 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .order-details i {
+            margin-top: 3px;
+        }
+        .order-details strong {
+             min-width: 70px;
+        }
+
+        .share-button {
+            background-color: #25D366; /* WhatsApp green */
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 90%;
+            max-width: 300px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .share-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 15px;
+            transition: transform 0.3s ease;
+        }
+        .summary-card:hover { transform: translateY(-5px); }
+        .summary-card h3 { font-size: 1rem; margin-top: 0; }
+        .summary-count { font-size: 2.5rem; font-weight: 700; color: var(--dark-color); }
+        
+        .chart-card {
+            grid-column: 1 / -1; /* Full width */
+            padding: 15px;
+        }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg); display: flex; justify-content: center;
+            align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: var(--modal-bg); padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 90vw; width: 100%;
+            position: relative; transform: scale(0.9); transition: transform 0.3s ease;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-close-button {
+            position: absolute; top: 15px; left: 15px; background: var(--accent-color);
+            color: white; border: none; border-radius: 50%; width: 35px; height: 35px;
+            font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center;
+            align-items: center;
+        }
+        
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px 0;
+            z-index: 999;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .nav-button {
+            background-color: transparent;
+            border: none;
+            color: #888;
+            padding: 8px 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .nav-button.active {
+            color: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+
+        .nav-button i {
+            font-size: 1.3rem;
+        }
+
+        .nav-button .button-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        
+        .nav-button.active .button-avatar {
+             border-color: var(--secondary-color);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            padding: 10px 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .nav-button.warehouse-button.active .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
+        }
+        
+        .dropdown-item {
+            padding: 10px 15px; color: var(--text-color);
+            cursor: pointer; transition: background-color 0.2s ease;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .dropdown-item:hover { background-color: #f0f0f0; }
+
+    </style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect rx='10' width='64' height='64' fill='%2306b6d4'/><text x='50%' y='55%' text-anchor='middle' font-size='28' fill='white' font-family='Rubik'>חס</text></svg>" alt="logo">
-      <div>
-        <h1>ח.סבן — סידור עבודה יומי</h1>
-        <div class="status" id="last-updated">טען טרם הריצה</div>
-      </div>
+    
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg" alt="Logo">
+        <div class="spinner"></div>
     </div>
-    <div style="flex:1"></div>
-    <button class="btn" id="btn-refresh">רענון ידני</button>
-  </header>
-  <main>
-    <div class="grid">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
-          <strong>הזמנות היום</strong>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div id="loader" style="display:none" class="loader"></div>
-            <div class="status" id="status-text">—</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-          <div style="flex:1;min-width:220px" class="card">
-            <strong>רשימה מהירה</strong>
-            <div class="orders-list" id="orders-list"></div>
-          </div>
-          <div style="flex:2;min-width:320px" class="card">
-            <strong>תכנון יומי (ציר זמן)</strong>
-            <div class="timeline" id="timeline">
-              <div class="timeline-grid" id="timeline-grid"></div>
+    
+    <div class="app-container">
+        <header class="header">
+            <h1>🚛 דוח בוקר</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Main Page Content -->
+            <div id="mainPage" class="page-content">
+                <!-- Summary cards, charts and timelines will be rendered here -->
+                <div class="summary-grid">
+                    <div class="summary-card"><h3><i class="fas fa-truck"></i> עלי</h3><div class="summary-count" id="aliOrderCount">0</div></div>
+                    <div class="summary-card"><h3><i class="fas fa-truck"></i> חכמת</h3><div class="summary-count" id="hakmatOrderCount">0</div></div>
+                    <div class="summary-card"><h3><i class="fas fa-warehouse"></i> מחסן</h3><div class="summary-count" id="totalWarehouseOrderCount">0</div></div>
+                </div>
+                 <div class="chart-card summary-card">
+                    <h3><i class="fas fa-chart-bar"></i> הזמנות בוקר (06:00-09:00)</h3>
+                    <div class="chart-container" style="height:250px"><canvas id="morningOrdersChart"></canvas></div>
+                </div>
+                 <div class="driver-section-title"><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Avatar for Ali" class="driver-avatar">נהג: עלי</div>
+                <div id="aliTimeline" class="timeline-grid"></div>
+                <div class="driver-section-title"><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Avatar for Hakmat" class="driver-avatar">נהג: חכמת</div>
+                <div id="hakmatTimeline" class="timeline-grid"></div>
+                 <button class="share-button" onclick="showPasswordModal()"><i class="fab fa-whatsapp"></i> שתף לווצאפ</button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <strong>יומן שינויים (אחרונים)</strong>
-        <div class="logs" id="logs"></div>
-        <hr style="opacity:0.06;margin:12px 0">
-        <strong>הגדרות</strong>
-        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-          <label> OneSignal App ID: <input id="onesignal-id" value="acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3" style="width:100%"></label>
-          <label> Apps Script URL: <input id="apps-url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%"></label>
-          <button id="save-settings" class="btn">שמור הגדרות</button>
-        </div>
-      </div>
+             <!-- Other pages (Hakmat, Ali, Warehouse, etc.) -->
+            <div id="hakmatPage" class="page-content"></div>
+            <div id="aliPage" class="page-content"></div>
+            <div id="warehousePage" class="page-content"></div>
+            <div id="truckDeliveryPage" class="page-content"></div>
+            <div id="craneDeliveryPage" class="page-content"></div>
+            <div id="websiteAccessPage" class="page-content"></div>
+        </main>
+        
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+             <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button"><i class="fas fa-home"></i><span>ראשי</span></button>
+            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button"><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Hakmat" class="button-avatar"><span>חכמת</span></button>
+            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button"><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Ali" class="button-avatar"><span>עלי</span></button>
+            <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
+                <i class="fas fa-boxes"></i><span>מחסן</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> מחסן התלמיד</div>
+                    <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> מחסן החרש</div>
+                </div>
+            </button>
+             <!-- More nav buttons can be added here if needed -->
+        </nav>
     </div>
-  </main>
 
-  <script>
-    // Configuration and state
-    const cfg = {
-      appsUrl: localStorage.getItem('appsUrl') || '',
-      onesignalId: localStorage.getItem('onesignalId') || 'acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3',
-      pollInterval: 60_000 // 1 minute
-    };
+    <!-- Modals (Order Details, City Map, Password) -->
+    <div id="orderDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
+            <h2 id="modalTitle">פרטי הזמנה</h2>
+            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
+            <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
+            <p><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> <span id="modalOperationType"></span></p>
+            <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+        </div>
+    </div>
+     <div id="passwordModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
+            <h2>הכנס סיסמה</h2>
+            <input type="password" id="passwordInput" placeholder="הכנס סיסמה" style="width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center;">
+            <button onclick="checkPassword()" style="padding: 10px 20px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white;">אשר</button>
+            <p id="passwordError" style="color: var(--accent-color); display: none;">סיסמה שגויה.</p>
+        </div>
+    </div>
 
-    document.getElementById('onesignal-id').value = cfg.onesignalId;
-    document.getElementById('apps-url').value = cfg.appsUrl;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- PWA Setup ---
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => console.log('Service Worker registered successfully with scope:', registration.scope))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            }
 
-    document.getElementById('save-settings').addEventListener('click', ()=>{
-      cfg.onesignalId = document.getElementById('onesignal-id').value.trim();
-      cfg.appsUrl = document.getElementById('apps-url').value.trim();
-      localStorage.setItem('onesignalId', cfg.onesignalId);
-      localStorage.setItem('appsUrl', cfg.appsUrl);
-      alert('ההגדרות נשמרו');
-      initOneSignal();
-      fetchAndRender();
-    })
+            // --- App Initialization ---
+            initializeApp();
 
-    document.getElementById('btn-refresh').addEventListener('click', ()=> fetchAndRender());
-
-    // Utilities
-    function showLoader(show, text){
-      document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
-      document.getElementById('status-text').textContent = text || '';
-    }
-
-    function formatTimeHM(t){
-      // t expected as "HH:MM"
-      return t;
-    }
-
-    // Fetching from Apps Script
-    async function fetchAll(){
-      if(!cfg.appsUrl) throw new Error('Apps Script URL לא מוגדר');
-      const url = new URL(cfg.appsUrl);
-      url.searchParams.set('action', 'getAllData');
-      const res = await fetch(url.toString(), {method:'GET'});
-      if(!res.ok) throw new Error('Fetch failed: '+res.status);
-      return res.json();
-    }
-
-    async function fetchLogs(){
-      if(!cfg.appsUrl) throw new Error('Apps Script URL לא מוגדר');
-      const url = new URL(cfg.appsUrl);
-      url.searchParams.set('action', 'getLogs');
-      const res = await fetch(url.toString(), {method:'GET'});
-      if(!res.ok) throw new Error('Fetch logs failed');
-      return res.json();
-    }
-
-    async function postUpdateOrderTime(orderId, newTime){
-      const res = await fetch(cfg.appsUrl, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({action:'updateOrderTime', orderId, newTime})
-      });
-      return res.json();
-    }
-
-    // Rendering
-    let orders = [];
-    function renderList(){
-      const container = document.getElementById('orders-list');
-      container.innerHTML = '';
-      orders.forEach(o=>{
-        const el = document.createElement('div'); el.className='order';
-        el.innerHTML = `<div class='meta'><div>${o.נהג || '—'} • ${o.לקוח || '—'}</div><div class='time'>${o.שעה || '—'}</div></div><div style='min-width:80px;text-align:left;'>${o.מחסן||''}</div>`;
-        container.appendChild(el);
-      })
-    }
-
-    // Timeline implementation (06:00 - 18:00)
-    const timelineGrid = document.getElementById('timeline-grid');
-    function buildTimeline(){
-      timelineGrid.innerHTML = '';
-      const startHour = 6, endHour = 18; const slotHeight=48; // px per slot
-      for(let h=startHour; h<endHour; h++){
-        const slot = document.createElement('div'); slot.className='slot';
-        slot.dataset.hour = h; slot.style.height = slotHeight+'px';
-        slot.textContent = (h<10? '0'+h:h)+':00';
-        timelineGrid.appendChild(slot);
-      }
-    }
-
-    function renderTimeline(){
-      buildTimeline();
-      // place cards
-      orders.forEach((o,idx)=>{
-        if(!o.שעה) return;
-        const [hh,mm] = (o.שעה||'').split(':');
-        if(!hh) return;
-        const startHour = 6; const slotHeight=48;
-        const top = ((Number(hh)-startHour) * slotHeight) + (Number(mm||0)/60)*slotHeight;
-        const card = document.createElement('div'); card.className='card-item';
-        card.style.top = top + 'px';
-        card.style.left = (20 + (idx%2)*180) + 'px';
-        card.style.width = '220px';
-        card.dataset.orderId = o.מזהה || o.id || o['מזהה ייחודי'] || '';
-        card.innerHTML = `<div style='font-weight:700'>${o.לקוח||''}</div><div style='font-size:13px;margin-top:6px'>${o.כתובת||''}</div><div style='margin-top:8px;font-size:12px'>${o.שעה||''}</div>`;
-        enableDrag(card);
-        timelineGrid.appendChild(card);
-      })
-    }
-
-    // Drag & Drop mechanics (pointer events simple)
-    function enableDrag(card){
-      let offsetY=0, startY=0; card.addEventListener('pointerdown', e=>{
-        card.setPointerCapture(e.pointerId);
-        card.classList.add('dragging');
-        startY = e.clientY; offsetY = parseFloat(card.style.top || 0);
-        function move(ev){
-          const dy = ev.clientY - startY;
-          card.style.top = (offsetY + dy) + 'px';
-        }
-        function up(ev){
-          card.releasePointerCapture(e.pointerId);
-          card.classList.remove('dragging');
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', up);
-          // compute new time
-          const top = parseFloat(card.style.top);
-          const slotHeight = 48; const startHour = 6;
-          const hourFloat = top/slotHeight + startHour;
-          const hh = Math.floor(hourFloat);
-          const mm = Math.round((hourFloat - hh)*60/5)*5; // round to 5 min
-          const newTime = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
-          // send update
-          postUpdateOrderTime(card.dataset.orderId, newTime)
-            .then(r=>{
-              if(r && r.success){
-                speakReminder(`הזמנה עבור ${r.client||''} עודכנה לשעה ${newTime}`);
-                fetchAndRender();
-              } else {
-                alert('עדכון נכשל'); fetchAndRender();
-              }
-            }).catch(err=>{alert('שגיאה בעדכון');fetchAndRender()});
-        }
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', up);
-      })
-    }
-
-    // Polling and orchestration
-    let pollTimer = null;
-    async function fetchAndRender(){
-      showLoader(true,'טוען...');
-      try{
-        const data = await fetchAll();
-        orders = (data && data.orders) || [];
-        renderList();
-        renderTimeline();
-        document.getElementById('last-updated').textContent = 'עודכן: ' + new Date().toLocaleString('he-IL');
-        const logs = await fetchLogs();
-        renderLogs(logs);
-        checkReminders();
-        showLoader(false,'עודכן');
-      }catch(err){
-        console.error(err);
-        showLoader(false,'שגיאה בטעינה');
-        document.getElementById('status-text').textContent = 'אירעה שגיאה';
-      }
-    }
-
-    function renderLogs(logs){
-      const el = document.getElementById('logs'); el.innerHTML='';
-      (logs||[]).forEach(l=>{
-        const d = document.createElement('div'); d.style.padding='8px'; d.style.borderBottom='1px solid rgba(255,255,255,0.03)';
-        d.innerHTML = `<div style='font-size:13px;color:var(--muted)'>${l[0]||''}</div><div style='font-weight:600'>${l[2]||''}</div>`;
-        el.appendChild(d);
-      })
-    }
-
-    // Reminders: visual and speech
-    function checkReminders(){
-      const now = new Date();
-      orders.forEach(o=>{
-        if(!o.שעה) return;
-        const [hh,mm]=o.שעה.split(':').map(Number);
-        const orderDate = new Date(); orderDate.setHours(hh,mm,0,0);
-        const diff = (orderDate - now)/60000; // minutes
-        const cardEl = document.querySelector(`[data-order-id='${o.מזהה||o.id||o['מזהה ייחודי']}']`);
-        if(cardEl){
-          cardEl.classList.remove('pulse');
-          if(diff<=15 && diff>=0){
-            cardEl.classList.add('pulse');
-            // speak
-            speakReminder(`תזכורת: הזמנה עבור ${o.לקוח||''} בשעה ${o.שעה}`);
-          }
-        }
-      })
-    }
-
-    // Speech
-    function speakReminder(text){
-      if(!('speechSynthesis' in window)) return;
-      const ut = new SpeechSynthesisUtterance(text);
-      ut.lang = 'he-IL';
-      speechSynthesis.cancel(); // prevent overlap
-      speechSynthesis.speak(ut);
-    }
-
-    // Initialize OneSignal (lightweight) — only loads SDK after user saved settings
-    function initOneSignal(){
-      const id = cfg.onesignalId;
-      if(!id) return;
-      // minimal integration: load OneSignal SDK script and init
-      if(window.OneSignalInitialized) return;
-      const s = document.createElement('script'); s.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.js'; s.async=true;
-      s.onload = ()=>{
-        window.OneSignal = window.OneSignal || [];
-        OneSignal.push(()=>{
-          OneSignal.init({appId: id, notifyButton:{enable:false}});
+            // Hide splash screen after a delay
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden');
+                document.body.classList.add('loaded');
+            }, 2500);
         });
-        window.OneSignalInitialized = true;
-      };
-      document.head.appendChild(s);
-    }
+        
+        // --- DATA AND LOGIC ---
+        
+        const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU';
+        // חשוב: יש להחליף את מפתח ה-API במפתח תקין מחשבון Google Cloud שלך
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI';
+        const aliRange = 'Sheet2!B2:H';
+        const hakmatRange = 'Sheet1!B2:H';
+        const WHATSAPP_PASSWORD = "1125";
 
-    // Boot
-    (function boot(){
-      try{ cfg.appsUrl = localStorage.getItem('appsUrl') || cfg.appsUrl; document.getElementById('apps-url').value = cfg.appsUrl;}catch(e){}
-      initOneSignal();
-      fetchAndRender();
-      if(pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(fetchAndRender, cfg.pollInterval);
-    })();
+        let allAliOrders = [];
+        let allHakmatOrders = [];
+        let morningChartInstance = null;
+        
+        async function initializeApp() {
+            allAliOrders = await fetchOrdersData(aliRange);
+            allHakmatOrders = await fetchOrdersData(hakmatRange);
 
-    // PWA: service worker register
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js').then(()=>console.log('sw registered')).catch(()=>console.log('sw fail'));
-    }
+            // Initial render on the main page
+            renderOrders(allAliOrders, "aliTimeline", "עלי");
+            renderOrders(allHakmatOrders, "hakmatTimeline", "חכמת");
+            updateSummaryCounts();
+            renderMorningChart();
+            setupNavListeners();
+            activatePageAndNav('mainPage', 'main-nav-button');
+        }
 
-    // small helper for demo: allow file drop to change appsUrl (not necessary in prod)
-  </script>
+        async function fetchOrdersData(range) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.values && data.values.length > 0) {
+                    return data.values
+                        .filter(row => row.length >= 7 && row[1])
+                        .map(row => ({ 
+                            date: row[0], time: row[1], warehouse: row[2], status: row[3], 
+                            customer: row[4], address: row[5], operationType: row[6] 
+                        }))
+                        .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                }
+                return [];
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("שגיאה בטעינת הנתונים. אנא בדוק את חיבור האינטרנט שלך.");
+                return [];
+            }
+        }
+        
+        function parseTimeForSorting(timeStr) {
+            if (!timeStr) return new Date(0);
+            if (timeStr.includes("ביחד")) {
+                const date = new Date();
+                date.setHours(7, 0, 0, 0); // Treat "ביחד" as a morning order
+                return date;
+            }
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
+
+        function renderOrders(orders, containerId, driverName = null) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
+            if (!orders || orders.length === 0) {
+                container.innerHTML = "<p>אין הזמנות זמינות.</p>";
+                return;
+            }
+            orders.forEach(order => {
+                const card = document.createElement("div");
+                card.className = `order-card ${driverName || ''}`.trim();
+                card.onclick = () => showOrderDetails(order);
+                card.innerHTML = `
+                    <div class="order-time"><i class="far fa-clock"></i> ${order.time || 'N/A'}</div>
+                    <div class="order-details">
+                        <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || 'N/A'}</p>
+                        <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${order.address || 'N/A'}</p>
+                        <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || 'N/A'}</p>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+        
+        function updateSummaryCounts() {
+            document.getElementById('aliOrderCount').textContent = allAliOrders.length;
+            document.getElementById('hakmatOrderCount').textContent = allHakmatOrders.length;
+            const allOrders = [...allAliOrders, ...allHakmatOrders];
+            const totalWarehouseOrders = allOrders.filter(o => o.warehouse && o.warehouse.trim() !== '').length;
+            document.getElementById('totalWarehouseOrderCount').textContent = totalWarehouseOrders;
+        }
+
+        function renderMorningChart() {
+             const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+             const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+            
+             const aliMorning = allAliOrders.filter(o => {
+                 const orderTime = parseTimeForSorting(o.time);
+                 return (orderTime >= sixAM && orderTime <= nineAM) || o.time.includes("ביחד");
+             }).length;
+
+             const hakmatMorning = allHakmatOrders.filter(o => {
+                 const orderTime = parseTimeForSorting(o.time);
+                 return (orderTime >= sixAM && orderTime <= nineAM) || o.time.includes("ביחד");
+             }).length;
+
+            const ctx = document.getElementById('morningOrdersChart').getContext('2d');
+            if(morningChartInstance) morningChartInstance.destroy();
+            morningChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['עלי', 'חכמת'],
+                    datasets: [{
+                        label: 'הזמנות בוקר',
+                        data: [aliMorning, hakmatMorning],
+                        backgroundColor: ['rgba(135, 206, 235, 0.8)', 'rgba(178, 235, 242, 0.8)'],
+                        borderColor: ['#87CEEB', '#B2EBF2'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+        
+        function activatePageAndNav(pageId, navId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+            
+            const page = document.getElementById(pageId);
+            if(page) page.classList.add('active');
+
+            document.querySelectorAll(`[data-nav-id="${navId}"]`).forEach(b => b.classList.add('active'));
+
+            // Special rendering for dynamic pages
+            if(pageId === 'hakmatPage' || pageId === 'aliPage'){
+                 const orders = (pageId === 'hakmatPage') ? allHakmatOrders : allAliOrders;
+                 const driverName = (pageId === 'hakmatPage') ? 'חכמת' : 'עלי';
+                 const avatar = (pageId === 'hakmatPage') ? 'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg' : 'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg';
+                 page.innerHTML = `<div class="driver-section-title"><img src="${avatar}" alt="${driverName}" class="driver-avatar">נהג: ${driverName}</div><div id="${driverName}OnlyTimeline" class="timeline-grid"></div>`;
+                 renderOrders(orders, `${driverName}OnlyTimeline`, driverName);
+            }
+        }
+
+        function setupNavListeners() {
+            document.querySelectorAll('.nav-button:not(.warehouse-button)').forEach(button => {
+                button.onclick = () => {
+                    activatePageAndNav(button.dataset.pageId, button.dataset.navId);
+                };
+            });
+
+            document.querySelector('.nav-button.warehouse-button').onclick = (e) => {
+                 e.currentTarget.classList.toggle('active');
+            };
+            
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = item.dataset.warehouseType;
+                    const page = document.getElementById('warehousePage');
+                    activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                    const filtered = [...allAliOrders, ...allHakmatOrders].filter(o => o.warehouse && o.warehouse.includes(type));
+                    page.innerHTML = `<div class="driver-section-title"><i class="fas fa-boxes"></i>מחסן: ${type}</div><div id="warehouseTimeline" class="timeline-grid"></div>`;
+                    renderOrders(filtered, 'warehouseTimeline');
+                    document.querySelector('.nav-button.warehouse-button').classList.remove('active');
+                };
+            });
+        }
+        
+        function showOrderDetails(order) {
+            document.getElementById('modalDate').textContent = order.date || 'N/A';
+            document.getElementById('modalTime').textContent = order.time || 'N/A';
+            document.getElementById('modalCustomer').textContent = order.customer || 'N/A';
+            document.getElementById('modalAddress').textContent = order.address || 'N/A';
+            document.getElementById('modalWarehouse').textContent = order.warehouse || 'N/A';
+            document.getElementById('modalOperationType').textContent = order.operationType || 'N/A';
+            document.getElementById('modalStatus').textContent = order.status || 'N/A';
+            document.getElementById('orderDetailsModal').classList.add('visible');
+        }
+        
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('visible'); }
+        function showPasswordModal() { document.getElementById('passwordModal').classList.add('visible'); }
+
+        function checkPassword() {
+            if (document.getElementById('passwordInput').value === WHATSAPP_PASSWORD) {
+                closeModal('passwordModal');
+                shareToWhatsApp();
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+            }
+        }
+        
+        function shareToWhatsApp() {
+            const formatForWhatsApp = (orders, name) => {
+                if (!orders || orders.length === 0) return `*${name}*\nאין הזמנות.`;
+                let msg = `*${name}*\n`;
+                orders.forEach(o => {
+                    msg += `⏰ ${o.time || ''} | 👤 ${o.customer || ''} | 📍 ${o.address || ''} | 🏠 ${o.warehouse || ''}\n`;
+                });
+                return msg;
+            };
+
+            const aliMsg = formatForWhatsApp(allAliOrders, "עלי");
+            const hakmatMsg = formatForWhatsApp(allHakmatOrders, "חכמת");
+            const fullMessage = `*📋 דוח בוקר - סיכום*\n\n${aliMsg}\n\n${hakmatMsg}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
+            window.open(url, "_blank");
+        }
+    </script>
 </body>
 </html>
+
