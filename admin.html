@@ -3,295 +3,452 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ניהול הזמנות CRM</title>
+    <title>CRM | לוח שיבוצים</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
-    <!-- LeafletJS for Interactive Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <style>
         :root {
-            --primary-color: #87CEEB; --secondary-color: #4587de; --dark-color: #2C3E50;
-            --light-color: #F8F8F8; --accent-color: #E74C3C; --text-color: #333;
-            --success-color: #2ecc71; --warning-color: #f39c12; --bg-color: #f4f7fa;
-            --sidebar-bg: #ffffff; --sidebar-width: 260px;
+            --bg-color: #f0f2f5;
+            --sidebar-bg: #1e293b; /* Dark Blue/Gray */
+            --header-bg: #ffffff;
+            --card-bg: #ffffff;
+            --primary-color: #3b82f6; /* Vivid Blue */
+            --secondary-color: #a78bfa; /* Lavender */
+            --text-color: #334155;
+            --text-light: #94a3b8;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --font-main: 'Rubik', sans-serif;
         }
-        body {
-            font-family: 'Rubik', sans-serif; background-color: var(--bg-color); margin: 0;
-            color: var(--text-color); display: flex;
-        }
-        .crm-container { display: flex; width: 100%; height: 100vh; }
 
-        /* --- Sidebar Navigation --- */
-        .sidebar {
-            width: var(--sidebar-width); background-color: var(--sidebar-bg);
-            box-shadow: 4px 0 20px rgba(0,0,0,0.05); display: flex; flex-direction: column;
-            padding: 20px 0; z-index: 100;
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            margin: 0;
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
         }
-        .sidebar-header { text-align: center; padding: 0 20px 20px 20px; border-bottom: 1px solid #eee; }
-        .sidebar-header h1 { font-size: 1.8rem; color: var(--dark-color); margin: 0; }
-        .sidebar nav { flex-grow: 1; margin-top: 20px; }
-        .sidebar nav a {
-            display: flex; align-items: center; padding: 15px 25px; color: #555;
-            text-decoration: none; font-size: 1.1rem; font-weight: 500;
-            transition: all 0.3s; border-right: 4px solid transparent;
+
+        .dashboard-container {
+            display: flex;
+            height: 100%;
         }
-        .sidebar nav a:hover { background-color: #f8f9fa; color: var(--secondary-color); }
-        .sidebar nav a.active {
-            background-color: #eef5ff; color: var(--secondary-color);
-            border-right-color: var(--secondary-color);
-        }
-        .sidebar nav a i { margin-left: 15px; width: 20px; }
         
         /* --- Main Content Area --- */
         .main-content {
-            flex-grow: 1; padding: 30px; overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
-        h2 { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-top: 0; }
+        /* --- Header --- */
+        .header {
+            background-color: var(--header-bg);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .header-title p {
+            margin: 0;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+        .header-actions .date-picker { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; }
+        .header-actions button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-        /* --- Orders & Customers Table View --- */
-        .table-toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .search-box input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 250px; }
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
-        .data-table th { text-align: right; padding: 12px; color: #777; font-weight: 500; }
-        .data-table td { background: #fff; padding: 15px; vertical-align: middle; }
-        .data-table tr:not(:first-child) { box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .data-table td:first-child { border-radius: 0 8px 8px 0; }
-        .data-table td:last-child { border-radius: 8px 0 0 8px; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: 500; font-size: 0.8rem; }
-        .status-חדשה { background-color: #e0f7fa; color: #00796b; }
-        .status-בטיפול { background-color: #fff9c4; color: #f57f17; }
-        .status-הושלם { background-color: #e8f5e9; color: #388e3c; }
-        .action-buttons button { background: none; border: none; cursor: pointer; color: #888; font-size: 1.1rem; padding: 5px; }
-        .action-buttons button:hover { color: var(--secondary-color); }
+        /* --- Scheduling Board --- */
+        .scheduling-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        .driver-column {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .driver-header {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .driver-header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-left: 15px;
+        }
+        .driver-info h3 { margin: 0; font-size: 1.2rem; }
+        .driver-stats { display: flex; gap: 15px; margin-top: 4px; font-size: 0.8rem; color: var(--text-light); }
+        .timeline {
+            overflow-y: auto;
+            padding: 10px;
+        }
 
-        /* --- Order Form View --- */
-        .form-container { display: grid; grid-template-columns: 1fr 300px; gap: 30px; }
-        .progress-bar-container { background: #eee; border-radius: 20px; overflow: hidden; margin-bottom: 20px; }
-        .progress-bar {
-            height: 10px; width: 0%; background: linear-gradient(90deg, var(--primary-color), var(--success-color));
-            transition: width 0.5s;
+        .time-slot {
+            display: flex;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background-color 0.2s;
         }
-        .form-group label { font-weight: 500; color: #555; display: block; margin-bottom: 8px; }
-        input, select {
-            width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ddd;
-            border-radius: 8px; box-sizing: border-box; background: #fafafa; color: var(--text-color); /* FIX: Ensure text color is not white */
+        .time-label {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            background-color: #f8fafc;
+            color: var(--text-light);
+            padding: 5px;
+            font-size: 0.7rem;
+            border-radius: 0 8px 8px 0;
+            text-align: center;
         }
-        #map-container { height: 200px; border-radius: 12px; background: #eee; margin-bottom: 15px; }
-        .insights-card { background: #eef5ff; padding: 15px; border-radius: 12px; }
-        .insight { display: flex; align-items: center; margin-bottom: 10px; }
-        .insight i { color: var(--secondary-color); font-size: 1.2rem; margin-left: 10px; }
-        
-        /* --- Notifications View --- */
-        .notification-templates { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .notification-card {
-            background: white; border-radius: 12px; padding: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+        .drop-zone {
+            min-height: 60px;
+            flex-grow: 1;
+            padding: 5px;
         }
-        .notification-card h3 { margin-top: 0; }
-        .notification-card p { font-size: 0.9rem; color: #666; }
-        .notification-card button { width: 100%; padding: 12px; font-size: 1rem; }
+        .time-slot.drag-over {
+            background-color: #eef5ff;
+            border-color: var(--primary-color);
+        }
+        .time-slot.load-high { background-color: #fee2e2; }
+        .time-slot.load-medium { background-color: #fef3c7; }
+
+        .order-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f4f7fa 100%);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
+        }
+        .order-card.dragging {
+            opacity: 0.5;
+            transform: scale(1.02);
+        }
+        .order-card-customer { font-weight: 500; font-size: 0.9rem; }
+        .order-card-address { font-size: 0.8rem; color: #64748b; }
+
+
+        /* --- Modal for Order Form --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: flex; justify-content: center;
+            align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: white; padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 800px;
+            transform: scale(0.95); transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-modal { background:none; border:none; font-size:1.5rem; cursor:pointer; }
     </style>
 </head>
 <body>
-    <div class="crm-container">
-        <aside class="sidebar">
-            <div class="sidebar-header"><h1>CRM ניהול</h1></div>
-            <nav>
-                <a href="#" class="nav-link active" data-view="dashboard-view"><i class="fas fa-list-ul"></i> הזמנות פעילות</a>
-                <a href="#" class="nav-link" data-view="customers-view"><i class="fas fa-users"></i> ניהול לקוחות</a>
-                <a href="#" class="nav-link" data-view="order-form-view"><i class="fas fa-plus-circle"></i> הזמנה חדשה</a>
-                <a href="#" class="nav-link" data-view="notifications-view"><i class="fas fa-bell"></i> מרכז התראות</a>
-            </nav>
-        </aside>
-
+    <div class="dashboard-container">
         <main class="main-content">
-            <!-- Dashboard / Orders Table View -->
-            <section id="dashboard-view" class="view active">
-                <h2><i class="fas fa-list-ul"></i> הזמנות פעילות</h2>
-                <div class="table-toolbar">
-                    <div class="search-box"><input type="text" id="orderSearchInput" placeholder="חיפוש לפי לקוח או כתובת..."></div>
-                    <button id="addNewOrderBtn">הוסף הזמנה חדשה</button>
+            <header class="header">
+                <div class="header-title">
+                    <h1>לוח שיבוצים</h1>
+                    <p id="currentDateTime"></p>
                 </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table orders-table">
-                        <thead>
-                            <tr>
-                                <th>לקוח</th><th>כתובת</th><th>נהג</th><th>שעה</th><th>סטטוס</th><th>פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-tbody"></tbody>
-                    </table>
+                <div class="header-actions">
+                    <input type="date" class="date-picker" id="datePicker">
+                    <button id="addNewOrderBtn"><i class="fas fa-plus"></i> הוסף הזמנה</button>
                 </div>
-            </section>
-            
-            <!-- Customers View -->
-            <section id="customers-view" class="view">
-                <h2><i class="fas fa-users"></i> ניהול לקוחות</h2>
-                 <div class="table-toolbar">
-                    <div class="search-box"><input type="text" id="customerSearchInput" placeholder="חיפוש לקוח..."></div>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>שם לקוח</th><th>כתובת אחרונה</th><th>מספר הזמנות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="customers-tbody"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Create/Edit Order Form View -->
-            <section id="order-form-view" class="view">
-                <h2 id="form-title"><i class="fas fa-edit"></i> יצירת הזמנה חדשה</h2>
-                <div class="form-container">
-                    <div class="form-fields">
-                         <form id="createOrderForm">
-                            <input type="hidden" id="orderId">
-                            <div class="form-group"><label for="orderCustomer">לקוח</label><input list="customers-list" id="orderCustomer" required><datalist id="customers-list"></datalist></div>
-                            <div class="form-group"><label for="orderAddress">כתובת אספקה</label><input type="text" id="orderAddress" required></div>
-                            <div class="form-group"><label for="orderCity">עיר</label><select id="orderCity" required><option value="">בחר עיר...</option></select></div>
-                            <div class="form-group"><label for="orderDriver">נהג</label><select id="orderDriver" required><option value="חכמת">חכמת</option><option value="עלי">עלי</option></select></div>
-                            <div class="form-group"><label for="orderDate">תאריך</label><input type="date" id="orderDate" required></div>
-                            <div class="form-group"><label for="orderTime">שעה</label><input type="time" id="orderTime" required></div>
-                            <!-- Add other fields as needed, like warehouse -->
-                            <div class="form-group"><label for="orderWarehouse">מחסן</label><select id="orderWarehouse" required><option value="התלמיד">התלמיד</option><option value="החרש">החרש</option></select></div>
-                            <button type="submit" id="submitOrderBtn">שמור הזמנה</button>
-                         </form>
-                    </div>
-                    <div class="form-sidebar">
-                        <h3><i class="fas fa-map-marked-alt"></i> מפה ותובנות</h3>
-                        <div id="map-container"></div>
-                        <div class="insights-card">
-                            <div id="insights-content">
-                                <p>בחר עיר לקבלת תובנות</p>
+            </header>
+            <div class="scheduling-board">
+                <div class="driver-column" id="driver-hakmat">
+                    <div class="driver-header">
+                        <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת">
+                        <div class="driver-info">
+                            <h3>חכמת</h3>
+                            <div class="driver-stats">
+                                <span id="hakmat-orders-count"><strong>0</strong> הזמנות</span>
+                                <span id="hakmat-km-total"><strong>0</strong> ק"מ</span>
                             </div>
                         </div>
                     </div>
+                    <div class="timeline" id="timeline-hakmat"></div>
                 </div>
-            </section>
-
-            <!-- Notifications View -->
-            <section id="notifications-view" class="view">
-                <h2><i class="fas fa-paper-plane"></i> שליחת התראות מהירות</h2>
-                <div class="notification-templates">
-                    <div class="notification-card">
-                        <h3>עיכוב צפוי</h3>
-                        <p>שליחת התראה כללית על עיכובים אפשריים באספקות עקב עומסי תנועה.</p>
-                        <button class="send-notification-btn" data-template="delay_traffic">שלח התראה</button>
+                <div class="driver-column" id="driver-ali">
+                     <div class="driver-header">
+                        <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי">
+                        <div class="driver-info">
+                            <h3>עלי</h3>
+                             <div class="driver-stats">
+                                <span id="ali-orders-count"><strong>0</strong> הזמנות</span>
+                                <span id="ali-km-total"><strong>0</strong> ק"מ</span>
+                            </div>
+                        </div>
                     </div>
+                    <div class="timeline" id="timeline-ali"></div>
                 </div>
-            </section>
+            </div>
         </main>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="form-title">יצירת הזמנה חדשה</h2>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <!-- Reusing the form from previous version inside the modal -->
+             <form id="createOrderForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <input type="hidden" id="orderId">
+                <div class="form-group"><label for="orderCustomer">לקוח</label><input list="customers-list" id="orderCustomer" required><datalist id="customers-list"></datalist></div>
+                <div class="form-group"><label for="orderAddress">כתובת אספקה</label><input type="text" id="orderAddress" required></div>
+                <div class="form-group"><label for="orderCity">עיר</label><select id="orderCity" required><option value="">בחר עיר...</option></select></div>
+                <div class="form-group"><label for="orderDriver">נהג</label><select id="orderDriver" required><option value="חכמת">חכמת</option><option value="עלי">עלי</option></select></div>
+                <div class="form-group"><label for="orderDate">תאריך</label><input type="date" id="orderDate" readonly></div>
+                <div class="form-group"><label for="orderTime">שעה</label><input type="time" id="orderTime" readonly></div>
+                <div class="form-group"><label for="orderWarehouse">מחסן</label><select id="orderWarehouse" required><option value="התלמיד">התלמיד</option><option value="החרש">החרש</option></select></div>
+                <button type="submit" id="submitOrderBtn" style="grid-column: 1 / -1;">שמור הזמנה</button>
+             </form>
+        </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- CRITICAL: USE THE NEW DEPLOYMENT URL ----
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzUeFaV_N2a1G5U-cz5VRepqXuLXWlWy8QqsMkrCjX-czOCzokv9cUzkretMo-YY5JJ/exec';
-    
     let allOrders = [], customersData = [], citiesData = [];
-    let map;
-
-    // --- VIEW MANAGEMENT ---
-    const views = document.querySelectorAll('.view');
-    const navLinks = document.querySelectorAll('.nav-link');
-    function showView(viewId) {
-        views.forEach(v => v.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
-        navLinks.forEach(l => l.classList.toggle('active', l.dataset.view === viewId));
-    }
-    navLinks.forEach(link => link.addEventListener('click', (e) => {
-        e.preventDefault();
-        showView(e.currentTarget.dataset.view);
-    }));
-    document.getElementById('addNewOrderBtn').addEventListener('click', () => {
-        resetForm();
-        showView('order-form-view');
-    });
-
+    
     // --- INITIALIZATION ---
+    function initializeDateTime() {
+        const now = new Date();
+        const datePicker = document.getElementById('datePicker');
+        datePicker.value = now.toISOString().split('T')[0];
+        
+        const update = () => {
+            const d = new Date();
+            document.getElementById('currentDateTime').textContent = d.toLocaleString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        };
+        update();
+        setInterval(update, 60000);
+    }
+    
     async function initializeApp() {
+        initializeDateTime();
+        generateTimeSlots();
+        
         try {
-            [allOrders, customersData, citiesData] = await Promise.all([
-                fetchFromBackend('getActiveOrders'),
+            [customersData, citiesData] = await Promise.all([
                 fetchFromBackend('getCustomers'),
                 fetchFromBackend('getCities')
             ]);
             
-            renderOrdersTable();
-            renderCustomersTable();
             populateFormDatalists();
-            initializeMap();
+            await loadOrdersForDate(document.getElementById('datePicker').value);
+
         } catch (error) {
-            document.body.innerHTML = `<h1>שגיאת טעינה</h1><p>${error.message}</p><p>ודא שקובץ ה-Google Sheet משותף כ-"Anyone with the link can view".</p>`;
+            alert('שגיאת טעינה: ' + error.message);
         }
-    }
-
-    // --- DATA TABLES RENDERING ---
-    function renderOrdersTable() {
-        const tbody = document.getElementById('orders-tbody');
-        const filter = document.getElementById('orderSearchInput').value.toLowerCase();
-        tbody.innerHTML = '<tr><td colspan="6">טוען...</td></tr>';
-        const filteredOrders = allOrders.filter(o => (o['לקוח'] || '').toLowerCase().includes(filter) || (o['כתובת אספקה'] || '').toLowerCase().includes(filter));
         
-        if (filteredOrders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">לא נמצאו הזמנות פעילות.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = filteredOrders.map(order => `
-            <tr>
-                <td><strong>${order['לקוח']}</strong><br><small>${order['חותמת זמן'] ? new Date(order['חותמת זמן']).toLocaleString('he-IL') : ''}</small></td>
-                <td>${order['כתובת אספקה']}</td>
-                <td>${order['נהג']}</td>
-                <td>${order['שעה']}</td>
-                <td><span class="status-badge status-${order['סטטוס']}">${order['סטטוס']}</span></td>
-                <td class="action-buttons">
-                    <button onclick="editOrder('${order['חותמת זמן']}')" title="עריכה"><i class="fas fa-pencil-alt"></i></button>
-                    <button onclick="archiveOrder('${order['חותמת זמן']}')" title="סגירה/ארכוב"><i class="fas fa-archive"></i></button>
-                </td>
-            </tr>
-        `).join('');
+        setupEventListeners();
     }
 
-    function renderCustomersTable() {
-        const tbody = document.getElementById('customers-tbody');
-        const filter = document.getElementById('customerSearchInput').value.toLowerCase();
-        tbody.innerHTML = '<tr><td colspan="3">טוען...</td></tr>';
-        const filteredCustomers = customersData.filter(c => (c['שם לקוח'] || '').toLowerCase().includes(filter));
+    // --- DATA LOADING & RENDERING ---
+    async function loadOrdersForDate(date) {
+        allOrders = await fetchFromBackend('getActiveOrders', { date });
+        renderSchedulingBoard();
+    }
 
-        if(filteredCustomers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3">לא נמצאו לקוחות.</td></tr>';
-            return;
-        }
+    function renderSchedulingBoard() {
+        // Clear existing orders
+        document.querySelectorAll('.order-card').forEach(card => card.remove());
 
-        tbody.innerHTML = filteredCustomers.map(customer => `
-            <tr>
-                <td><strong>${customer['שם לקוח']}</strong></td>
-                <td>${customer['כתובת אחרונה']}</td>
-                <td>${customer['מספר הזמנות']}</td>
-            </tr>
-        `).join('');
+        let stats = {
+            hakmat: { orders: 0, km: 0 },
+            ali: { orders: 0, km: 0 }
+        };
+
+        allOrders.forEach(order => {
+            const driverKey = order['נהג'] === 'חכמת' ? 'hakmat' : 'ali';
+            const timelineId = `timeline-${driverKey}`;
+            const timeSlot = document.querySelector(`#${timelineId} .drop-zone[data-time="${order['שעה']}"]`);
+            
+            if (timeSlot) {
+                const orderCard = createOrderCard(order);
+                timeSlot.appendChild(orderCard);
+                stats[driverKey].orders++;
+                const city = citiesData.find(c => c['עיר'] === order['עיר']);
+                if (city) {
+                    stats[driverKey].km += parseFloat(city['מרחק מהוד השרון (ק"מ)']) || 0;
+                }
+            }
+        });
+
+        // Update stats display
+        document.getElementById('hakmat-orders-count').innerHTML = `<strong>${stats.hakmat.orders}</strong> הזמנות`;
+        document.getElementById('hakmat-km-total').innerHTML = `<strong>${stats.hakmat.km.toFixed(1)}</strong> ק"מ`;
+        document.getElementById('ali-orders-count').innerHTML = `<strong>${stats.ali.orders}</strong> הזמנות`;
+        document.getElementById('ali-km-total').innerHTML = `<strong>${stats.ali.km.toFixed(1)}</strong> ק"מ`;
+        
+        updateLoadIndicators();
+    }
+
+    function createOrderCard(order) {
+        const div = document.createElement('div');
+        div.className = 'order-card';
+        div.draggable = true;
+        div.dataset.orderId = order['חותמת זמן'];
+        div.innerHTML = `
+            <div class="order-card-customer">${order['לקוח'] || 'לקוח לא ידוע'}</div>
+            <div class="order-card-address">${order['כתובת אספקה'] || ''}</div>
+        `;
+        // Attach drag events
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
+        div.addEventListener('click', () => openModalForEdit(order['חותמת זמן']));
+        return div;
     }
     
-    document.getElementById('orderSearchInput').addEventListener('input', renderOrdersTable);
-    document.getElementById('customerSearchInput').addEventListener('input', renderCustomersTable);
+    function generateTimeSlots() {
+        const timelines = document.querySelectorAll('.timeline');
+        timelines.forEach(timeline => {
+            timeline.innerHTML = '';
+            for (let hour = 6; hour < 18; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.innerHTML = `
+                        <div class="time-label">${time}</div>
+                        <div class="drop-zone" data-time="${time}" data-driver="${timeline.id.split('-')[1]}"></div>
+                    `;
+                    timeline.appendChild(timeSlot);
+                }
+            }
+        });
+    }
 
-    // --- MAP & FORM LOGIC ---
-    function initializeMap() {
-        if (!map) {
-             map = L.map('map-container').setView([32.293, 34.855], 13);
-             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    function updateLoadIndicators() {
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            const orderCount = slot.querySelector('.drop-zone').children.length;
+            slot.classList.remove('load-high', 'load-medium');
+            if(orderCount >= 2) slot.classList.add('load-high');
+            else if (orderCount === 1) slot.classList.add('load-medium');
+        });
+    }
+
+    // --- DRAG & DROP LOGIC ---
+    let draggedItem = null;
+
+    function handleDragStart(e) {
+        draggedItem = this;
+        setTimeout(() => this.classList.add('dragging'), 0);
+    }
+
+    function handleDragEnd() {
+        this.classList.remove('dragging');
+        draggedItem = null;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        this.parentElement.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        this.parentElement.classList.remove('drag-over');
+    }
+
+    async function handleDrop(e) {
+        e.preventDefault();
+        this.parentElement.classList.remove('drag-over');
+        if (draggedItem) {
+            const orderId = draggedItem.dataset.orderId;
+            const newTime = this.dataset.time;
+            const newDriver = this.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+            
+            // Optimistic UI update
+            this.appendChild(draggedItem);
+            
+            try {
+                await postToBackend('updateOrderSchedule', { orderId, newTime, newDriver });
+                // Refresh data from server to be sure
+                await loadOrdersForDate(document.getElementById('datePicker').value);
+            } catch(error) {
+                alert('שגיאה בעדכון השיבוץ: ' + error.message);
+                // Revert UI if update fails
+                await loadOrdersForDate(document.getElementById('datePicker').value);
+            }
         }
     }
+
+    // --- MODAL & FORM LOGIC ---
+    const modal = document.getElementById('orderModal');
+    
+    function openModalForNew(driver, time) {
+        document.getElementById('createOrderForm').reset();
+        document.getElementById('form-title').textContent = "יצירת הזמנה חדשה";
+        document.getElementById('orderId').value = '';
+        document.getElementById('orderDate').value = document.getElementById('datePicker').value;
+        document.getElementById('orderTime').value = time;
+        document.getElementById('orderDriver').value = driver;
+        modal.classList.add('visible');
+    }
+    
+    function openModalForEdit(orderId) {
+        const order = allOrders.find(o => o['חותמת זמן'] === orderId);
+        if(!order) return;
+        
+        document.getElementById('form-title').textContent = "עריכת הזמנה";
+        document.getElementById('orderId').value = order['חותמת זמן'];
+        document.getElementById('orderCustomer').value = order['לקוח'];
+        document.getElementById('orderAddress').value = order['כתובת אספקה'];
+        document.getElementById('orderCity').value = order['עיר'] || '';
+        document.getElementById('orderDriver').value = order['נהג'];
+        document.getElementById('orderDate').value = order['תאריך'];
+        document.getElementById('orderTime').value = order['שעה'];
+        document.getElementById('orderWarehouse').value = order['מחסן'];
+        
+        modal.classList.add('visible');
+    }
+
+    window.closeModal = () => {
+        modal.classList.remove('visible');
+    };
 
     function populateFormDatalists() {
         const customerDatalist = document.getElementById('customers-list');
@@ -302,86 +459,53 @@ document.addEventListener('DOMContentLoaded', () => {
         citySelect.innerHTML = '<option value="">בחר עיר...</option>';
         citiesData.forEach(c => citySelect.innerHTML += `<option value="${c['עיר']}">${c['עיר']}</option>`);
     }
-    
-    document.getElementById('orderCity').addEventListener('change', async (e) => {
-        const cityName = e.target.value;
-        const insightsContent = document.getElementById('insights-content');
-        if (!cityName) {
-            insightsContent.innerHTML = '<p>בחר עיר לקבלת תובנות</p>';
-            return;
-        }
-        insightsContent.innerHTML = '<p>טוען מידע...</p>';
-        try {
-            const trafficInfo = await fetchFromBackend('getTrafficInfo', { destination: cityName });
-            insightsContent.innerHTML = `
-                <div class="insight"><i class="fas fa-road"></i> <span><strong>מרחק:</strong> ${trafficInfo.distance}</span></div>
-                <div class="insight"><i class="fas fa-car"></i> <span><strong>זמן נסיעה:</strong> ${trafficInfo.duration_in_traffic}</span></div>
-            `;
-        } catch (error) {
-            insightsContent.innerHTML = '<p style="color:red;">שגיאה בקבלת מידע.</p>';
-        }
-    });
 
-    function resetForm() {
-        document.getElementById('createOrderForm').reset();
-        document.getElementById('orderId').value = '';
-        document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle"></i> יצירת הזמנה חדשה';
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+        document.getElementById('datePicker').addEventListener('change', (e) => loadOrdersForDate(e.target.value));
+        document.getElementById('addNewOrderBtn').addEventListener('click', () => openModalForNew('חכמת', '09:00'));
+
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleDrop);
+            zone.addEventListener('click', function() {
+                if (this.children.length === 0) {
+                     const driver = this.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+                     openModalForNew(driver, this.dataset.time);
+                }
+            });
+        });
+
+        document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitOrderBtn');
+            btn.disabled = true; btn.textContent = 'שומר...';
+            
+            const orderData = {
+                'id': document.getElementById('orderId').value,
+                'לקוח': document.getElementById('orderCustomer').value,
+                'כתובת אספקה': document.getElementById('orderAddress').value,
+                'עיר': document.getElementById('orderCity').value,
+                'נהג': document.getElementById('orderDriver').value,
+                'תאריך': document.getElementById('orderDate').value,
+                'שעה': document.getElementById('orderTime').value,
+                'מחסן': document.getElementById('orderWarehouse').value,
+            };
+
+            try {
+                await postToBackend('saveOrder', orderData);
+                closeModal();
+                await loadOrdersForDate(document.getElementById('datePicker').value);
+            } catch (error) {
+                alert('שגיאה בשמירת ההזמנה: ' + error.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'שמור הזמנה';
+            }
+        });
     }
 
-    // --- FORM SUBMISSION ---
-    document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitOrderBtn');
-        btn.disabled = true; btn.textContent = 'שומר...';
-        
-        const orderData = {
-            'id': document.getElementById('orderId').value,
-            'לקוח': document.getElementById('orderCustomer').value,
-            'כתובת אספקה': document.getElementById('orderAddress').value,
-            'נהג': document.getElementById('orderDriver').value,
-            'תאריך': document.getElementById('orderDate').value,
-            'שעה': document.getElementById('orderTime').value,
-            'מחסן': document.getElementById('orderWarehouse').value,
-        };
-        try {
-            const result = await postToBackend('saveOrder', orderData);
-            allOrders = result;
-            renderOrdersTable();
-            showView('dashboard-view');
-        } catch (error) {
-            alert('שגיאה בשמירת ההזמנה: ' + error.message);
-        } finally {
-            btn.disabled = false; btn.textContent = 'שמור הזמנה';
-        }
-    });
-    
-    // --- GLOBAL FUNCTIONS & API ---
-    window.editOrder = (orderId) => {
-        const order = allOrders.find(o => o['חותמת זמן'] === orderId);
-        if (!order) return;
-        resetForm();
-        document.getElementById('orderId').value = order['חותמת זמן'];
-        document.getElementById('orderCustomer').value = order['לקוח'];
-        document.getElementById('orderAddress').value = order['כתובת אספקה'];
-        document.getElementById('orderDriver').value = order['נהג'];
-        document.getElementById('orderDate').value = order['תאריך'];
-        document.getElementById('orderTime').value = order['שעה'];
-        document.getElementById('orderWarehouse').value = order['מחסן'];
-        document.getElementById('form-title').innerHTML = '<i class="fas fa-edit"></i> עריכת הזמנה';
-        showView('order-form-view');
-    };
-    
-    window.archiveOrder = async (orderId) => {
-        if (confirm('האם אתה בטוח שברצונך להעביר הזמנה זו לארכיון?')) {
-            try {
-                allOrders = await postToBackend('archiveOrder', { orderId });
-                renderOrdersTable();
-            } catch (error) {
-                alert('שגיאה בארכוב ההזמנה: ' + error.message);
-            }
-        }
-    };
-    
+    // --- API HELPERS ---
     async function fetchFromBackend(action, params = {}) {
         const url = new URL(BACKEND_URL);
         url.searchParams.append('action', action);
@@ -398,9 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             body: JSON.stringify({ action, data }),
             headers: {'Content-Type': 'application/json'},
-            mode: 'cors' // Use cors for proper error handling from Apps Script
+            mode: 'cors'
         });
-         if (!response.ok) throw new Error(`Network error on POST action: ${action}. Status: ${response.status}`);
+        if (!response.ok) throw new Error(`Network error on POST action: ${action}. Status: ${response.status}`);
         const result = await response.json();
         if (result.status !== 'success') throw new Error(result.message);
         return result.data;
@@ -409,7 +533,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 </script>
-
 </body>
 </html>
 
