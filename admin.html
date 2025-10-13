@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>📋 דוח בוקר - לוח מחוונים</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4587de">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({ appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3" });
+      });
+    </script>
+    <style>
+        :root {
+            --primary-color: #87CEEB; --secondary-color: #4587de; --dark-color: #2C3E50;
+            --light-color: #F8F8F8; --accent-color: #E74C3C; --text-color: #333;
+        }
+        body {
+            font-family: 'Rubik', sans-serif; background-color: #eef2f5; margin: 0;
+            overscroll-behavior-y: contain;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white; padding: 15px; text-align: center;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .main-container { padding: 20px; }
+        .driver-dashboard { margin-bottom: 30px; }
+        .driver-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px; background: white; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer;
+        }
+        .driver-header h2 { margin: 0; font-size: 1.5rem; }
+        .driver-avatar { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--primary-color); }
+        .timeline {
+            margin-top: 10px; border-radius: 12px; background: #fafafa;
+            max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out;
+        }
+        .timeline.open { max-height: 2000px; /* Large value */ }
+        .time-slot {
+            display: flex; align-items: center; border-bottom: 1px dashed #e0e0e0;
+            min-height: 60px;
+        }
+        .time-label {
+            width: 70px; text-align: center; font-weight: 500;
+            color: #888; font-size: 0.9rem; flex-shrink: 0;
+        }
+        .drop-zone {
+            flex-grow: 1; padding: 5px; min-height: 50px;
+        }
+        .timeline-order {
+            background-color: white; border-radius: 8px; padding: 10px;
+            margin: 5px 0; box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+            cursor: grab; border-left: 5px solid var(--primary-color);
+        }
+        .timeline-order.hakmat { border-left-color: #1abc9c; }
+        .timeline-order strong { display: block; margin-bottom: 4px; }
+        .timeline-order p { margin: 0; font-size: 0.9rem; color: #555; }
+        .add-order-btn {
+            width: 100%; text-align: left; background: none; border: none;
+            padding: 15px 10px; color: #aaa; font-style: italic; cursor: pointer;
+        }
+        .dragging { opacity: 0.5; }
+        .drag-over { background-color: #e0f7ff; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>לוח מחוונים - סידור בוקר</h1>
+    </header>
+
+    <div class="main-container">
+        <div id="loadingMessage"><p>טוען נתונים, אנא המתן...</p></div>
+
+        <div class="driver-dashboard">
+            <div class="driver-header" data-driver="hakmat">
+                <h2><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" class="driver-avatar"> חכמת</h2>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="timeline" id="hakmat-timeline"></div>
+        </div>
+
+        <div class="driver-dashboard">
+            <div class="driver-header" data-driver="ali">
+                <h2><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" class="driver-avatar"> עלי</h2>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="timeline" id="ali-timeline"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // --- CONFIG ---
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzV3sJw60QN2s1ShccMWAjvbzjwtmFQxurJaGR62Lhn_vP0Iiw2tJLXw83Zqp6qBQct/exec';
+    
+    // --- DOM ELEMENTS ---
+    const hakmatTimeline = document.getElementById('hakmat-timeline');
+    const aliTimeline = document.getElementById('ali-timeline');
+    const loadingMessage = document.getElementById('loadingMessage');
+
+    // --- INITIALIZE ---
+    async function initializeDashboard() {
+        generateTimeSlots(hakmatTimeline);
+        generateTimeSlots(aliTimeline);
+        
+        try {
+            const allOrders = await fetchFromBackend('getActiveOrders');
+            loadingMessage.style.display = 'none';
+            
+            const ordersByTime = groupOrdersByTime(allOrders);
+            populateTimelines(ordersByTime);
+            setupDragAndDrop();
+
+        } catch (error) {
+            loadingMessage.innerHTML = `<p style="color: red;">שגיאה בטעינת הנתונים: ${error.message}</p>`;
+        }
+        
+        document.querySelectorAll('.driver-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const timeline = header.nextElementSibling;
+                timeline.classList.toggle('open');
+            });
+        });
+    }
+
+    // --- UI GENERATION ---
+    function generateTimeSlots(container) {
+        let timelineHTML = '';
+        for (let h = 6; h < 18; h++) {
+            for (let m = 0; m < 60; m += 30) {
+                const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                timelineHTML += `
+                    <div class="time-slot">
+                        <div class="time-label">${time}</div>
+                        <div class="drop-zone" data-time="${time}">
+                            <button class="add-order-btn" onclick="openAdminPage('${time}')">+ הוסף הזמנה</button>
+                        </div>
+                    </div>`;
+            }
+        }
+        container.innerHTML = timelineHTML;
+    }
+
+    function populateTimelines(ordersByTime) {
+        for (const time in ordersByTime) {
+            ordersByTime[time].forEach(order => {
+                const timelineId = order.driverName === 'חכמת' ? 'hakmat-timeline' : 'ali-timeline';
+                const container = document.querySelector(`#${timelineId} .drop-zone[data-time="${time}"]`);
+                if (container) {
+                    container.innerHTML += createOrderHTML(order);
+                }
+            });
+        }
+    }
+    
+    function createOrderHTML(order) {
+        return `
+        <div class="timeline-order ${order.driverName.toLowerCase()}" draggable="true" data-order-id="${order.id}" data-date="${order.date}">
+            <strong>${order.customer}</strong>
+            <p>${order.address} - [${order.status}]</p>
+        </div>`;
+    }
+
+    // --- DRAG & DROP LOGIC ---
+    function setupDragAndDrop() {
+        let draggedItem = null;
+
+        document.querySelectorAll('.timeline-order').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                draggedItem = item;
+                setTimeout(() => item.classList.add('dragging'), 0);
+            });
+            item.addEventListener('dragend', () => {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            });
+        });
+
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                if (draggedItem) {
+                    zone.appendChild(draggedItem);
+                    const orderId = draggedItem.dataset.orderId;
+                    const newTime = zone.dataset.time;
+                    const newDate = draggedItem.dataset.date; // Assuming date doesn't change on drag
+                    
+                    try {
+                        await postToBackend('updateOrderTime', { orderId, newTime, newDate });
+                        // Optionally show a success message
+                    } catch(error) {
+                        alert('שגיאה בעדכון שעת ההזמנה.');
+                        // Revert UI change if backend fails (more complex logic)
+                    }
+                }
+            });
+        });
+    }
+
+    // --- HELPERS ---
+    window.openAdminPage = (time) => {
+        // Redirects to admin page, passing the time as a URL parameter
+        window.open(`admin.html?time=${time}`, '_blank');
+    }
+
+    function groupOrdersByTime(orders) {
+        return orders.reduce((acc, order) => {
+            const time = order.time;
+            if (!acc[time]) acc[time] = [];
+            acc[time].push({
+                id: order.id, driverName: order.driverName, customer: order.customer,
+                address: order.address, status: order.status, date: order.date
+            });
+            return acc;
+        }, {});
+    }
+
+    async function fetchFromBackend(action) {
+        const url = `${BACKEND_URL}?action=${action}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Network error`);
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message);
+        return result.data.map(row => ({
+            id: row[0], driverName: row[1], date: row[2], time: row[3],
+            warehouse: row[4], status: row[5], customer: row[6], address: row[7],
+            operationType: row[8]
+        }));
+    }
+    
+    async function postToBackend(action, data) {
+        const response = await fetch(BACKEND_URL, {
+            method: 'POST', mode: 'no-cors', body: JSON.stringify({ action, data })
+        });
+        return { status: 'success' };
+    }
+
+    // --- START ---
+    initializeDashboard();
+});
+</script>
+
+</body>
+</html>
+
