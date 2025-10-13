@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#4587de">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg">
-    <link rel="manifest" id="manifest">
+    <link rel="manifest" href="manifest.json">
 
     <!-- External Libraries & Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,19 +18,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 
     <!-- OneSignal SDK for Push Notifications -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-      notifyButton: {
-        enable: true,
-      },
-    });
-  });
-</script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+          safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+
     <style>
         /* General styling for the application */
         :root {
@@ -500,9 +501,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- PWA & OneSignal Setup ---
-            setupPWA();
-            initializeOneSignal();
+            // --- PWA Setup ---
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => console.log('Service Worker registered successfully with scope:', registration.scope))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            }
 
             // --- App Initialization ---
             initializeApp();
@@ -513,84 +517,8 @@
                 document.body.classList.add('loaded');
             }, 2500);
         });
-
-        function setupPWA() {
-            // 1. Create Manifest dynamically as a Blob
-            const manifest = {
-                "name": "דוח בוקר - זכוכית מתקדמת",
-                "short_name": "דוח בוקר",
-                "start_url": ".",
-                "display": "standalone",
-                "background_color": "#ffffff",
-                "theme_color": "#4587de",
-                "description": "אפליקציה לניהול דוחות בוקר וסידור עבודה.",
-                "icons": [{
-                    "src": "https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg",
-                    "sizes": "192x192",
-                    "type": "image/jpeg"
-                }, {
-                    "src": "https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg",
-                    "sizes": "512x512",
-                    "type": "image/jpeg"
-                }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            document.querySelector('#manifest').setAttribute('href', manifestURL);
-
-            // 2. Create and Register Service Worker dynamically
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-                    const CACHE_NAME = 'morning-report-cache-v1';
-                    const urlsToCache = [
-                        '/',
-                        'https://cdn.jsdelivr.net/npm/chart.js',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css',
-                        'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap'
-                    ];
-
-                    self.addEventListener('install', event => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then(cache => {
-                                    console.log('Opened cache');
-                                    return cache.addAll(urlsToCache);
-                                })
-                        );
-                    });
-
-                    self.addEventListener('fetch', event => {
-                        event.respondWith(
-                            caches.match(event.request)
-                                .then(response => {
-                                    if (response) {
-                                        return response; // Serve from cache
-                                    }
-                                    return fetch(event.request); // Fetch from network
-                                })
-                        );
-                    });
-                `;
-                const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                const swURL = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swURL)
-                    .then(registration => console.log('Service Worker registered with scope:', registration.scope))
-                    .catch(error => console.log('Service Worker registration failed:', error));
-            }
-        }
         
-        function initializeOneSignal() {
-            window.OneSignal = window.OneSignal || [];
-            OneSignal.push(function() {
-                OneSignal.init({
-                    // חשוב: החלף את המזהה הבא במזהה האפליקציה שלך מ-OneSignal
-                    appId: "YOUR_ONESIGNAL_APP_ID", 
-                });
-            });
-        }
-        
-        // --- DATA AND LOGIC (Adapted from original file) ---
+        // --- DATA AND LOGIC ---
         
         const sheetId = '1LM1rUju2EXcdKb97HbfYguanHJ6YGxULKAvQLvxPQhU';
         // חשוב: יש להחליף את מפתח ה-API במפתח תקין מחשבון Google Cloud שלך
@@ -795,7 +723,7 @@
                 return msg;
             };
 
-            const aliMsg = formatForWhatsApp(allAliOrders, "עли");
+            const aliMsg = formatForWhatsApp(allAliOrders, "עלי");
             const hakmatMsg = formatForWhatsApp(allHakmatOrders, "חכמת");
             const fullMessage = `*📋 דוח בוקר - סיכום*\n\n${aliMsg}\n\n${hakmatMsg}`;
             const url = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
@@ -804,3 +732,4 @@
     </script>
 </body>
 </html>
+
