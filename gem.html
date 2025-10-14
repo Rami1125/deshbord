@@ -1,162 +1,356 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-    <title>ניהול הזמנות</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
-    
-    <style>
-      body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-      #map { height: 400px; width: 100%; border: 1px solid #ccc; margin-bottom: 20px; }
-     .form-container { display: flex; flex-direction: column; gap: 10px; max-width: 500px; }
-     .form-container input,.form-container select { padding: 8px; font-size: 16px; }
-     .form-container button { padding: 10px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; }
-     .spinner { display: none; /* לוגיקה להצגה/הסתרה ב-JS */ }
-    </style>
-  </head>
-  <body>
+<!doctype html>
+<html lang="he">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ניהול הזמנות עם מפה</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root{--bg:#f7f8fa;--card:#ffffff;--accent:#0f62fe;--muted:#6b7280;--success:#198754; --danger:#dc3545;}
+    body{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); color:#111; direction:rtl; margin: 0;}
+    .container{max-width:1400px;margin:18px auto;padding:18px; display: grid; grid-template-columns: 1fr 2fr; gap: 18px;}
+    .form-col { display: flex; flex-direction: column; gap: 12px; }
+    .map-col { display: flex; flex-direction: column; gap: 12px; }
+    .col{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,22,39,0.06)}
+    h2{margin:0 0 12px 0;font-size:18px; border-bottom: 1px solid #eee; padding-bottom: 8px;}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box; transition: border-color 0.2s;}
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    textarea{height:80px;resize:vertical}
+    .btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:bold; transition: background-color 0.2s;}
+    .btn-primary{background:var(--accent);color:white}
+    .btn-primary:hover{background:#0d50c7}
+    .btn-secondary{background:#e0e0e0;color:#333}
+    #map{height:500px;border-radius:12px; background-color: #eee;}
+    .status-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 8px; z-index: 10000; display: none; }
+  </style>
+</head>
+<body>
 
-    <h1>מערכת ניהול הזמנות</h1>
+  <div id="statusIndicator" class="status-indicator"></div>
 
-    <div id="map"></div>
-
-    <h2>יצירת הזמנה חדשה</h2>
-    <div class="form-container" id="orderForm">
-      <input type="text" id="customer" placeholder="שם לקוח" required>
-      <input type="text" id="city" placeholder="עיר" required>
-      <input type="text" id="street" placeholder="רחוב ומספר">
-      <button onclick="saveOrder()">שמור הזמנה</button>
-      <div class="spinner" id="spinner">טוען...</div>
+  <div class="container">
+    <div class="form-col">
+      <div class="col">
+        <h2>הזמנה חדשה</h2>
+        <div class="form-grid">
+          <div><label for="customer">לקוח</label><input id="customer" type="text" list="customers-list"></div>
+          <div><label for="contactPhone">טלפון איש קשר</label><input id="contactPhone" type="tel"></div>
+          <div><label for="street">רחוב</label><input id="street" type="text"></div>
+          <div><label for="streetNumber">מספר</label><input id="streetNumber" type="text"></div>
+          <div style="grid-column: span 2;"><label for="city">עיר</label><input id="city" type="text"></div>
+          <div><label for="date">תאריך</label><input id="date" type="date"></div>
+          <div><label for="time">שעה</label><input id="time" type="time"></div>
+          <div><label for="delivery_type">סוג הובלה</label><select id="delivery_type"></select></div>
+          <div><label for="warehouse">מחסן</label><select id="warehouse"></select></div>
+          <div style="grid-column: span 2;"><label for="driver">נהג</label><select id="driver"><option>עלי</option><option>חכמת</option></select></div>
+          <div style="grid-column: span 2;"><label for="notes">הערות</label><textarea id="notes"></textarea></div>
+        </div>
+        <div style="margin-top:14px; display:flex; gap: 10px;">
+          <button id="btnSave" class="btn btn-primary">שמור הזמנה</button>
+          <button id="btnShowRoute" class="btn btn-secondary">הצג מסלול</button>
+        </div>
+      </div>
     </div>
+    <div class="map-col">
+      <div class="col">
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-      // --- משתנים גלובליים ---
-      let map;
-      let markersLayer;
+  <datalist id="customers-list"></datalist>
 
-      // --- אתחול האפליקציה עם טעינת הדף ---
-      document.addEventListener('DOMContentLoaded', initializeMap);
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- 
+    !!! ATTENTION !!!
+    In a real application, you should get your own Google Maps API key from the Google Cloud Console.
+    Using this without a key or with a shared key may result in service interruptions.
+    Replace YOUR_GOOGLE_MAPS_API_KEY with your actual key.
+  -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=onGoogleMapsApiLoad"></script>
 
-      /**
-       * מאתחל את המפה ואת שכבת הסמנים, וקורא לטעינת ההזמנות.
-       */
-      function initializeMap() {
-        map = L.map('map').setView([32.0853, 34.7818], 8); // מרכז על תל אביב
+<script>
+  // =================================================================
+  // SCRIPT CONFIGURATION
+  // =================================================================
+  // This URL is generated after you deploy your Google Apps Script as a Web App.
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzl8mK_zf9NQ-IIkYu6B3zFYAGevBFkgEE6M6Pbq7--VwY7GrYfgggehLLYTe92mgzzcw/exec'; // <-- IMPORTANT: REPLACE WITH YOUR DEPLOYED SCRIPT URL
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+  // =================================================================
+  // GLOBAL VARIABLES & DOM ELEMENTS
+  // =================================================================
+  let map;
+  let markersLayer = L.layerGroup();
+  let routeLayer = L.layerGroup();
+  let WAREHOUSE_COORDS = { lat: 32.1844, lng: 34.9082 }; // Default: Hod HaSharon
 
-        // התיקון הקריטי: אתחול השכבה כ-FeatureGroup והוספתה למפה
-        markersLayer = L.featureGroup().addTo(map);
-        
-        loadOrders();
+  const customerEl = document.getElementById('customer');
+  const contactPhoneEl = document.getElementById('contactPhone');
+  const streetEl = document.getElementById('street');
+  const streetNumberEl = document.getElementById('streetNumber');
+  const cityEl = document.getElementById('city');
+  const dateEl = document.getElementById('date');
+  const timeEl = document.getElementById('time');
+  const deliveryTypeEl = document.getElementById('delivery_type');
+  const warehouseEl = document.getElementById('warehouse');
+  const driverEl = document.getElementById('driver');
+  const notesEl = document.getElementById('notes');
+  const btnSave = document.getElementById('btnSave');
+  const btnShowRoute = document.getElementById('btnShowRoute');
+  
+  // =================================================================
+  // INITIALIZATION
+  // =================================================================
+
+  // This function is called by the Google Maps script once it's loaded and ready.
+  function onGoogleMapsApiLoad() {
+    console.log("Google Maps API loaded successfully.");
+    initializeMap();
+    loadInitialData();
+  }
+
+  function initializeMap() {
+    map = L.map('map').setView([WAREHOUSE_COORDS.lat, WAREHOUSE_COORDS.lng], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Add warehouse marker
+    L.marker([WAREHOUSE_COORDS.lat, WAREHOUSE_COORDS.lng]).addTo(map)
+      .bindPopup('<b>מחסן ראשי</b><br>החרש 10, הוד השרון').openPopup();
+
+    markersLayer.addTo(map);
+    routeLayer.addTo(map);
+  }
+
+  function loadInitialData() {
+    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+      showStatus("אנא הגדר את כתובת ה-URL של Apps Script", "error");
+      return;
+    }
+    loadOrders();
+    loadCustomers();
+    loadSettings();
+  }
+  
+  // =================================================================
+  // DATA FETCHING FUNCTIONS
+  // =================================================================
+
+  async function fetchData(action) {
+    try {
+      const response = await fetch(`${SCRIPT_URL}?action=${action}`);
+      if (!response.ok) throw new Error(`Network response was not ok for action: ${action}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      showStatus(`שגיאה בטעינת נתונים: ${error.message}`, 'error');
+      return null;
+    }
+  }
+
+  async function loadOrders() {
+    showStatus('טוען הזמנות...', 'loading');
+    const orders = await fetchData('getOrders');
+    if (orders && Array.isArray(orders)) {
+      drawMarkers(orders);
+      showStatus('הזמנות נטענו', 'success');
+    }
+  }
+
+  async function loadCustomers() {
+    const customers = await fetchData('getCustomers');
+    if (customers && Array.isArray(customers)) {
+      const list = document.getElementById('customers-list');
+      list.innerHTML = '';
+      customers.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.name;
+        list.appendChild(option);
+      });
+    }
+  }
+  
+  async function loadSettings() {
+      const settings = await fetchData('getSettings');
+      // Example of using settings - can be expanded
+      if (settings && Array.isArray(settings)) {
+          console.log('Settings loaded:', settings);
       }
+  }
+  
+  // =================================================================
+  // MAP & UI FUNCTIONS
+  // =================================================================
 
-      /**
-       * קורא לפונקציית השרת לטעינת ההזמנות.
-       */
-      function loadOrders() {
-        showSpinner();
-        google.script.run
-         .withSuccessHandler(drawMarkers)
-         .withFailureHandler(onLoadFailure)
-         .loadOrdersFromSheet();
+  async function drawMarkers(orders) {
+    markersLayer.clearLayers();
+    for (const order of orders) {
+      if (order.street && order.city) {
+        const fullAddress = `${order.street} ${order.street_number || ''}, ${order.city}`;
+        const coords = await geocodeAddress(fullAddress);
+        if (coords) {
+          L.marker([coords.lat, coords.lng])
+            .addTo(markersLayer)
+            .bindPopup(`<b>${order.customer}</b><br>${fullAddress}<br>נהג: ${order.driver}`);
+        }
       }
-      
-      /**
-       * פונקציית Callback להצלחה בטעינת הזמנות. מציירת את הסמנים על המפה.
-       * @param {Array<Object>} orders - מערך אובייקטי הזמנה מהשרת.
-       */
-      function drawMarkers(orders) {
-        hideSpinner();
-        markersLayer.clearLayers();
+    }
+    // Zoom map to fit all markers if there are any
+    if (markersLayer.getLayers().length > 0) {
+        map.fitBounds(markersLayer.getBounds().pad(0.1));
+    }
+  }
+  
+  async function drawRoute(startCoords, endCoords) {
+    routeLayer.clearLayers();
+    const start = L.latLng(startCoords[0], startCoords[1]);
+    const end = L.latLng(endCoords[0], endCoords[1]);
+    
+    L.polyline([start, end], {color: 'blue', dashArray: '5, 10'}).addTo(routeLayer);
+    map.fitBounds(L.latLngBounds(start, end), { padding: [50, 50] });
+  }
 
-        orders.forEach(order => {
-          // נדרש שיהיו שדות lat ו-lng באובייקט ההזמנה
-          if (order.lat && order.lng) {
-            const marker = L.marker([order.lat, order.lng]);
-            const popupContent = `<b>לקוח:</b> ${order.customer}<br><b>עיר:</b> ${order.city}`;
-            marker.bindPopup(popupContent);
-            marker.addTo(markersLayer);
-          }
+  function showStatus(message, type = 'info', duration = 3000) {
+    const indicator = document.getElementById('statusIndicator');
+    indicator.textContent = message;
+    indicator.style.display = 'block';
+    
+    indicator.style.backgroundColor = 'rgba(0,0,0,0.7)'; // default
+    if (type === 'success') indicator.style.backgroundColor = 'var(--success)';
+    if (type === 'error') indicator.style.backgroundColor = 'var(--danger)';
+
+    if (type !== 'loading') {
+      setTimeout(() => {
+        indicator.style.display = 'none';
+      }, duration);
+    }
+  }
+
+  // =================================================================
+  // ACTIONS & EVENT LISTENERS
+  // =================================================================
+
+  async function saveOrder() {
+    const orderData = {
+      customer: customerEl.value,
+      contactPhone: contactPhoneEl.value,
+      street: streetEl.value,
+      street_number: streetNumberEl.value,
+      city: cityEl.value,
+      date: dateEl.value,
+      time: timeEl.value,
+      delivery_type: deliveryTypeEl.value,
+      warehouse: warehouseEl.value,
+      driver: driverEl.value,
+      notes: notesEl.value,
+    };
+
+    if (!orderData.customer || !orderData.street || !orderData.city) {
+      showStatus("יש למלא לקוח, רחוב ועיר", "error");
+      return;
+    }
+    
+    showStatus('שומר הזמנה...', 'loading');
+
+    // Get coordinates for distance calculation
+    const fullAddress = `${orderData.street} ${orderData.street_number}, ${orderData.city}`;
+    const destCoords = await geocodeAddress(fullAddress);
+
+    if (destCoords) {
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix({
+            origins: [new google.maps.LatLng(WAREHOUSE_COORDS.lat, WAREHOUSE_COORDS.lng)],
+            destinations: [new google.maps.LatLng(destCoords.lat, destCoords.lng)],
+            travelMode: 'DRIVING',
+        }, (response, status) => {
+            if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
+                const element = response.rows[0].elements[0];
+                orderData.distance_km = (element.distance.value / 1000).toFixed(1);
+                orderData.duration_min = Math.round(element.duration.value / 60);
+            } else {
+                console.warn('Distance Matrix failed:', status);
+            }
+            // Send to server regardless of distance calculation result
+            postOrder(orderData);
         });
+    } else {
+        // Post without distance if geocoding fails
+        postOrder(orderData);
+    }
+  }
 
-        fitMapToBounds();
+  async function postOrder(orderData) {
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Important for simple POST to Apps Script
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addOrder', payload: orderData })
+      });
+      showStatus('הזמנה נשמרה בהצלחה!', 'success');
+      // Reload orders to show the new one on the map
+      loadOrders(); 
+      // Optionally clear the form
+      // document.querySelector('form').reset();
+    } catch (error) {
+      console.error('Save Error:', error);
+      showStatus(`שגיאה בשמירת הזמנה: ${error.message}`, 'error');
+    }
+  }
+
+  btnSave.addEventListener('click', saveOrder);
+  
+  btnShowRoute.addEventListener('click', async () => {
+    const fullAddress = `${streetEl.value} ${streetNumberEl.value}, ${cityEl.value}`;
+    if (!streetEl.value || !cityEl.value) {
+        showStatus('יש למלא רחוב ועיר כדי להציג מסלול', 'error');
+        return;
+    }
+    const g = await geocodeAddress(fullAddress);
+    if (g) {
+      drawRoute([WAREHOUSE_COORDS.lat, WAREHOUSE_COORDS.lng], [g.lat, g.lng]);
+    } else {
+      showStatus('לא נמצאה כתובת. בדוק את הפרטים ונסה שוב.', 'error');
+    }
+  });
+
+  // =================================================================
+  // UTILITY FUNCTIONS
+  // =================================================================
+
+  // Caching for geocoder results to avoid hitting API limits
+  const geocodeCache = new Map();
+
+  function geocodeAddress(address) {
+    if (geocodeCache.has(address)) {
+      return Promise.resolve(geocodeCache.get(address));
+    }
+    
+    return new Promise((resolve, reject) => {
+      // Check if google object is available
+      if (typeof google === 'undefined' || !google.maps.Geocoder) {
+          console.error("Google Geocoder not available.");
+          return resolve(null);
       }
-
-      /**
-       * מתאימה את תצוגת המפה לגבולות כל הסמנים.
-       */
-      function fitMapToBounds() {
-        if (markersLayer.getLayers().length > 0) {
-          const bounds = markersLayer.getBounds();
-          map.fitBounds(bounds.pad(0.1));
+      
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ 'address': address, 'region': 'IL' }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const location = results[0].geometry.location;
+          const coords = { lat: location.lat(), lng: location.lng() };
+          geocodeCache.set(address, coords);
+          resolve(coords);
         } else {
-          map.setView([32.0853, 34.7818], 8);
+          console.warn(`Geocode was not successful for the following reason: ${status}`);
+          resolve(null);
         }
-      }
-      
-      /**
-       * אוסף את הנתונים מהטופס ומחזיר אובייקט הזמנה.
-       * @returns {Object} - אובייקט עם נתוני ההזמנה.
-       */
-      function collectOrderDataFromForm() {
-        // יש להרחיב פונקציה זו כדי לאסוף את כל שדות הטופס
-        return {
-          customer: document.getElementById('customer').value,
-          city: document.getElementById('city').value,
-          street: document.getElementById('street').value,
-          //...
-        };
-      }
+      });
+    });
+  }
 
-      /**
-       * קורא לפונקציית השרת לשמירת ההזמנה.
-       */
-      function saveOrder() {
-        const orderData = collectOrderDataFromForm();
-        if (!orderData.customer ||!orderData.city) {
-            alert('נא למלא שדות חובה: שם לקוח ועיר.');
-            return;
-        }
-        
-        showSpinner();
-        google.script.run
-         .withSuccessHandler(onSaveSuccess)
-         .withFailureHandler(onSaveFailure)
-         .saveOrderInSheet(orderData);
-      }
-
-      // --- פונקציות Callback ופונקציות עזר ---
-
-      function onSaveSuccess(response) {
-        hideSpinner();
-        alert('ההזמנה נשמרה בהצלחה!');
-        document.getElementById('orderForm').reset();
-        loadOrders(); // רענון המפה עם ההזמנה החדשה
-      }
-
-      function onSaveFailure(error) {
-        hideSpinner();
-        console.error('Server-side save error:', error);
-        alert('שגיאה בשמירת ההזמנה: \n' + error.message);
-      }
-      
-      function onLoadFailure(error) {
-        hideSpinner();
-        console.error('Server-side load error:', error);
-        alert('שגיאה בטעינת ההזמנות: \n' + error.message);
-      }
-
-      function showSpinner() { document.getElementById('spinner').style.display = 'block'; }
-      function hideSpinner() { document.getElementById('spinner').style.display = 'none'; }
-
-    </script>
-  </body>
+</script>
+</body>
 </html>
