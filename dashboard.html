@@ -14,9 +14,9 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-        .table-action-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        .table-action-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.5rem; }
     </style>
 </head>
 <body class="text-slate-800">
@@ -31,97 +31,160 @@
         </div>
         <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"></div>
 
-        <div id="content-dashboard" class="tab-content active">...</div>
-        <div id="content-orders" class="tab-content">...</div>
-        <div id="content-planner" class="tab-content">...</div>
+        <div id="content-dashboard" class="tab-content active"><!-- Dashboard content will be loaded here --></div>
+        <div id="content-orders" class="tab-content"><!-- Orders management content will be loaded here --></div>
+        <div id="content-planner" class="tab-content"><!-- Planner content will be loaded here --></div>
     </div>
 
-    <!-- Modals and Templates can be defined here -->
-    <div id="view-modal" class="modal-overlay hidden"> ... </div>
-    <div id="archive-modal" class="modal-overlay hidden"> ... </div>
-    
-    <!-- SCRIPT SECTION -->
-    <script>
-        // =================================================================
-        // ==  IMPORTANT: PASTE YOUR KEYS HERE                          ==
-        // =================================================================
-        
-        // This is your Google Maps API Key. It should start with "AIza..."
-        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 PASTE YOUR GOOGLE MAPS API KEY
-        
-        // This is your Apps Script deployment URL.
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu1p19fHqnQQRWJw9o5UI5mnCJ_-S3p934dTAN80_qRnLonlJ-AinhyjYR3WutzkOH/exec'; // 👈 PASTE YOUR SCRIPT URL
-        
-        // =================================================================
-    </script>
-    <script>
-        // This loads the Google Maps script dynamically AFTER the keys are defined
-        (function() {
-            if (typeof google === 'object' && typeof google.maps === 'object') {
-                window.initMaps();
-            } else {
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMaps&libraries=places`;
-                script.async = true;
-                script.defer = true;
-                document.head.appendChild(script);
-            }
-        })();
-    </script>
+    <!-- Modals -->
+    <div id="view-modal" class="modal-overlay hidden"><div class="card w-full max-w-2xl p-6 relative"><button onclick="closeModal('view-modal')" class="absolute top-4 left-4 text-2xl">&times;</button><h2 class="text-2xl font-semibold mb-4">פרטי הזמנה</h2><div id="view-modal-content" class="space-y-2"></div><div id="view-modal-map" class="w-full h-64 my-4 rounded-lg bg-slate-200"></div><hr class="my-4"><h3 class="text-lg font-semibold">ניתוח היסטורי</h3><div id="view-modal-history" class="text-sm"></div></div></div>
+    <div id="archive-modal" class="modal-overlay hidden"><div class="card w-full max-w-md p-6 relative"><h2 class="text-2xl font-semibold mb-4">סגירת הזמנה</h2><p class="mb-4">נא להזין זמני יציאה וחזרה בפועל.</p><input type="hidden" id="archive-order-id"><div class="space-y-4"><div><label for="departure-time">שעת יציאה</label><input type="time" id="departure-time" class="mt-1 block w-full rounded-md border-gray-300"></div><div><label for="return-time">שעת חזרה</label><input type="time" id="return-time" class="mt-1 block w-full rounded-md border-gray-300"></div></div><div class="mt-6 flex gap-4"><button id="btn-confirm-archive" class="w-full bg-green-600 text-white py-2 rounded-lg">אשר וסגור</button><button onclick="closeModal('archive-modal')" class="w-full bg-slate-200 py-2 rounded-lg">ביטול</button></div></div></div>
     
     <script>
-        // The main application logic will be wrapped in the initMaps function
-        // to ensure Google Maps is loaded first.
-        window.initMaps = function() {
-            
-            let allOrders = [];
-            let initialData = {};
-            let charts = {};
-            let plannerMap, newOrderMap, directionsService, plannerDirectionsRenderer, newOrderDirectionsRenderer;
+        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // Your Maps API Key
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu1p19fHqnQQRWJw9o5UI5mnCJ_-S3p934dTAN80_qRnLonlJ-AinhyjYR3WutzkOH/exec'; // Your Script URL
+    </script>
+    <script async defer src=`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMaps&libraries=places`></script>
 
-            // All your application functions (setupEventListeners, loadInitialData, renderOrdersTable, etc.)
-            // will now be defined *inside* this initMaps function.
-            
-            function setupEventListeners() {
-                document.getElementById('tabs-nav').addEventListener('click', (e) => {
-                    if (e.target.matches('.tab')) {
-                        handleTabClick(e.target);
-                    }
-                });
-                document.getElementById('order-form').addEventListener('submit', handleSaveOrder);
-                // ... all other event listeners
-            }
-            
-            function handleTabClick(clickedTab) {
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                
-                clickedTab.classList.add('active');
-                const tabName = clickedTab.dataset.tab;
-                const contentEl = document.getElementById(`content-${tabName}`);
-                if(contentEl) contentEl.classList.add('active');
-                
-                if (tabName === 'dashboard') {
-                    loadDashboardData();
-                }
-            }
-            
-            // ... the rest of the JavaScript logic from the previous turn goes here ...
-            // (loadInitialData, renderOrdersTable, handleSaveOrder, handleEdit, etc.)
-            
-            // Initialize maps
-            const centerOfIsrael = { lat: 31.7, lng: 35.2 };
-            plannerMap = new google.maps.Map(document.getElementById("planner-map") || document.createElement('div'), { zoom: 8, center: centerOfIsrael });
-            newOrderMap = new google.maps.Map(document.getElementById("new-order-map") || document.createElement('div'), { zoom: 8, center: centerOfIsrael });
+    <script>
+    window.initMaps = function() {
+        let allOrders = [], initialData = {}, charts = {};
+        let plannerMap, newOrderMap, viewMap, directionsService, plannerDR, newOrderDR, viewDR;
+
+        const elements = {
+            nav: document.getElementById('tabs-nav'),
+            errorBanner: document.getElementById('error-banner'),
+            content: {
+                dashboard: document.getElementById('content-dashboard'),
+                orders: document.getElementById('content-orders'),
+                planner: document.getElementById('content-planner'),
+            },
+            modals: {
+                view: document.getElementById('view-modal'),
+                archive: document.getElementById('archive-modal'),
+            },
+        };
+
+        function initialize() {
+            const center = { lat: 31.7, lng: 35.2 };
+            // Init maps on demand later to avoid errors on hidden divs
             directionsService = new google.maps.DirectionsService();
-            plannerDirectionsRenderer = new google.maps.DirectionsRenderer({ map: plannerMap });
-            newOrderDirectionsRenderer = new google.maps.DirectionsRenderer({ map: newOrderMap });
 
-            // Start the app
             setupEventListeners();
-            loadInitialData();
-            handleTabClick(document.querySelector('.tab.active'));
+            loadInitialData().then(() => {
+                handleTabClick(document.querySelector('.tab.active'));
+            });
         }
+        
+        function setupEventListeners() {
+            elements.nav.addEventListener('click', e => {
+                if (e.target.closest('.tab')) handleTabClick(e.target.closest('.tab'));
+            });
+        }
+
+        async function loadInitialData() {
+            try {
+                initialData = await runGAS('getInitialData');
+                allOrders = initialData.activeOrders;
+            } catch (error) { showError(error.message); }
+        }
+
+        function handleTabClick(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.dataset.tab;
+            const contentEl = elements.content[tabName];
+            contentEl.classList.add('active');
+
+            // Render content for the selected tab
+            switch(tabName) {
+                case 'dashboard': renderDashboard(); break;
+                case 'orders': renderOrderManagement(); break;
+                case 'planner': renderPlanner(); break;
+            }
+        }
+        
+        // --- RENDER FUNCTIONS FOR EACH TAB ---
+        function renderDashboard() { /* ... Chart logic ... */ }
+        function renderOrderManagement() {
+            if (elements.content.orders.innerHTML !== '') return; // Already rendered
+            elements.content.orders.innerHTML = `
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4 card p-6">
+                         <h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה חדשה</h2>
+                         <form id="order-form" class="space-y-4"> ... </form>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8 card p-6">
+                        <h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2>
+                        <div class="overflow-x-auto"><table class="min-w-full"> ... <tbody id="orders-table-body"></tbody></table></div>
+                    </div>
+                </div>`;
+            // Populate dropdowns, attach listeners, render table
+            // This is a simplified representation
+            renderOrdersTable();
+        }
+        function renderPlanner() { /* ... Planner HTML and logic ... */ }
+
+        function renderOrdersTable() {
+            const tableBody = document.getElementById('orders-table-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = allOrders.map(order => `
+                <tr data-id="${order.id}">
+                    <td class="px-6 py-4">${order.customer}</td>
+                    <td class="px-6 py-4">${order.city}, ${order.street} ${order.street_number}</td>
+                    <td class="px-6 py-4">${order.date}</td>
+                    <td class="px-6 py-4 space-x-2 space-x-reverse">
+                        <button onclick="window.app.handleView('${order.id}')" class="table-action-btn" title="תצוגה"><i class="fa-solid fa-eye text-blue-500"></i></button>
+                        <button onclick="window.app.handleEdit('${order.id}')" class="table-action-btn" title="עריכה"><i class="fa-solid fa-pencil text-yellow-500"></i></button>
+                        <button onclick="window.app.handleDuplicate('${order.id}')" class="table-action-btn" title="שכפול"><i class="fa-solid fa-copy text-gray-500"></i></button>
+                        <button onclick="window.app.showArchiveModal('${order.id}')" class="table-action-btn" title="סגירה"><i class="fa-solid fa-check text-green-500"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- HANDLER FUNCTIONS ---
+        window.app = {
+            handleEdit(orderId) { /* ... logic to find order and populate form ... */ },
+            handleDuplicate(orderId) { /* ... logic to find order and populate form without ID ... */ },
+            async handleView(orderId) {
+                const order = allOrders.find(o => o.id == orderId);
+                const address = `${order.street} ${order.street_number}, ${order.city}`;
+                // show modal, render basic data
+                // fetch history
+                const history = await runGAS('getHistoricalData', { address });
+                // render history and prediction
+            },
+            showArchiveModal(orderId) { /* ... show modal ... */ },
+            async confirmArchive() {
+                // ... get data from modal
+                // await runGAS('archiveOrder', { orderId, ... })
+                // reload data and re-render table
+            }
+        };
+
+        function runGAS(action, payload) {
+            const url = `${SCRIPT_URL}?action=${action}`;
+            if (payload && action.startsWith('get')) { // GET request with params
+                return fetch(`${url}&${new URLSearchParams(payload)}`).then(res => res.json()).then(handleGasResponse);
+            }
+            // POST request
+            return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, payload }) }).then(res => res.json()).then(handleGasResponse);
+        }
+
+        function handleGasResponse(response) {
+            if (response.status === 'error') throw new Error(response.message);
+            return response.data;
+        }
+
+        function showError(message) { /* ... */ }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Kick off the app
+        initialize();
+    }
     </script>
 </body>
 </html>
