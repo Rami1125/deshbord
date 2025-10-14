@@ -233,7 +233,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyHb1-SW1Rcd-8639B-PgB19gpC2NijzzLEiCnemDP96hAsO-bD_OpATIYXqoYU9TgY0g/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzGxgfgl_dsqlcUa8ss0bOOYCe51bZlQ1nadwRFK8B0_xxu0W7qBQdmBYWPOn3xlkpR9A/exec';
     let allOrders = [], customersData = [], citiesData = [];
     let map;
 
@@ -444,14 +444,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll('.timeline').forEach(timeline => {
             timeline.addEventListener('click', (e) => {
-                if (e.target.classList.contains('drop-zone') && e.target.children.length === 0) {
-                     const driver = e.target.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
-                     openModalForNew(driver, e.target.dataset.time);
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone && dropZone.children.length === 0) {
+                     const driver = dropZone.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+                     openModalForNew(driver, dropZone.dataset.time);
                 }
             });
-            timeline.addEventListener('dragover', handleDragOver);
-            timeline.addEventListener('dragleave', handleDragLeave);
-            timeline.addEventListener('drop', handleDrop);
+            timeline.addEventListener('dragover', (e) => { e.preventDefault(); e.target.closest('.time-slot').classList.add('drag-over'); });
+            timeline.addEventListener('dragleave', (e) => e.target.closest('.time-slot').classList.remove('drag-over'));
+            timeline.addEventListener('drop', (e) => {
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone) handleDrop.call(dropZone, e);
+            });
         });
 
         document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
@@ -512,8 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
             body: JSON.stringify({ action, data }),
-            headers: {'Content-Type': 'application/json'},
-            mode: 'cors'
         });
         if (!response.ok) throw new Error(`שגיאת רשת בפעולת POST: ${action}. סטטוס: ${response.status}`);
         const result = await response.json();
