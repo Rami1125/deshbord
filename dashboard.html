@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול לוגיסטיקה V3.1</title>
+    <title>מערכת ניהול לוגיסטיקה V3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -43,11 +43,7 @@
             <div id="content-orders" class="tab-content">
                 <div class="grid grid-cols-12 gap-6">
                     <div class="col-span-12 lg:col-span-4 card p-6"><h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה</h2><form id="order-form" class="space-y-4"><!-- Form fields here --></form></div>
-                    <div class="col-span-12 lg:col-span-8 card p-6">
-                         <h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2>
-                         <div id="new-order-map" class="w-full h-64 rounded-lg bg-slate-200 mb-4"></div>
-                         <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr>...</tr></thead><tbody id="orders-table-body"></tbody></table></div>
-                    </div>
+                    <div class="col-span-12 lg:col-span-8 card p-6"><div id="new-order-map" class="w-full h-64 rounded-lg bg-slate-200 mb-4"></div><h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2><div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-right text-xs">לקוח</th><th class="px-6 py-3 text-right text-xs">כתובת</th><th class="px-6 py-3 text-right text-xs">תאריך</th><th class="px-6 py-3 text-right text-xs">פעולות</th></tr></thead><tbody id="orders-table-body"></tbody></table></div></div>
                 </div>
             </div>
             <div id="content-planner" class="tab-content">
@@ -61,14 +57,31 @@
     <div id="modal-container"></div>
     
     <script>
-        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 PASTE YOUR GOOGLE MAPS API KEY
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGeF34FSNe2ueS335k_m6_F6iflKCtTtKK7jRJTpaAf7gFlgHNFG57ImhWZi8aN56KVA/exec'; // 👈 PASTE YOUR SCRIPT URL
+        console.log("🟢 שלב 1: הקוד מתחיל לרוץ. מגדיר מפתחות.");
+        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 הדבק פה את מפתח המפות (מתחיל ב-AIza)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTuMupgoKYqP1nEuMMfqOvFnOjafZVNWfcrq2SbcX9B4rkjIIMM3dWtEe1WZ2vobSZ1Q/exec'; // 👈 הדבק פה את כתובת הסקריפט
     </script>
-    <script async defer src=`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initApp&libraries=places`></script>
-
+    <script>
+        (function() {
+            console.log("🔵 שלב 2: מכין בקשה לטעינת גוגל מפות.");
+            if (!API_KEY || !API_KEY.startsWith('AIza')) {
+                console.error("⛔️ כשל קריטי: מפתח ה-API של גוגל מפות אינו תקין או חסר!");
+                document.getElementById('error-banner').textContent = 'שגיאה קריטית: מפתח ה-API של גוגל מפות אינו תקין.';
+                document.getElementById('error-banner').classList.remove('hidden');
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initApp&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+            console.log("🟡 שלב 3: נשלחה בקשה לטעינת גוגל מפות. ממתין לתשובה...");
+        })();
+    </script>
+    
     <script>
     function initApp() {
-        console.log("✅ Google Maps loaded. Initializing application.");
+        console.log("✅ שלב 4: הצלחה! גוגל מפות נטען. מתחיל את האפליקציה.");
         
         let allOrders = [], initialData = {}, charts = {};
         let plannerMap, newOrderMap, viewMap, directionsService;
@@ -89,9 +102,11 @@
         };
         
         function initialize() {
-            directionsService = new google.maps.DirectionsService();
+            console.log("🔗 שלב 5: מחבר איוונטים לכפתורים.");
             setupEventListeners();
+            console.log("☁️ שלב 6: פונה לשרת להביא נתונים ראשוניים...");
             loadInitialData().then(() => {
+                console.log("🚀 שלב 7: נתונים הגיעו. מפעיל את הטאב הראשון.");
                 handleTabClick(document.querySelector('.tab.active'));
             });
         }
@@ -111,6 +126,7 @@
 
         function handleTabClick(tab) {
             const tabName = tab.dataset.tab;
+            console.log(`Switching to tab: ${tabName}`);
             
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -119,10 +135,12 @@
 
             // Initialize maps only ONCE when their tab is first viewed
             if (tabName === 'orders' && !newOrderMap) {
+                console.log("Initializing New Order map for the first time.");
                 newOrderMap = new google.maps.Map(elements.maps.newOrder, { zoom: 8, center: { lat: 31.7, lng: 35.2 } });
                 newOrderDR = new google.maps.DirectionsRenderer({ map: newOrderMap });
                 renderOrderManagement();
             } else if (tabName === 'planner' && !plannerMap) {
+                console.log("Initializing Planner map for the first time.");
                 plannerMap = new google.maps.Map(elements.maps.planner, { zoom: 8, center: { lat: 31.7, lng: 35.2 } });
                 plannerDR = new google.maps.DirectionsRenderer({ map: plannerMap });
                 renderPlanner();
@@ -132,10 +150,14 @@
         }
         
         function renderDashboard() { /* ... Chart logic ... */ }
-        function renderOrderManagement() { /* ... Order form and table logic ... */ }
+        function renderOrderManagement() { 
+            console.log("Rendering Order Management tab...");
+            // Logic to render form and table
+        }
         function renderPlanner() { /* ... Planner logic ... */ }
         
         function runGAS(action, payload) {
+             console.log(`Executing server action: ${action}`);
              return new Promise((resolve, reject) => {
                 const isGet = action.startsWith('get');
                 const url = isGet && payload ? `${SCRIPT_URL}?action=${action}&${new URLSearchParams(payload)}` : `${SCRIPT_URL}?action=${action}`;
@@ -143,18 +165,25 @@
                 fetch(isGet ? url : SCRIPT_URL, options)
                     .then(res => res.json())
                     .then(response => {
-                        if (response.status === 'error') reject(new Error(response.message));
-                        else resolve(response.data);
+                        if (response.status === 'error') throw new Error(response.message);
+                        console.log(`✅ SUCCESS from server for action: ${action}`);
+                        resolve(response.data);
                     })
-                    .catch(error => reject(error));
+                    .catch(error => {
+                        console.error(`⛔️ FAILED server action: ${action}`, error);
+                        reject(error)
+                    });
              });
         }
 
         function showError(message) {
+            console.error("⛔️ Application Error:", message);
             elements.errorBanner.textContent = message;
             elements.errorBanner.classList.remove('hidden');
         }
 
+        // --- Initialize the App ---
+        directionsService = new google.maps.DirectionsService();
         initialize();
     }
     </script>
