@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CRM | לוח שיבוצים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-color: #f0f5fa; --header-bg: #ffffff; --card-bg: #ffffff;
+            --primary-color: #3b82f6; --primary-light: #eff6ff; --text-color: #1e293b;
+            --text-light: #64748b; --border-color: #e2e8f0; --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --font-main: 'Rubik', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: var(--font-main); background-color: var(--bg-color); margin: 0;
+            color: var(--text-color); overflow: hidden; height: 100vh;
+        }
+        .dashboard-container { display: flex; height: 100%; flex-direction: column; }
+        
+        .header {
+            background-color: var(--header-bg); padding: 15px 25px; border-bottom: 1px solid var(--border-color);
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            flex-shrink: 0; gap: 15px;
+        }
+        .header-title h1 { margin: 0; font-size: 1.5rem; }
+        .header-title p { margin: 0; color: var(--text-light); font-size: 0.9rem; }
+        .header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .header-actions .date-picker { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-main); }
+        .header-actions button {
+            background-color: var(--primary-color); color: white; border: none; padding: 10px 15px;
+            border-radius: 8px; cursor: pointer; font-weight: 500; display: flex;
+            align-items: center; gap: 8px; transition: background-color 0.2s;
+        }
+        .header-actions button:hover { background-color: #2563eb; }
+        
+        .kpi-bar {
+            display: flex; gap: 15px; padding: 15px 25px; background-color: #f8fafc;
+            border-bottom: 1px solid var(--border-color); flex-wrap: wrap;
+        }
+        .kpi-card {
+            background-color: white; padding: 10px 15px; border-radius: 8px;
+            flex-grow: 1; text-align: center;
+        }
+        .kpi-card .value { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
+        .kpi-card .label { font-size: 0.8rem; color: var(--text-light); }
+
+        .scheduling-board {
+            display: grid; grid-template-columns: 1fr; gap: 20px;
+            padding: 20px; flex-grow: 1; overflow: auto;
+        }
+        @media (min-width: 1024px) { .scheduling-board { grid-template-columns: 1fr 1fr; } }
+
+        .driver-column {
+            background-color: var(--card-bg); border-radius: 12px; display: flex;
+            flex-direction: column; box-shadow: var(--shadow); overflow: hidden;
+            min-height: 400px;
+        }
+        .driver-header {
+            display: flex; align-items: center; padding: 15px;
+            border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .driver-header img { width: 50px; height: 50px; border-radius: 50%; margin-left: 15px; }
+        .driver-info h3 { margin: 0; font-size: 1.2rem; }
+        .driver-stats { display: flex; gap: 15px; margin-top: 4px; font-size: 0.8rem; color: var(--text-light); }
+        
+        .timeline { overflow-y: auto; padding: 10px; }
+        .time-slot {
+            display: flex; border: 2px dashed var(--border-color); border-radius: 8px;
+            margin-bottom: 8px; transition: background-color 0.2s;
+        }
+        .time-label {
+            writing-mode: vertical-rl; transform: rotate(180deg); background-color: #f8fafc;
+            color: var(--text-light); padding: 5px; font-size: 0.7rem; border-radius: 0 8px 8px 0;
+            text-align: center; flex-shrink: 0;
+        }
+        .drop-zone { min-height: 60px; flex-grow: 1; padding: 5px; }
+        .time-slot.drag-over { background-color: var(--primary-light); border-color: var(--primary-color); }
+
+        .order-card {
+            background-color: var(--primary-light); border-left: 4px solid var(--primary-color);
+            padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; cursor: grab;
+            user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .order-card.dragging { opacity: 0.5; }
+        .order-card-customer { font-weight: 500; font-size: 0.9rem; }
+        .order-card-address { font-size: 0.8rem; color: #64748b; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: flex; justify-content: center;
+            align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: white; padding: 25px; border-radius: 15px; width: 95%;
+            max-width: 900px; max-height: 90vh; transform: scale(0.95);
+            transition: transform 0.3s; display: flex; flex-direction: column;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-modal { background:none; border:none; font-size:1.5rem; cursor:pointer; }
+        
+        .form-layout { display: grid; grid-template-columns: 1fr; gap: 25px; overflow-y: auto; padding: 5px; }
+        @media (min-width: 768px) { .form-layout { grid-template-columns: 1fr 300px; } }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { font-weight: 500; display: block; margin-bottom: 8px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; font-size: 1rem; border: 1px solid var(--border-color);
+            border-radius: 8px; background: #fafafa; font-family: var(--font-main);
+        }
+        #map-container { height: 200px; border-radius: 12px; background: #eee; margin-bottom: 15px; z-index: 1; }
+        .insights-card { background: var(--primary-light); padding: 15px; border-radius: 12px; }
+        .insight { display: flex; align-items: center; margin-bottom: 10px; }
+        .insight i { color: var(--primary-color); font-size: 1.2rem; margin-left: 10px; }
+
+        #logger-container {
+            position: fixed; bottom: 15px; left: 15px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .log-entry {
+            padding: 15px; border-radius: 8px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0; transform: translateY(10px); animation: log-fade-in 0.5s forwards; max-width: 350px;
+        }
+        .log-entry.error { background-color: #ef4444; }
+        .log-entry.success { background-color: #22c55e; }
+        .log-entry.info { background-color: #3b82f6; }
+        @keyframes log-fade-in { to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="logger-container"></div>
+    <div class="dashboard-container">
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>לוח שיבוצים</h1>
+                    <p id="currentDateTime"></p>
+                </div>
+                <div class="header-actions">
+                    <input type="date" class="date-picker" id="datePicker">
+                    <button id="addNewOrderBtn"><i class="fas fa-plus"></i> הוסף הזמנה</button>
+                </div>
+            </header>
+            <div class="kpi-bar">
+                <div class="kpi-card"><div class="value" id="kpi-total-orders">0</div><div class="label">סך הזמנות</div></div>
+                <div class="kpi-card"><div class="value" id="kpi-total-km">0</div><div class="label">סך ק"מ</div></div>
+                <div class="kpi-card"><div class="value" id="kpi-pending">0</div><div class="label">ממתינות</div></div>
+            </div>
+            <div class="scheduling-board">
+                <div class="driver-column" id="driver-hakmat">
+                    <div class="driver-header">
+                        <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת">
+                        <div class="driver-info">
+                            <h3>חכמת</h3>
+                            <div class="driver-stats">
+                                <span id="hakmat-orders-count"><strong>0</strong> הזמנות</span>
+                                <span id="hakmat-km-total"><strong>0</strong> ק"מ</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline" id="timeline-hakmat"></div>
+                </div>
+                <div class="driver-column" id="driver-ali">
+                     <div class="driver-header">
+                        <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי">
+                        <div class="driver-info">
+                            <h3>עלי</h3>
+                             <div class="driver-stats">
+                                <span id="ali-orders-count"><strong>0</strong> הזמנות</span>
+                                <span id="ali-km-total"><strong>0</strong> ק"מ</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline" id="timeline-ali"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="form-title">יצירת הזמנה חדשה</h2>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-layout">
+                <form id="createOrderForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start;">
+                    <input type="hidden" id="orderId">
+                    <div class="form-group"><label for="orderCustomer">לקוח</label><input list="customers-list" id="orderCustomer" required><datalist id="customers-list"></datalist></div>
+                    <div class="form-group"><label for="orderContactName">איש קשר</label><input type="text" id="orderContactName"></div>
+                    <div class="form-group"><label for="orderPhone">טלפון</label><input type="tel" id="orderPhone"></div>
+                    <div class="form-group"><label for="orderStreet">רחוב</label><input type="text" id="orderStreet"></div>
+                    <div class="form-group"><label for="orderStreetNumber">מספר בית</label><input type="text" id="orderStreetNumber"></div>
+                    <div class="form-group"><label for="orderCity">עיר</label><select id="orderCity" required><option value="">בחר עיר...</option></select></div>
+                    <div class="form-group"><label for="orderDriver">נהג</label><select id="orderDriver" required><option value="חכמת">חכמת</option><option value="עלי">עלי</option></select></div>
+                    <div class="form-group"><label for="orderDate">תאריך</label><input type="date" id="orderDate" readonly></div>
+                    <div class="form-group"><label for="orderTime">שעה</label><input type="time" id="orderTime" readonly></div>
+                    <div class="form-group"><label for="orderWarehouse">מחסן</label><select id="orderWarehouse" required><option value="התלמיד">התלמיד</option><option value="החרש">החרש</option></select></div>
+                    <div class="form-group"><label for="orderDeliveryType">סוג הובלה</label><select id="orderDeliveryType"></select></div>
+                    <div class="form-group" style="grid-column: 1 / -1;"><label for="orderNotes">הערות</label><input type="text" id="orderNotes"></div>
+                    <button type="submit" id="submitOrderBtn" style="grid-column: 1 / -1; padding: 12px; font-size: 1rem;">שמור הזמנה</button>
+                </form>
+                <div class="form-sidebar">
+                    <h3><i class="fas fa-map-marked-alt"></i> מפה ותובנות</h3>
+                    <div id="map-container"></div>
+                    <div class="insights-card">
+                        <div id="insights-content"><p>בחר עיר לקבלת תובנות</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwMCVeU6G6mrnbdq1TzEZM3Jw7mk97s3Q4Mft77vo0A-DMQ-OYn6NXivO_fCO8FaBrJ/exec';
+    let allOrders = [], customersData = [], citiesData = [];
+    let map, pinMarker;
+
+    const Logger = {
+        _container: null,
+        init() { this._container = document.getElementById('logger-container'); },
+        log(message, type = 'info', duration = 5000) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = message;
+            this._container.appendChild(entry);
+            setTimeout(() => { entry.style.opacity = '0'; setTimeout(() => entry.remove(), 500); }, duration);
+        },
+        error(message, details) { console.error(message, details); this.log(`<strong>שגיאה:</strong> ${message}`, 'error', 10000); },
+        success(message) { this.log(message, 'success'); }
+    };
+    Logger.init();
+
+    async function initializeApp() {
+        initializeDateTime();
+        generateTimeSlots();
+        
+        try {
+            Logger.log('מתחיל טעינת נתונים...', 'info');
+            const initialData = await fetchFromBackend('getInitialData', { date: document.getElementById('datePicker').value });
+            customersData = initialData.customers;
+            citiesData = initialData.cities;
+            allOrders = initialData.activeOrders;
+            
+            Logger.success('כל הנתונים נטענו בהצלחה!');
+            
+            populateFormDatalists();
+            renderSchedulingBoard();
+        } catch (error) {
+            Logger.error('כשל בטעינה ראשונית של המערכת.', error);
+            document.body.innerHTML = `<h1>שגיאה קריטית</h1><p>לא ניתן היה לטעון את נתוני המערכת. ודא שהגדרות השיתוף ב-Google Sheet תקינות ושהסקריפט פורסם מחדש.</p><p><small>${error.message}</small></p>`;
+        }
+        
+        setupEventListeners();
+    }
+    
+    function initializeDateTime() {
+        const datePicker = document.getElementById('datePicker');
+        datePicker.value = new Date().toISOString().split('T')[0];
+        const update = () => { document.getElementById('currentDateTime').textContent = new Date().toLocaleString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); };
+        update();
+        setInterval(update, 60000);
+    }
+    
+    async function loadOrdersForDate(date) {
+        try {
+            Logger.log(`טוען הזמנות לתאריך ${date}...`, 'info');
+            const data = await fetchFromBackend('getActiveOrders', { date });
+            allOrders = data;
+            renderSchedulingBoard();
+            Logger.success(`הוצגו ${allOrders.length} הזמנות.`);
+        } catch (error) {
+            Logger.error('כשל בטעינת הזמנות.', error);
+        }
+    }
+
+    function renderSchedulingBoard() {
+        document.querySelectorAll('.order-card').forEach(card => card.remove());
+        let stats = { 
+            hakmat: { orders: 0, km: 0 }, 
+            ali: { orders: 0, km: 0 },
+            totalOrders: 0, totalKm: 0, pending: 0
+        };
+
+        allOrders.forEach(order => {
+            stats.totalOrders++;
+            if(order['סטטוס'] === 'חדשה') stats.pending++;
+
+            const driverKey = order['נהג'] === 'חכמת' ? 'hakmat' : 'ali';
+            const timelineId = `timeline-${driverKey}`;
+            const timeSlot = document.querySelector(`#${timelineId} .drop-zone[data-time="${order['שעה']}"]`);
+            
+            if (timeSlot) {
+                const orderCard = createOrderCard(order);
+                timeSlot.appendChild(orderCard);
+                stats[driverKey].orders++;
+                const city = citiesData.find(c => c['עיר'] === order['עיר']);
+                if (city && city['מרחק ק"מ']) {
+                    const distance = parseFloat(city['מרחק ק"מ']);
+                    stats[driverKey].km += distance;
+                    stats.totalKm += distance;
+                }
+            }
+        });
+
+        // Update driver stats
+        document.getElementById('hakmat-orders-count').innerHTML = `<strong>${stats.hakmat.orders}</strong> הזמנות`;
+        document.getElementById('hakmat-km-total').innerHTML = `<strong>${stats.hakmat.km.toFixed(1)}</strong> ק"מ`;
+        document.getElementById('ali-orders-count').innerHTML = `<strong>${stats.ali.orders}</strong> הזמנות`;
+        document.getElementById('ali-km-total').innerHTML = `<strong>${stats.ali.km.toFixed(1)}</strong> ק"מ`;
+        
+        // Update KPI bar
+        document.getElementById('kpi-total-orders').textContent = stats.totalOrders;
+        document.getElementById('kpi-total-km').textContent = stats.totalKm.toFixed(1);
+        document.getElementById('kpi-pending').textContent = stats.pending;
+    }
+
+    function createOrderCard(order) {
+        const div = document.createElement('div');
+        div.className = 'order-card';
+        div.draggable = true;
+        div.dataset.orderId = order['id'];
+        div.innerHTML = `<div class="order-card-customer">${order['לקוח']}</div><div class="order-card-address">${order['רחוב']} ${order['מספר בית']}, ${order['עיר']}</div>`;
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
+        div.addEventListener('click', () => openModalForEdit(order['id']));
+        return div;
+    }
+    
+    function generateTimeSlots() {
+        document.querySelectorAll('.timeline').forEach(timeline => {
+            timeline.innerHTML = '';
+            for (let h = 6; h < 18; h++) for (let m of ['00', '30']) {
+                const time = `${String(h).padStart(2, '0')}:${m}`;
+                timeline.innerHTML += `<div class="time-slot"><div class="time-label">${time}</div><div class="drop-zone" data-time="${time}" data-driver="${timeline.id.split('-')[1]}"></div></div>`;
+            }
+        });
+    }
+
+    let draggedItem = null;
+    function handleDragStart(e) { draggedItem = this; setTimeout(() => this.classList.add('dragging'), 0); }
+    function handleDragEnd() { this.classList.remove('dragging'); draggedItem = null; }
+    function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+    async function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        if (draggedItem) {
+            const orderId = draggedItem.dataset.orderId;
+            const newTime = this.dataset.time;
+            const newDriver = this.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+            this.appendChild(draggedItem);
+            
+            try {
+                await postToBackend('updateOrderSchedule', { orderId, newTime, newDriver });
+                Logger.success('שיבוץ עודכן בהצלחה!');
+                await loadOrdersForDate(document.getElementById('datePicker').value);
+            } catch(error) {
+                Logger.error('שגיאה בעדכון השיבוץ.', error);
+                await loadOrdersForDate(document.getElementById('datePicker').value); // Revert on failure
+            }
+        }
+    }
+
+    const modal = document.getElementById('orderModal');
+    
+    function initializeMap() {
+        if (!map) {
+            map = L.map('map-container').setView([32.15, 34.85], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            const pinIcon = L.divIcon({
+                html: '📍',
+                className: 'map-pin-icon',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40]
+            });
+            pinMarker = L.marker([0,0], { icon: pinIcon });
+        }
+    }
+    
+    function openModalForNew(driver, time) {
+        document.getElementById('createOrderForm').reset();
+        document.getElementById('form-title').textContent = "יצירת הזמנה חדשה";
+        document.getElementById('orderId').value = '';
+        document.getElementById('orderDate').value = document.getElementById('datePicker').value;
+        document.getElementById('orderTime').value = time;
+        document.getElementById('orderDriver').value = driver;
+        document.getElementById('insights-content').innerHTML = '<p>בחר עיר לקבלת תובנות</p>';
+        modal.classList.add('visible');
+        setTimeout(() => { if (map) map.invalidateSize(); else initializeMap(); }, 10);
+    }
+    
+    function openModalForEdit(orderId) {
+        const order = allOrders.find(o => o['id'] === orderId);
+        if(!order) return Logger.error('הזמנה לא נמצאה לעריכה.');
+        
+        document.getElementById('form-title').textContent = "עריכת הזמנה";
+        Object.keys(order).forEach(key => {
+            const element = document.getElementById(`order${key.charAt(0).toUpperCase() + key.slice(1)}`);
+            if(element) element.value = order[key];
+        });
+        document.getElementById('orderId').value = order.id;
+        document.getElementById('orderCustomer').value = order['לקוח'];
+        document.getElementById('orderContactName').value = order['שם איש קשר'];
+        document.getElementById('orderPhone').value = order['טלפון'];
+        document.getElementById('orderStreet').value = order['רחוב'];
+        document.getElementById('orderStreetNumber').value = order['מספר בית'];
+        document.getElementById('orderCity').value = order['עיר'] || '';
+        document.getElementById('orderDriver').value = order['נהג'];
+        document.getElementById('orderDate').value = order['תאריך'];
+        document.getElementById('orderTime').value = order['שעה'];
+        document.getElementById('orderWarehouse').value = order['מחסן'];
+        document.getElementById('orderDeliveryType').value = order['סוג הובלה'];
+        document.getElementById('orderNotes').value = order['הערות'];
+        
+        document.getElementById('orderCity').dispatchEvent(new Event('change'));
+        modal.classList.add('visible');
+        setTimeout(() => { if (map) map.invalidateSize(); else initializeMap(); }, 10);
+    }
+
+    window.closeModal = () => modal.classList.remove('visible');
+    
+    function populateFormDatalists() {
+        const customerDatalist = document.getElementById('customers-list');
+        customerDatalist.innerHTML = '';
+        customersData.forEach(c => customerDatalist.innerHTML += `<option value="${c['שם לקוח']}"></option>`);
+        
+        const citySelect = document.getElementById('orderCity');
+        citySelect.innerHTML = '<option value="">בחר עיר...</option>';
+        citiesData.forEach(c => citySelect.innerHTML += `<option value="${c['עיר']}">${c['עיר']}</option>`);
+
+        const deliveryTypeSelect = document.getElementById('orderDeliveryType');
+        const deliveryTypes = [...new Set(citiesData.map(c => c['סוג הובלה']).filter(Boolean))];
+        deliveryTypes.forEach(type => deliveryTypeSelect.innerHTML += `<option value="${type}">${type}</option>`);
+    }
+    
+    function setupEventListeners() {
+        document.getElementById('datePicker').addEventListener('change', (e) => loadOrdersForDate(e.target.value));
+        document.getElementById('addNewOrderBtn').addEventListener('click', () => openModalForNew('חכמת', '09:00'));
+
+        document.querySelectorAll('.timeline').forEach(timeline => {
+            timeline.addEventListener('click', (e) => {
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone && dropZone.children.length === 0) {
+                     const driver = dropZone.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+                     openModalForNew(driver, dropZone.dataset.time);
+                }
+            });
+            timeline.addEventListener('dragover', handleDragOver);
+            timeline.addEventListener('dragleave', handleDragLeave);
+            timeline.addEventListener('drop', handleDrop);
+        });
+
+        document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitOrderBtn');
+            btn.disabled = true; btn.textContent = 'שומר...';
+            
+            const orderData = {
+                'id': document.getElementById('orderId').value,
+                'לקוח': document.getElementById('orderCustomer').value,
+                'שם איש קשר': document.getElementById('orderContactName').value,
+                'טלפון': document.getElementById('orderPhone').value,
+                'רחוב': document.getElementById('orderStreet').value,
+                'מספר בית': document.getElementById('orderStreetNumber').value,
+                'עיר': document.getElementById('orderCity').value,
+                'נהג': document.getElementById('orderDriver').value,
+                'תאריך': document.getElementById('orderDate').value,
+                'שעה': document.getElementById('orderTime').value,
+                'מחסן': document.getElementById('orderWarehouse').value,
+                'סוג הובלה': document.getElementById('orderDeliveryType').value,
+                'הערות': document.getElementById('orderNotes').value,
+                'מרחק ק"מ': document.getElementById('insights-content').querySelector('#insight-dist')?.textContent || '',
+                'זמן נסיעה (דקות)': document.getElementById('insights-content').querySelector('#insight-time')?.textContent || ''
+            };
+
+            try {
+                await postToBackend('saveOrder', orderData);
+                closeModal();
+                Logger.success(`הזמנה עבור ${orderData['לקוח']} נשמרה בהצלחה!`);
+                await loadOrdersForDate(document.getElementById('datePicker').value);
+            } catch (error) {
+                Logger.error('שגיאה בשמירת ההזמנה.', error);
+            } finally {
+                btn.disabled = false; btn.textContent = 'שמור הזמנה';
+            }
+        });
+        
+        document.getElementById('orderCustomer').addEventListener('change', (e) => {
+            const customer = customersData.find(c => c['שם לקוח'] === e.target.value);
+            if (customer) {
+                document.getElementById('orderContactName').value = customer['שם איש קשר'] || '';
+                document.getElementById('orderPhone').value = customer['טלפון'] || '';
+                document.getElementById('orderStreet').value = customer['רחוב'] || '';
+                document.getElementById('orderStreetNumber').value = customer['מספר בית'] || '';
+                document.getElementById('orderCity').value = customer['עיר'] || '';
+                document.getElementById('orderCity').dispatchEvent(new Event('change'));
+            }
+        });
+
+        document.getElementById('orderCity').addEventListener('change', (e) => {
+            const cityName = e.target.value;
+            const insightsContent = document.getElementById('insights-content');
+            const city = citiesData.find(c => c['עיר'] === cityName);
+            if (!city) {
+                insightsContent.innerHTML = '<p>בחר עיר לקבלת תובנות</p>';
+                return;
+            }
+            insightsContent.innerHTML = `
+                <div class="insight"><i class="fas fa-road"></i> <span><strong id="insight-dist">${city['מרחק ק"מ']}</strong> ק"מ</span></div>
+                <div class="insight"><i class="fas fa-car"></i> <span><strong id="insight-time">${city['זמן נסיעה (דקות)']}</strong> דקות (ממוצע)</span></div>
+            `;
+        });
+    }
+
+    async function fetchFromBackend(action, params = {}) {
+        const url = new URL(BACKEND_URL);
+        url.searchParams.append('action', action);
+        for(const key in params) { url.searchParams.append(key, params[key]); }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`שגיאת רשת בפעולה: ${action}. סטטוס: ${response.status}`);
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message);
+        return result.data;
+    }
+    
+    async function postToBackend(action, data) {
+        const response = await fetch(BACKEND_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action, data }),
+        });
+        if (!response.ok) throw new Error(`שגיאת רשת בפעולת POST: ${action}. סטטוס: ${response.status}`);
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message);
+        return result.data;
+    }
+
+    initializeApp();
+});
+</script>
+</body>
+</html>
+
+
