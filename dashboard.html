@@ -9,32 +9,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { font-family: 'Rubik', sans-serif; background-color: #f1f5f9; }
-        .tab { cursor: pointer; padding: 10px 20px; border-bottom: 4px solid transparent; transition: all 0.2s; }
+        .tab { cursor: pointer; padding: 10px 20px; border-bottom: 4px solid transparent; }
         .tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-        .table-action-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.5rem; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
     </style>
 </head>
 <body class="text-slate-800">
     <div class="container mx-auto p-4 max-w-screen-2xl">
         <header class="mb-6"><h1 class="text-4xl font-bold text-slate-900">מרכז בקרה לוגיסטי</h1></header>
         <div class="border-b border-slate-200 mb-6">
-            <nav id="tabs-nav" class="flex space-x-4 -mb-px" aria-label="Tabs">
+            <nav id="tabs-nav" class="flex space-x-4 -mb-px">
                 <a data-tab="dashboard" class="tab active"><i class="fa-solid fa-chart-pie mr-2"></i>לוח בקרה</a>
                 <a data-tab="orders" class="tab"><i class="fa-solid fa-tasks mr-2"></i>ניהול הזמנות</a>
                 <a data-tab="planner" class="tab"><i class="fa-solid fa-route mr-2"></i>תכנון מסלול יומי</a>
             </nav>
         </div>
-        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"></div>
+        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"></div>
 
-        <!-- Tab content placeholders -->
-        <div id="content-dashboard" class="tab-content active"></div>
-        <div id="content-orders" class="tab-content"></div>
-        <div id="content-planner" class="tab-content"></div>
+        <main>
+            <div id="content-dashboard" class="tab-content active"></div>
+            <div id="content-orders" class="tab-content"></div>
+            <div id="content-planner" class="tab-content"></div>
+        </main>
     </div>
 
     <!-- Modals -->
@@ -42,42 +42,20 @@
     <div id="archive-modal" class="modal-overlay hidden"> ... </div>
     
     <script>
-        console.log("Phase 1: Initial script running. Defining keys.");
-        // =================================================================
-        // ==  חשוב: הדבק את המפתחות הנכונים כאן                    ==
-        // =================================================================
-        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 הדבק פה את מפתח המפות (מתחיל ב-AIza)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeMtq2tRq9XKwYH4K05fA2pvmeq_T2mfMopRaq4a-0wH0odFE9naDZhd7Fu7jUUQ4JsA/exec'; // 👈 הדבק פה את כתובת הסקריפט
-        // =================================================================
+        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDL6f5ZXdD-WCGVMreJzPHi3P-OxDkVv73fycSGG6u9eY_tEcJLQWJaZFuPleUPOrRhw/exec';
     </script>
+    <script async defer src=`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initApp&libraries=places`></script>
+
     <script>
-        // This function dynamically loads the Google Maps script
-        (function() {
-            console.log("Phase 2: Preparing to load Google Maps script.");
-            if (!API_KEY || !API_KEY.startsWith('AIza')) {
-                console.error("CRITICAL ERROR: Google Maps API_KEY is invalid or missing!");
-                document.getElementById('error-banner').textContent = 'שגיאה קריטית: מפתח ה-API של גוגל מפות אינו תקין.';
-                document.getElementById('error-banner').classList.remove('hidden');
-                return;
-            }
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMaps&libraries=places`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-            console.log("Phase 3: Google Maps script requested.");
-        })();
-    </script>
-    
-    <script>
-    // This function is the main entry point, called by the Google Maps script
-    window.initMaps = function() {
-        console.log("Phase 4: SUCCESS! Google Maps loaded. Initializing application.");
+    // Main App Entry Point
+    function initApp() {
+        console.log("Phase 4: Google Maps loaded. Initializing application.");
         
+        // Global state
         let allOrders = [], initialData = {}, charts = {};
         let plannerMap, newOrderMap, viewMap, directionsService, plannerDR, newOrderDR, viewDR;
 
-        // Simplified element cache
         const elements = {
             nav: document.getElementById('tabs-nav'),
             errorBanner: document.getElementById('error-banner'),
@@ -87,17 +65,10 @@
                 planner: document.getElementById('content-planner'),
             },
         };
-
+        
+        // --- INITIALIZATION ---
         function initialize() {
-            // Render the HTML skeletons for each tab
             renderSkeletons();
-            
-            // Now that HTML exists, we can create maps
-            const center = { lat: 31.7, lng: 35.2 };
-            directionsService = new google.maps.DirectionsService();
-            
-            // Maps are initialized only when their tab is shown for the first time
-            
             setupEventListeners();
             loadInitialData().then(() => {
                 handleTabClick(document.querySelector('.tab.active'));
@@ -105,76 +76,93 @@
         }
         
         function renderSkeletons() {
-            elements.content.dashboard.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"><div class="card p-6 col-span-full"><h2 class="text-xl font-semibold">סקירה כללית</h2><p>סה"כ הזמנות: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p></div><div class="card p-6 lg:col-span-2"><h2 class="text-xl font-semibold">ערים מובילות</h2><canvas id="cities-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">סוגי הובלה</h2><canvas id="types-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">לקוחות מובילים</h2><canvas id="customers-chart"></canvas></div></div>`;
-            elements.content.orders.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-12 lg:col-span-4 card p-6"><h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה</h2><form id="order-form" class="space-y-4"> ... </form></div><div class="col-span-12 lg:col-span-8 card p-6"><h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2><div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr> ... </tr></thead><tbody id="orders-table-body"></tbody></table></div></div></div>`;
-            elements.content.planner.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-4 card p-6"> ... </div><div class="col-span-8 card p-4"><div id="planner-map" class="w-full h-96"></div> ... </div></div>`;
-            console.log("UI Skeletons rendered.");
+            elements.content.dashboard.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-4 gap-6"> ... </div>`;
+            elements.content.orders.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-4 card p-6"> ... </div><div class="col-span-8 card p-6"><div id="new-order-map" style="height:300px; margin-bottom:1rem;"></div> ... </div></div>`;
+            elements.content.planner.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-4 card p-6"> ... </div><div class="col-span-8 card p-4"><div id="planner-map" style="height:450px;"></div> ... </div></div>`;
+            console.log("Phase 5: UI Skeletons rendered.");
         }
 
         function setupEventListeners() {
             elements.nav.addEventListener('click', e => {
                 if (e.target.closest('.tab')) handleTabClick(e.target.closest('.tab'));
             });
-            // Other listeners will be attached when tabs are rendered
+            console.log("Phase 6: Event listeners attached.");
         }
 
         async function loadInitialData() {
-            console.log("Phase 5: Fetching initial data from server...");
             try {
                 initialData = await runGAS('getInitialData');
                 allOrders = initialData.activeOrders;
-                console.log("Phase 6: SUCCESS! Initial data loaded.");
             } catch (error) { showError(error.message); }
         }
 
+        // --- TAB HANDLING & RENDERING ---
         function handleTabClick(tab) {
-             console.log(`Tab clicked: ${tab.dataset.tab}`);
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             const tabName = tab.dataset.tab;
-            const contentEl = elements.content[tabName];
-            contentEl.classList.add('active');
+            elements.content[tabName].classList.add('active');
 
             switch(tabName) {
                 case 'dashboard': renderDashboard(); break;
-                case 'orders': if(!newOrderMap) { newOrderMap = new google.maps.Map(document.getElementById("new-order-map")); } renderOrderManagement(); break;
-                case 'planner': if(!plannerMap) { plannerMap = new google.maps.Map(document.getElementById("planner-map")); } renderPlanner(); break;
+                case 'orders': renderOrderManagement(); break;
+                case 'planner': renderPlanner(); break;
             }
         }
         
         function renderDashboard() { /* ... Chart logic ... */ }
-        function renderOrderManagement() { /* ... Order form and table logic ... */ }
-        function renderPlanner() { /* ... Planner logic ... */ }
+        
+        function renderOrderManagement() {
+            if (!newOrderMap) {
+                newOrderMap = new google.maps.Map(document.getElementById("new-order-map"));
+                newOrderDR = new google.maps.DirectionsRenderer({ map: newOrderMap });
+            }
+            // ... Populate dropdowns, render table, attach form listeners ...
+            renderOrdersTable();
+        }
+        
+        function renderPlanner() {
+             if (!plannerMap) {
+                plannerMap = new google.maps.Map(document.getElementById("planner-map"));
+                plannerDR = new google.maps.DirectionsRenderer({ map: plannerMap });
+            }
+            // ... Populate dropdowns, attach planner listeners ...
+        }
 
+        function renderOrdersTable() {
+            const tableBody = document.getElementById('orders-table-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = allOrders.map(order => `... HTML for table row ...`).join('');
+        }
+        
+        // --- SERVER COMMUNICATION ---
         function runGAS(action, payload) {
-            console.log(`Executing server action: ${action}`);
-            const url = `${SCRIPT_URL}?action=${action}`;
-            if (payload && action.startsWith('get')) {
-                return fetch(`${url}&${new URLSearchParams(payload)}`).then(res => res.json()).then(handleGasResponse);
-            }
-            return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, payload }) }).then(res => res.json()).then(handleGasResponse);
+            const isGet = action.startsWith('get');
+            const url = isGet && payload ? `${SCRIPT_URL}?action=${action}&${new URLSearchParams(payload)}` : `${SCRIPT_URL}?action=${action}`;
+            const options = isGet ? { method: 'GET' } : { method: 'POST', body: JSON.stringify({ action, payload }) };
+            
+            return fetch(SCRIPT_URL, options)
+                .then(res => res.json())
+                .then(response => {
+                    if (response.status === 'error') throw new Error(response.message);
+                    return response.data;
+                });
         }
-
-        function handleGasResponse(response) {
-            if (response.status === 'error') {
-                console.error(`Server Error for action: ${response.action || 'unknown'}`, response.message);
-                throw new Error(response.message);
-            }
-            console.log(`SUCCESS from server for action.`);
-            return response.data;
-        }
-
+        
         function showError(message) {
-            console.error("Application Error:", message);
             elements.errorBanner.textContent = message;
             elements.errorBanner.classList.remove('hidden');
         }
 
+        // ... All other handler functions (saveOrder, edit, view, archive, etc.)
+        
         // Kick off the app
-        console.log("Initializing core application logic...");
         initialize();
     }
+    // Change callback name to avoid conflicts
+    window.initApp = initApp; 
     </script>
 </body>
 </html>
