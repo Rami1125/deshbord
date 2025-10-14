@@ -128,22 +128,21 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // === CONFIG ===
-    const GAS_URL = https://script.google.com/macros/s/AKfycbzVyknX0rD9QGwTm8IWSExBGoqJFAyYGxtOi-2LWF_-6OFynchcHvj1fo2mjxYkJDOW/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzVyknX0rD9QGwTm8IWSExBGoqJFAyYGxtOi-2LWF_-6OFynchcHvj1fo2mjxYkJDOW/exec';
     // warehouse coordinates (example) - change to your real warehouse
 const WAREHOUSES = {
-MAIN: {
-name: 'מחסן ראשי — החרש 10',
-address: 'החרש 10, הוד השרון, ישראל',
-lat: 32.16267,
-lng: 34.89648,
-},
-SECONDARY: {
-name: 'מחסן משנה — התלמיד 6',
-address: 'התלמיד 6, הוד השרון, ישראל',
-lat: 32.16343,
-lng: 34.89181,
-}
-};
+  MAIN: {
+    name: 'מחסן ראשי — החרש 10',
+    address: 'החרש 10, הוד השרון, ישראל',
+    lat: 32.16267,
+    lng: 34.89648,
+  },
+  SECONDARY: {
+    name: 'מחסן משנה — התלמיד 6',
+    address: 'התלמיד 6, הוד השרון, ישראל',
+    lat: 32.16343,
+    lng: 34.89181,
+  }
     // Mock customers data - replace with fetch from GAS endpoint getCustomers
     let customersData = [
       {name:'לקוח א', phone:'050-1112223', contact:'יוסי כהן', street:'הרצל', number:'12', city:'ת"א'},
