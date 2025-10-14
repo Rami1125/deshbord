@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>ניהול הזמנות</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+      #map { height: 400px; width: 100%; border: 1px solid #ccc; margin-bottom: 20px; }
+     .form-container { display: flex; flex-direction: column; gap: 10px; max-width: 500px; }
+     .form-container input,.form-container select { padding: 8px; font-size: 16px; }
+     .form-container button { padding: 10px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; }
+     .spinner { display: none; /* לוגיקה להצגה/הסתרה ב-JS */ }
+    </style>
+  </head>
+  <body>
+
+    <h1>מערכת ניהול הזמנות</h1>
+
+    <div id="map"></div>
+
+    <h2>יצירת הזמנה חדשה</h2>
+    <div class="form-container" id="orderForm">
+      <input type="text" id="customer" placeholder="שם לקוח" required>
+      <input type="text" id="city" placeholder="עיר" required>
+      <input type="text" id="street" placeholder="רחוב ומספר">
+      <button onclick="saveOrder()">שמור הזמנה</button>
+      <div class="spinner" id="spinner">טוען...</div>
+    </div>
+
+    <script>
+      // --- משתנים גלובליים ---
+      let map;
+      let markersLayer;
+
+      // --- אתחול האפליקציה עם טעינת הדף ---
+      document.addEventListener('DOMContentLoaded', initializeMap);
+
+      /**
+       * מאתחל את המפה ואת שכבת הסמנים, וקורא לטעינת ההזמנות.
+       */
+      function initializeMap() {
+        map = L.map('map').setView([32.0853, 34.7818], 8); // מרכז על תל אביב
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // התיקון הקריטי: אתחול השכבה כ-FeatureGroup והוספתה למפה
+        markersLayer = L.featureGroup().addTo(map);
+        
+        loadOrders();
+      }
+
+      /**
+       * קורא לפונקציית השרת לטעינת ההזמנות.
+       */
+      function loadOrders() {
+        showSpinner();
+        google.script.run
+         .withSuccessHandler(drawMarkers)
+         .withFailureHandler(onLoadFailure)
+         .loadOrdersFromSheet();
+      }
+      
+      /**
+       * פונקציית Callback להצלחה בטעינת הזמנות. מציירת את הסמנים על המפה.
+       * @param {Array<Object>} orders - מערך אובייקטי הזמנה מהשרת.
+       */
+      function drawMarkers(orders) {
+        hideSpinner();
+        markersLayer.clearLayers();
+
+        orders.forEach(order => {
+          // נדרש שיהיו שדות lat ו-lng באובייקט ההזמנה
+          if (order.lat && order.lng) {
+            const marker = L.marker([order.lat, order.lng]);
+            const popupContent = `<b>לקוח:</b> ${order.customer}<br><b>עיר:</b> ${order.city}`;
+            marker.bindPopup(popupContent);
+            marker.addTo(markersLayer);
+          }
+        });
+
+        fitMapToBounds();
+      }
+
+      /**
+       * מתאימה את תצוגת המפה לגבולות כל הסמנים.
+       */
+      function fitMapToBounds() {
+        if (markersLayer.getLayers().length > 0) {
+          const bounds = markersLayer.getBounds();
+          map.fitBounds(bounds.pad(0.1));
+        } else {
+          map.setView([32.0853, 34.7818], 8);
+        }
+      }
+      
+      /**
+       * אוסף את הנתונים מהטופס ומחזיר אובייקט הזמנה.
+       * @returns {Object} - אובייקט עם נתוני ההזמנה.
+       */
+      function collectOrderDataFromForm() {
+        // יש להרחיב פונקציה זו כדי לאסוף את כל שדות הטופס
+        return {
+          customer: document.getElementById('customer').value,
+          city: document.getElementById('city').value,
+          street: document.getElementById('street').value,
+          //...
+        };
+      }
+
+      /**
+       * קורא לפונקציית השרת לשמירת ההזמנה.
+       */
+      function saveOrder() {
+        const orderData = collectOrderDataFromForm();
+        if (!orderData.customer ||!orderData.city) {
+            alert('נא למלא שדות חובה: שם לקוח ועיר.');
+            return;
+        }
+        
+        showSpinner();
+        google.script.run
+         .withSuccessHandler(onSaveSuccess)
+         .withFailureHandler(onSaveFailure)
+         .saveOrderInSheet(orderData);
+      }
+
+      // --- פונקציות Callback ופונקציות עזר ---
+
+      function onSaveSuccess(response) {
+        hideSpinner();
+        alert('ההזמנה נשמרה בהצלחה!');
+        document.getElementById('orderForm').reset();
+        loadOrders(); // רענון המפה עם ההזמנה החדשה
+      }
+
+      function onSaveFailure(error) {
+        hideSpinner();
+        console.error('Server-side save error:', error);
+        alert('שגיאה בשמירת ההזמנה: \n' + error.message);
+      }
+      
+      function onLoadFailure(error) {
+        hideSpinner();
+        console.error('Server-side load error:', error);
+        alert('שגיאה בטעינת ההזמנות: \n' + error.message);
+      }
+
+      function showSpinner() { document.getElementById('spinner').style.display = 'block'; }
+      function hideSpinner() { document.getElementById('spinner').style.display = 'none'; }
+
+    </script>
+  </body>
+</html>
