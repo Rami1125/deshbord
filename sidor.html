@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>📋 דוח בוקר - זכוכית מתקדמת</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4587de">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- External Libraries & Fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+    <!-- OneSignal SDK for Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+          safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+
+    <style>
+        /* General styling for the application */
+        :root {
+            --primary-color: #87CEEB; /* Sky Blue - Light Blue */
+            --secondary-color: #4587de; /* Light Blue - Slightly lighter */
+            --dark-color: #2C3E50; /* Dark blue-gray for strong text contrast */
+            --light-color: #F8F8F8; /* Off-white */
+            --accent-color: #E74C3C; /* Red for alerts/accents */
+            --text-color: #333; /* Dark text */
+            --shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+            --card-bg: rgba(255, 255, 255, 0.9); /* More opaque white for cards */
+            --modal-bg: rgba(255, 255, 255, 0.95); /* Almost opaque white for modals */
+            --overlay-bg: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay for modals */
+            --glass-bg: rgba(255, 255, 255, 0.8); /* More opaque glass effect */
+        }
+        
+        html, body {
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh */
+        }
+
+        body {
+            font-family: 'Rubik', Arial, sans-serif;
+            text-align: center;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Full page background image with transparency */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0; /* Initially hidden, will be faded in */
+            z-index: -1;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        body.loaded::before {
+            opacity: 0.7; /* Fade in after splash screen */
+        }
+        
+        /* Splash Screen Styling */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        #splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        #splash-screen img {
+            width: 150px;
+            height: 150px;
+            border-radius: 20%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        #splash-screen .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0,0,0,0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+
+        /* App container */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 0;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            border-radius: 0 0 30px 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 80px 15px 80px 15px; /* Top padding for header, bottom for nav */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            position: relative;
+        }
+        
+        /* Page transition styling */
+        .page-content {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            position: absolute;
+            width: calc(100% - 30px); /* Account for parent padding */
+            top: 80px;
+            right: 15px;
+            padding-bottom: 80px;
+        }
+
+        .page-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+            top: 0;
+            right: 0;
+        }
+        
+        /* Driver section title, order cards, modals, summary cards etc. */
+        .driver-section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 30px 0 25px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            background-color: var(--light-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .driver-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 10px 0;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .order-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 15px;
+            text-align: right;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .order-card.ali { background: linear-gradient(135deg, rgba(173, 216, 230, 0.8), rgba(135, 206, 235, 0.8)); }
+        .order-card.hakmat { background: linear-gradient(135deg, rgba(224, 242, 241, 0.8), rgba(178, 235, 242, 0.8)); }
+
+        .order-time {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            padding-bottom: 10px;
+        }
+        .order-details p {
+            margin: 4px 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .order-details i {
+            margin-top: 3px;
+        }
+        .order-details strong {
+             min-width: 70px;
+        }
+
+        .share-button {
+            background-color: #25D366;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 90%;
+            max-width: 300px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .share-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 15px;
+            transition: transform 0.3s ease;
+        }
+        .summary-card:hover { transform: translateY(-5px); }
+        .summary-card h3 { font-size: 1rem; margin-top: 0; }
+        .summary-count { font-size: 2.5rem; font-weight: 700; color: var(--dark-color); }
+        
+        .chart-card {
+            grid-column: 1 / -1; /* Full width */
+            padding: 15px;
+        }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg); display: flex; justify-content: center;
+            align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: var(--modal-bg); padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 90vw; width: 100%;
+            position: relative; transform: scale(0.9); transition: transform 0.3s ease;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-close-button {
+            position: absolute; top: 15px; left: 15px; background: var(--accent-color);
+            color: white; border: none; border-radius: 50%; width: 35px; height: 35px;
+            font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center;
+            align-items: center;
+        }
+        
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px 0;
+            z-index: 999;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .nav-button {
+            background-color: transparent;
+            border: none;
+            color: #888;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .nav-button.active {
+            color: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+
+        .nav-button i {
+            font-size: 1.3rem;
+        }
+
+        .nav-button .button-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        
+        .nav-button.active .button-avatar {
+             border-color: var(--secondary-color);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            padding: 10px 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .nav-button.warehouse-button.active .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
+        }
+        
+        .dropdown-item {
+            padding: 10px 15px; color: var(--text-color);
+            cursor: pointer; transition: background-color 0.2s ease;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .dropdown-item:hover { background-color: #f0f0f0; }
+
+        /* Admin Page Styles */
+        #adminPage .form-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        #adminPage label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        #adminPage input, #adminPage select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        #adminPage button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #adminPage button:hover {
+            background-color: var(--dark-color);
+        }
+        #adminLoginModal .modal-content {
+            max-width: 350px;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg" alt="Logo">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="app-container">
+        <header class="header">
+            <h1 id="headerTitle">🚛 דוח בוקר</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Main Page Content -->
+            <div id="mainPage" class="page-content">
+                <div class="summary-grid">
+                    <div class="summary-card"><h3><i class="fas fa-truck"></i> עלי</h3><div class="summary-count" id="aliOrderCount">0</div></div>
+                    <div class="summary-card"><h3><i class="fas fa-truck"></i> חכמת</h3><div class="summary-count" id="hakmatOrderCount">0</div></div>
+                    <div class="summary-card"><h3><i class="fas fa-warehouse"></i> מחסן</h3><div class="summary-count" id="totalWarehouseOrderCount">0</div></div>
+                </div>
+                 <div class="chart-card summary-card">
+                    <h3><i class="fas fa-chart-bar"></i> הזמנות בוקר (06:00-09:00)</h3>
+                    <div class="chart-container" style="height:250px"><canvas id="morningOrdersChart"></canvas></div>
+                </div>
+                 <div class="driver-section-title"><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Avatar for Ali" class="driver-avatar">נהג: עלי</div>
+                <div id="aliTimeline" class="timeline-grid"></div>
+                <div class="driver-section-title"><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Avatar for Hakmat" class="driver-avatar">נהג: חכמת</div>
+                <div id="hakmatTimeline" class="timeline-grid"></div>
+                 <button class="share-button" onclick="showPasswordModal()"><i class="fab fa-whatsapp"></i> שתף דוח יומי</button>
+            </div>
+            
+             <!-- Other pages -->
+            <div id="hakmatPage" class="page-content"></div>
+            <div id="aliPage" class="page-content"></div>
+            <div id="warehousePage" class="page-content"></div>
+
+            <!-- Admin Page (New) -->
+            <div id="adminPage" class="page-content">
+                <div class="summary-card" style="margin-bottom: 20px;">
+                    <h3><i class="fas fa-plus-circle"></i> יצירת הזמנה חדשה</h3>
+                    <form id="createOrderForm">
+                        <div class="form-group">
+                            <label for="orderDate">תאריך</label>
+                            <input type="date" id="orderDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderTime">שעה</label>
+                            <input type="time" id="orderTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderCustomer">לקוח</label>
+                            <input type="text" id="orderCustomer" placeholder="שם הלקוח" required>
+                        </div>
+                         <div class="form-group">
+                            <label for="orderAddress">כתובת</label>
+                            <input type="text" id="orderAddress" placeholder="עיר, רחוב, מספר בית" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderWarehouse">מחסן</label>
+                            <select id="orderWarehouse" required>
+                                <option value="התלמיד">התלמיד</option>
+                                <option value="החרש">החרש</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderDriver">נהג</label>
+                            <select id="orderDriver" required>
+                                <option value="hakmat">חכמת</option>
+                                <option value="ali">עלי</option>
+                            </select>
+                        </div>
+                        <button type="submit">צור הזמנה ושלח התראה</button>
+                    </form>
+                </div>
+                <div class="summary-card">
+                     <h3><i class="fab fa-whatsapp"></i> דוח למחר</h3>
+                     <p>הכן ושלח את דוח ההזמנות המלא ליום העבודה הבא.</p>
+                     <button onclick="shareTomorrowReport()"><i class="fab fa-whatsapp"></i> שתף דוח למחר</button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+             <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button"><i class="fas fa-home"></i><span>ראשי</span></button>
+            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button"><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Hakmat" class="button-avatar"><span>חכמת</span></button>
+            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button"><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Ali" class="button-avatar"><span>עלי</span></button>
+            <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
+                <i class="fas fa-boxes"></i><span>מחסן</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" data-warehouse-type="התלמיד"><i class="fas fa-school"></i> התלמיד</div>
+                    <div class="dropdown-item" data-warehouse-type="החרש"><i class="fas fa-tools"></i> החרש</div>
+                </div>
+            </button>
+            <button class="nav-button" data-page-id="adminPage" data-nav-id="admin-nav-button"><i class="fas fa-user-shield"></i><span>ניהול</span></button>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="orderDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
+            <h2 id="modalTitle">פרטי הזמנה</h2>
+            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
+            <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
+            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
+            <p><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> <span id="modalOperationType"></span></p>
+            <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+        </div>
+    </div>
+     <div id="passwordModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
+            <h2>הכנס סיסמה</h2>
+            <input type="password" id="passwordInput" placeholder="סיסמה" style="width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center;">
+            <button onclick="checkPassword()" style="padding: 10px 20px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white;">אשר</button>
+            <p id="passwordError" style="color: var(--accent-color); display: none;">סיסמה שגויה.</p>
+        </div>
+    </div>
+    <div id="adminLoginModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('adminLoginModal')">&times;</button>
+            <h2>כניסת מנהל</h2>
+            <div class="form-group">
+                <label for="adminUsername">שם משתמש</label>
+                <select id="adminUsername">
+                    <option value="ראמי">ראמי</option>
+                    <option value="יואב">יואב</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">סיסמה</label>
+                <input type="password" id="adminPassword" placeholder="סיסמה">
+            </div>
+            <button onclick="checkAdminLogin()">התחבר</button>
+            <p id="adminLoginError" style="color: var(--accent-color); display: none; margin-top: 10px;">פרטי התחברות שגויים.</p>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered.', reg))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            }
+            initializeApp();
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden');
+                document.body.classList.add('loaded');
+            }, 2500);
+        });
+        
+        // --- DATA AND LOGIC ---
+        
+        // עדכון מזהה הגליון החדש
+        const sheetId = '1T3Q_N-R9YPuJMsfflq8Z9wFMVkiXEa-DxD5GV0WHsck';
+        const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // API Key for READ operations only
+        const ordersRange = 'כתיבת הזמנה לסידור - Orders!A2:P';
+        const WHATSAPP_PASSWORD = "1125";
+        const ADMIN_PASSWORD = "1125";
+
+        let allAliOrders = [], allHakmatOrders = [], morningChartInstance = null;
+        
+        async function initializeApp() {
+            const allOrders = await fetchOrdersData(ordersRange);
+            [allAliOrders, allHakmatOrders] = processOrdersByDriver(allOrders);
+            renderDashboard();
+            setupNavListeners();
+            activatePageAndNav('mainPage', 'main-nav-button');
+            document.getElementById('createOrderForm').addEventListener('submit', handleCreateOrder);
+        }
+
+        // פונקציה חדשה לעיבוד הזמנות לפי נהג
+        function processOrdersByDriver(orders) {
+            const aliOrders = [];
+            const hakmatOrders = [];
+            
+            orders.forEach(order => {
+                // יצירת כתובת מלאה
+                const fullAddress = `${order.street || ''} ${order.street_number || ''}, ${order.city || ''}`;
+                
+                // יצירת אובייקט הזמנה אחיד
+                const processedOrder = {
+                    date: order.date,
+                    time: order.time,
+                    warehouse: order.warehouse,
+                    status: order.status,
+                    customer: order.customer,
+                    address: fullAddress,
+                    operationType: order.delivery_type,
+                    driver: order.driver,
+                    distance: order.distance_km,
+                    duration: order.duration_min
+                };
+                
+                // מיון לפי נהג
+                if (order.driver === 'עלי') {
+                    aliOrders.push(processedOrder);
+                } else if (order.driver === 'חכמת') {
+                    hakmatOrders.push(processedOrder);
+                } else {
+                    // אם לא צוין נהג, נשייך לפי לוגיקה
+                    // כאן אפשר להוסיף לוגיקה נוספת לשיוך אוטומטי
+                    aliOrders.push(processedOrder);
+                }
+            });
+            
+            return [aliOrders, hakmatOrders];
+        }
+
+        function renderDashboard() {
+            renderOrders(allAliOrders, "aliTimeline", "עלי");
+            renderOrders(allHakmatOrders, "hakmatTimeline", "חכמת");
+            updateSummaryCounts();
+            renderMorningChart();
+        }
+
+        async function fetchOrdersData(range) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                if (!data.values) return [];
+                
+                // מיפוי העמודות לפי הגליון החדש
+                return data.values.map(row => {
+                    // לוודא שיש מספיק עמודות
+                    if (row.length < 15) return null;
+                    
+                    return {
+                        timestamp: row[0],
+                        id: row[1],
+                        customer: row[2],
+                        contact_phone: row[3],
+                        street: row[4],
+                        street_number: row[5],
+                        city: row[6],
+                        delivery_type: row[7],
+                        warehouse: row[8],
+                        date: row[9],
+                        time: row[10],
+                        driver: row[11],
+                        distance_km: row[12],
+                        duration_min: row[13],
+                        notes: row[14],
+                        status: row[15] || 'חדשה'
+                    };
+                }).filter(order => order !== null && order.date); // מסנן רשומות ריקות
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("שגיאה בטעינת הנתונים. ייתכן שהאפליקציה תציג מידע לא עדכני.");
+                return [];
+            }
+        }
+        
+        function parseTimeForSorting(timeStr) {
+            if (!timeStr) return new Date(0);
+            if (timeStr.includes("ביחד")) {
+                const date = new Date();
+                date.setHours(7, 0, 0, 0);
+                return date;
+            }
+            const [hours, minutes] = (timeStr.split(':') || [0,0]).map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
+
+        function renderOrders(orders, containerId, driverName = null) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
+            if (!orders || orders.length === 0) {
+                container.innerHTML = "<p>אין הזמנות זמינות.</p>";
+                return;
+            }
+            
+            // מיון הזמנות לפי זמן
+            const sortedOrders = [...orders].sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+            
+            sortedOrders.forEach(order => {
+                const card = document.createElement("div");
+                card.className = `order-card ${driverName || ''}`.trim();
+                card.onclick = () => showOrderDetails(order);
+                card.innerHTML = `
+                    <div class="order-time"><i class="far fa-clock"></i> ${order.time || 'N/A'}</div>
+                    <div class="order-details">
+                        <p><strong><i class="fas fa-user"></i> לקוח:</strong> ${order.customer || 'N/A'}</p>
+                        <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> ${order.address || 'N/A'}</p>
+                        <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> ${order.warehouse || 'N/A'}</p>
+                        ${order.distance ? `<p><strong><i class="fas fa-road"></i> מרחק:</strong> ${order.distance}</p>` : ''}
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+        
+        function updateSummaryCounts() {
+            document.getElementById('aliOrderCount').textContent = allAliOrders.length;
+            document.getElementById('hakmatOrderCount').textContent = allHakmatOrders.length;
+            const totalWarehouseOrders = [...allAliOrders, ...allHakmatOrders].filter(o => o.warehouse && o.warehouse.trim() !== '').length;
+            document.getElementById('totalWarehouseOrderCount').textContent = totalWarehouseOrders;
+        }
+
+        function renderMorningChart() {
+             const sixAM = new Date(); sixAM.setHours(6, 0, 0, 0);
+             const nineAM = new Date(); nineAM.setHours(9, 0, 0, 0);
+             const isMorning = (order) => {
+                 const orderTime = parseTimeForSorting(order.time);
+                 return (orderTime >= sixAM && orderTime <= nineAM) || (order.time || "").includes("ביחד");
+             };
+             const aliMorning = allAliOrders.filter(isMorning).length;
+             const hakmatMorning = allHakmatOrders.filter(isMorning).length;
+
+            const ctx = document.getElementById('morningOrdersChart').getContext('2d');
+            if(morningChartInstance) morningChartInstance.destroy();
+            morningChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['עלי', 'חכמת'],
+                    datasets: [{
+                        label: 'הזמנות בוקר',
+                        data: [aliMorning, hakmatMorning],
+                        backgroundColor: ['rgba(135, 206, 235, 0.8)', 'rgba(178, 235, 242, 0.8)'],
+                        borderColor: ['#87CEEB', '#B2EBF2'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+        
+        function activatePageAndNav(pageId, navId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+            
+            const page = document.getElementById(pageId);
+            if(page) page.classList.add('active');
+            
+            document.querySelectorAll(`[data-nav-id="${navId}"]`).forEach(b => b.classList.add('active'));
+
+            document.getElementById('headerTitle').textContent = pageId === 'adminPage' ? '🛠️ דף ניהול' : '🚛 דוח בוקר';
+
+            if(pageId === 'hakmatPage' || pageId === 'aliPage'){
+                 const orders = (pageId === 'hakmatPage') ? allHakmatOrders : allAliOrders;
+                 const driverName = (pageId === 'hakmatPage') ? 'חכמת' : 'עלי';
+                 const avatar = (pageId === 'hakmatPage') ? 'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg' : 'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg';
+                 page.innerHTML = `<div class="driver-section-title"><img src="${avatar}" alt="${driverName}" class="driver-avatar">נהג: ${driverName}</div><div id="${driverName}OnlyTimeline" class="timeline-grid"></div>`;
+                 renderOrders(orders, `${driverName}OnlyTimeline`, driverName);
+            }
+        }
+
+        function setupNavListeners() {
+            document.querySelectorAll('.nav-button:not(.warehouse-button)').forEach(button => {
+                button.onclick = () => {
+                    const pageId = button.dataset.pageId;
+                    const navId = button.dataset.navId;
+                    if (pageId === 'adminPage') {
+                        showAdminLoginModal();
+                    } else {
+                        activatePageAndNav(pageId, navId);
+                    }
+                };
+            });
+
+            document.querySelector('.nav-button.warehouse-button').onclick = (e) => {
+                 e.currentTarget.classList.toggle('active');
+            };
+            
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = item.dataset.warehouseType;
+                    const page = document.getElementById('warehousePage');
+                    activatePageAndNav('warehousePage', 'warehouse-nav-button');
+                    const filtered = [...allAliOrders, ...allHakmatOrders].filter(o => o.warehouse && o.warehouse.includes(type));
+                    page.innerHTML = `<div class="driver-section-title"><i class="fas fa-boxes"></i>מחסן: ${type}</div><div id="warehouseTimeline" class="timeline-grid"></div>`;
+                    renderOrders(filtered, 'warehouseTimeline');
+                    document.querySelector('.nav-button.warehouse-button').classList.remove('active');
+                };
+            });
+        }
+        
+        function showOrderDetails(order) {
+            document.getElementById('modalDate').textContent = order.date || 'N/A';
+            document.getElementById('modalTime').textContent = order.time || 'N/A';
+            document.getElementById('modalCustomer').textContent = order.customer || 'N/A';
+            document.getElementById('modalAddress').textContent = order.address || 'N/A';
+            document.getElementById('modalWarehouse').textContent = order.warehouse || 'N/A';
+            document.getElementById('modalOperationType').textContent = order.operationType || 'N/A';
+            document.getElementById('modalStatus').textContent = order.status || 'N/A';
+            document.getElementById('orderDetailsModal').classList.add('visible');
+        }
+        
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('visible'); }
+        function showPasswordModal() { document.getElementById('passwordModal').classList.add('visible'); }
+
+        function checkPassword() {
+            if (document.getElementById('passwordInput').value === WHATSAPP_PASSWORD) {
+                closeModal('passwordModal');
+                shareToWhatsApp(allAliOrders, allHakmatOrders);
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+            }
+        }
+        
+        function shareToWhatsApp(aliOrders, hakmatOrders) {
+            const formatForWhatsApp = (orders, name) => {
+                if (!orders || orders.length === 0) return `*${name}*\nאין הזמנות.`;
+                let msg = `*${name}*\n`;
+                orders.forEach(o => {
+                    msg += `⏰ ${o.time || ''} | 👤 ${o.customer || ''} | 📍 ${o.address || ''} | 🏠 ${o.warehouse || ''}\n`;
+                });
+                return msg;
+            };
+            const aliMsg = formatForWhatsApp(aliOrders, "עלי");
+            const hakmatMsg = formatForWhatsApp(hakmatOrders, "חכמת");
+            const fullMessage = `*📋 דוח בוקר - סיכום*\n\n${aliMsg}\n\n${hakmatMsg}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
+        }
+
+        // --- Admin Functionality ---
+
+        function showAdminLoginModal() {
+            document.getElementById('adminLoginError').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminLoginModal').classList.add('visible');
+        }
+
+        function checkAdminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const errorEl = document.getElementById('adminLoginError');
+
+            if ((username === 'ראמי' || username === 'יואב') && password === ADMIN_PASSWORD) {
+                errorEl.style.display = 'none';
+                closeModal('adminLoginModal');
+                activatePageAndNav('adminPage', 'admin-nav-button');
+            } else {
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function handleCreateOrder(event) {
+            event.preventDefault();
+            const form = event.target;
+            const orderData = {
+                date: form.orderDate.value,
+                time: form.orderTime.value,
+                customer: form.orderCustomer.value,
+                address: form.orderAddress.value,
+                warehouse: form.orderWarehouse.value,
+                driver: form.orderDriver.value, // 'ali' or 'hakmat'
+                // Add default values for other columns if needed
+                status: 'חדשה', 
+                operationType: 'הובלה' 
+            };
+
+            alert('יוצר הזמנה חדשה...');
+            
+            // This is the function that needs to call your backend
+            const success = await saveOrderAndNotify(orderData);
+            
+            if (success) {
+                alert('ההזמנה נוצרה ונשלחה התראה בהצלחה!');
+                form.reset();
+                // Refresh data
+                initializeApp();
+            } else {
+                alert('שגיאה ביצירת ההזמנה. אנא נסה שוב.');
+            }
+        }
+
+        async function saveOrderAndNotify(orderData) {
+            /********************************************************************************
+             * *
+             * !!! חשוב מאוד !!!                                                            *
+             * כדי לכתוב מידע ל-Google Sheet ולשלוח התראות OneSignal בצורה מאובטחת,       *
+             * יש להשתמש בשרת צד-שלישי. אסור לחשוף מפתחות API לכתיבה בקוד של האפליקציה.    *
+             * הדרך המומלצת היא ליצור Web App פשוט באמצעות Google Apps Script.             *
+             * *
+             * הקוד הבא הוא דוגמה לאיך היית "קורא" לשרת כזה מהאפליקציה שלך.               *
+             * *
+             ********************************************************************************/
+            
+            const BACKEND_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // <-- יש להחליף בכתובת של ה-Web App שלך
+            
+            console.log('Sending order to backend:', orderData);
+            
+            // This part is a simulation. You need to implement the backend logic.
+            // In a real scenario, you would uncomment the fetch call below.
+            try {
+                /*
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData),
+                    mode: 'no-cors' // Required for simple Apps Script POST requests
+                });
+                
+                // Note: with 'no-cors', you can't read the response status, 
+                // but the request is sent. You can handle success/error inside the Apps Script.
+                console.log('Request sent to backend.');
+                */
+                
+                // For demonstration, we'll just simulate a successful response
+                console.log("סימולציה: הבקשה נשלחה לשרת בהצלחה.");
+                return true; 
+
+            } catch (error) {
+                console.error('Failed to send order to backend:', error);
+                return false;
+            }
+        }
+
+        function shareTomorrowReport() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowDateString = tomorrow.toLocaleDateString('en-CA'); // YYYY-MM-DD format for easy comparison
+            
+            const formatDateForComparison = (dateStr) => {
+                if (!dateStr) return null;
+                // Assuming date is DD/MM/YYYY or similar, convert to YYYY-MM-DD
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                     return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                }
+                return dateStr; // Assume it's already in a comparable format if not DD/MM/YYYY
+            }
+
+            const aliTomorrow = allAliOrders.filter(o => formatDateForComparison(o.date) === tomorrowDateString);
+            const hakmatTomorrow = allHakmatOrders.filter(o => formatDateForComparison(o.date) === tomorrowDateString);
+            
+            if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) {
+                alert('לא נמצאו הזמנות למחר.');
+                return;
+            }
+
+            shareToWhatsApp(aliTomorrow, hakmatTomorrow);
+        }
+
+    </script>
+</body>
+</html>
