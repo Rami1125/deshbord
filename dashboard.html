@@ -23,353 +23,239 @@
         <header class="mb-6">
             <h1 class="text-4xl font-bold text-slate-900">מרכז בקרה לוגיסטי</h1>
         </header>
-
-        <!-- Navigation Tabs -->
         <div class="border-b border-slate-200 mb-6">
             <nav class="flex space-x-4" aria-label="Tabs">
-                <a id="tab-dashboard" class="tab active">
-                    <i class="fa-solid fa-chart-pie"></i> לוח בקרה
-                </a>
-                <a id="tab-planner" class="tab">
-                    <i class="fa-solid fa-route"></i> תכנון מסלול יומי
-                </a>
-                <a id="tab-new-order" class="tab">
-                    <i class="fa-solid fa-plus"></i> הזמנה חדשה
-                </a>
+                <a id="tab-dashboard" class="tab active"><i class="fa-solid fa-chart-pie"></i> לוח בקרה</a>
+                <a id="tab-planner" class="tab"><i class="fa-solid fa-route"></i> תכנון מסלול יומי</a>
+                <a id="tab-new-order" class="tab"><i class="fa-solid fa-plus"></i> הזמנה חדשה</a>
             </nav>
         </div>
         <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"></div>
-
-        <!-- Tab Content: Dashboard (Upgrade #1) -->
         <div id="content-dashboard" class="tab-content active">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="card p-6 col-span-1 md:col-span-2 lg:col-span-4">
-                    <h2 class="text-xl font-semibold">סקירה כללית</h2>
-                    <p>סה"כ הזמנות במערכת: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p>
-                </div>
-                <div class="card p-6 lg:col-span-2">
-                    <h2 class="text-xl font-semibold mb-4">5 הערים המובילות</h2>
-                    <canvas id="cities-chart"></canvas>
-                </div>
-                <div class="card p-6">
-                    <h2 class="text-xl font-semibold mb-4">התפלגות סוגי הובלה</h2>
-                    <canvas id="types-chart"></canvas>
-                </div>
-                <div class="card p-6">
-                    <h2 class="text-xl font-semibold mb-4">5 הלקוחות המובילים</h2>
-                    <canvas id="customers-chart"></canvas>
-                </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card p-6 col-span-1 md:col-span-2 lg:col-span-4"><h2 class="text-xl font-semibold">סקירה כללית</h2><p>סה"כ הזמנות במערכת: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p></div>
+                <div class="card p-6 lg:col-span-2"><h2 class="text-xl font-semibold mb-4">5 הערים המובילות</h2><canvas id="cities-chart"></canvas></div>
+                <div class="card p-6"><h2 class="text-xl font-semibold mb-4">התפלגות סוגי הובלה</h2><canvas id="types-chart"></canvas></div>
+                <div class="card p-6"><h2 class="text-xl font-semibold mb-4">5 הלקוחות המובילים</h2><canvas id="customers-chart"></canvas></div>
             </div>
         </div>
-
-        <!-- Tab Content: Route Planner (Upgrade #2) -->
         <div id="content-planner" class="tab-content">
             <div class="grid grid-cols-12 gap-6">
-                <div class="col-span-4 card p-6">
-                    <h2 class="text-xl font-semibold mb-4">בחר הזמנות לתכנון</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="planner-date" class="block text-sm font-medium text-slate-600">בחר תאריך</label>
-                            <input type="date" id="planner-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">
-                        </div>
-                         <div>
-                            <label for="planner-warehouse" class="block text-sm font-medium text-slate-600">נקודת מוצא</label>
-                            <select id="planner-warehouse" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></select>
-                        </div>
-                        <div id="planner-orders-list" class="space-y-2 max-h-96 overflow-y-auto">
-                           <p class="text-slate-500">נא לבחור תאריך כדי להציג הזמנות.</p>
-                        </div>
-                        <button id="btn-optimize-route" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
-                            <i class="fa-solid fa-calculator"></i> חשב מסלול אופטימלי
-                        </button>
-                    </div>
-                </div>
-                <div class="col-span-8 card p-4">
-                    <div id="planner-map"></div>
-                    <div id="planner-summary" class="p-4 text-center"></div>
-                </div>
+                <div class="col-span-4 card p-6"><h2 class="text-xl font-semibold mb-4">בחר הזמנות לתכנון</h2><div class="space-y-4"><div><label for="planner-date" class="block text-sm font-medium text-slate-600">בחר תאריך</label><input type="date" id="planner-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div><div><label for="planner-warehouse" class="block text-sm font-medium text-slate-600">נקודת מוצא</label><select id="planner-warehouse" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></select></div><div id="planner-orders-list" class="space-y-2 max-h-96 overflow-y-auto"><p class="text-slate-500">נא לבחור תאריך כדי להציג הזמנות.</p></div><button id="btn-optimize-route" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition"><i class="fa-solid fa-calculator"></i> חשב מסלול אופטימלי</button></div></div>
+                <div class="col-span-8 card p-4"><div id="planner-map"></div><div id="planner-summary" class="p-4 text-center"></div></div>
             </div>
         </div>
-
-        <!-- Tab Content: New Order -->
         <div id="content-new-order" class="tab-content">
              <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <main class="lg:col-span-4 card p-6 space-y-4">
                      <h2 class="text-xl font-semibold">יצירת הזמנה חדשה</h2>
-                     <!-- Form fields are identical to previous version -->
-                     <div>
-                        <label for="customer" class="text-sm font-medium text-gray-600">לקוח</label>
-                        <input type="text" id="customer" list="customers-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <datalist id="customers-list"></datalist>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label for="date" class="text-sm font-medium">תאריך</label><input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <div><label for="time" class="text-sm font-medium">שעה</label><input type="time" id="time" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                    </div>
+                     <div><label for="customer" class="text-sm font-medium text-gray-600">לקוח</label><input type="text" id="customer" list="customers-list" class="mt-1 block w-full rounded-md border-gray-300"><datalist id="customers-list"></datalist></div>
+                    <div class="grid grid-cols-2 gap-4"><div><label for="date" class="text-sm font-medium">תאריך</label><input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300"></div><div><label for="time" class="text-sm font-medium">שעה</label><input type="time" id="time" class="mt-1 block w-full rounded-md border-gray-300"></div></div>
                     <div><label for="city" class="text-sm font-medium">עיר</label><select id="city" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-2"><label for="street" class="text-sm font-medium">רחוב</label><input type="text" id="street" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <div><label for="street_number" class="text-sm font-medium">מספר</label><input type="text" id="street_number" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                    </div>
-                     <div class="grid grid-cols-2 gap-4">
-                        <div><label for="delivery_type" class="text-sm font-medium">סוג הובלה</label><select id="delivery_type" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                        <div><label for="warehouse" class="text-sm font-medium">מחסן מוצא</label><select id="warehouse" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                    </div>
+                    <div class="grid grid-cols-3 gap-4"><div class="col-span-2"><label for="street" class="text-sm font-medium">רחוב</label><input type="text" id="street" class="mt-1 block w-full rounded-md border-gray-300"></div><div><label for="street_number" class="text-sm font-medium">מספר</label><input type="text" id="street_number" class="mt-1 block w-full rounded-md border-gray-300"></div></div>
+                     <div class="grid grid-cols-2 gap-4"><div><label for="delivery_type" class="text-sm font-medium">סוג הובלה</label><select id="delivery_type" class="mt-1 block w-full rounded-md border-gray-300"></select></div><div><label for="warehouse" class="text-sm font-medium">מחסן מוצא</label><select id="warehouse" class="mt-1 block w-full rounded-md border-gray-300"></select></div></div>
                     <div><label for="notes" class="text-sm font-medium">הערות</label><textarea id="notes" rows="2" class="mt-1 block w-full rounded-md border-gray-300"></textarea></div>
-                    <button id="btn-save-order" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition">
-                        <i class="fa-solid fa-floppy-disk"></i> שמור הזמנה
-                    </button>
+                    <button id="btn-save-order" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition"><i class="fa-solid fa-floppy-disk"></i> שמור הזמנה</button>
                 </main>
-                <section class="lg:col-span-8 card p-4">
-                    <div id="new-order-map" class="w-full h-[550px]"></div>
-                </section>
+                <section class="lg:col-span-8 card p-4"><div id="new-order-map" class="w-full h-[550px]"></div></section>
             </div>
         </div>
     </div>
+
     <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps&callback=initMaps&libraries=places"></script>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwF_ca_uCaesBOsI94Pnl6WQ3VUtkqj9YgAhWz3kv8Yxy_u1CENPfhvS4WQnMqb0hQ/exec'; // 👈 PASTE YOUR DEPLOYED SCRIPT URL HERE
+        // CRITICAL FIX: Make initMaps globally available
+        var initMaps;
 
-        // Global map variables
-        let plannerMap, newOrderMap, directionsService;
-        let plannerDirectionsRenderer, newOrderDirectionsRenderer;
-        
-        // Data stores
-        let initialData = {};
+        (function() {
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKrnilt3cuHnFi4aLK2tbXprZCGnIysDc7sGA8UCMcKj5pRISUWGv-kk4IVR-dbSUdoQ/exec';
 
-        // --- Initialization ---
-        window.initMaps = function() {
-            const centerOfIsrael = { lat: 31.7, lng: 35.2 };
+            let plannerMap, newOrderMap, directionsService;
+            let plannerDirectionsRenderer, newOrderDirectionsRenderer;
+            let initialData = {};
+            let charts = {};
 
-            // Init Planner Map
-            plannerMap = new google.maps.Map(document.getElementById("planner-map"), {
-                zoom: 8, center: centerOfIsrael
-            });
-            plannerDirectionsRenderer = new google.maps.DirectionsRenderer({ map: plannerMap });
-
-            // Init New Order Map
-            newOrderMap = new google.maps.Map(document.getElementById("new-order-map"), {
-                zoom: 8, center: centerOfIsrael
-            });
-            newOrderDirectionsRenderer = new google.maps.DirectionsRenderer({ map: newOrderMap });
-            
-            directionsService = new google.maps.DirectionsService();
-
-            setupEventListeners();
-            loadInitialData();
-            handleTabClick(document.getElementById('tab-dashboard')); // Load dashboard by default
-        }
-
-        async function loadInitialData() {
-            try {
-                initialData = await fetchData('getInitialData');
-                populateCommonDropdowns();
-            } catch (error) { showError(`שגיאה בטעינת נתונים בסיסיים: ${error.message}`); }
-        }
-
-        function populateCommonDropdowns() {
-            // Planner warehouse
-            populateSelect(document.getElementById('planner-warehouse'), initialData.warehouses, "בחר מחסן מוצא");
-            // New Order form
-            populateSelect(document.getElementById('warehouse'), initialData.warehouses, "בחר מחסן...");
-            populateSelect(document.getElementById('delivery_type'), initialData.deliveryTypes, "בחר סוג הובלה...");
-            populateSelect(document.getElementById('city'), initialData.cities, "בחר עיר...");
-            populateDatalist(document.getElementById('customers-list'), initialData.customers.map(c => c.name));
-        }
-
-        // --- Tab Navigation ---
-        function setupEventListeners() {
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach(tab => tab.addEventListener('click', () => handleTabClick(tab)));
-
-            // Planner events
-            document.getElementById('planner-date').addEventListener('change', loadOrdersForPlanner);
-            document.getElementById('btn-optimize-route').addEventListener('click', optimizePlannerRoute);
-
-            // New Order events
-            ['street', 'street_number', 'city', 'warehouse'].forEach(id => {
-                 document.getElementById(id).addEventListener('change', debounce(updateNewOrderMap, 800));
-            });
-            document.getElementById('btn-save-order').addEventListener('click', saveNewOrder);
-        }
-
-        function handleTabClick(clickedTab) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            clickedTab.classList.add('active');
-            const contentId = `content-${clickedTab.id.split('-')[1]}`;
-            document.getElementById(contentId).classList.add('active');
-            
-            if (clickedTab.id === 'tab-dashboard') loadDashboardData();
-        }
-
-        // --- DASHBOARD (Upgrade #1) ---
-        async function loadDashboardData() {
-            try {
-                const analytics = await fetchData('getDashboardAnalytics');
-                document.getElementById('total-orders-stat').textContent = analytics.totalOrders;
-                createChart('cities-chart', 'bar', analytics.topCities.labels, analytics.topCities.data, 'הזמנות לפי עיר');
-                createChart('types-chart', 'doughnut', analytics.deliveryTypes.labels, analytics.deliveryTypes.data, 'התפלגות הובלות');
-                createChart('customers-chart', 'bar', analytics.topCustomers.labels, analytics.topCustomers.data, 'לקוחות מובילים');
-            } catch (error) { showError(`שגיאה בטעינת הדשבורד: ${error.message}`); }
-        }
-
-        let charts = {};
-        function createChart(canvasId, type, labels, data, label) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            if (charts[canvasId]) charts[canvasId].destroy(); // Destroy old chart instance
-            charts[canvasId] = new Chart(ctx, {
-                type: type,
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        backgroundColor: type === 'doughnut' 
-                            ? ['#3b82f6', '#ef4444', '#f97316', '#84cc16', '#a855f7', '#14b8a6']
-                            : '#3b82f6',
-                        borderColor: '#ffffff',
-                        borderWidth: type === 'doughnut' ? 2 : 0,
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: true, indexAxis: type === 'bar' ? 'y' : 'x' }
-            });
-        }
-        
-        // --- ROUTE PLANNER (Upgrade #2) ---
-        async function loadOrdersForPlanner() {
-            const date = document.getElementById('planner-date').value;
-            if (!date) return;
-            const listEl = document.getElementById('planner-orders-list');
-            listEl.innerHTML = '<p>טוען הזמנות...</p>';
-            try {
-                const orders = await fetchData(`getOrdersByDate&date=${date}`);
-                if (orders.length === 0) {
-                    listEl.innerHTML = '<p class="text-slate-500">לא נמצאו הזמנות לתאריך זה.</p>';
-                    return;
-                }
-                listEl.innerHTML = '';
-                orders.forEach(order => {
-                    const fullAddress = `${order.street || ''} ${order.street_number || ''}, ${order.city || ''}`.trim();
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center gap-3 p-2 border rounded-md';
-                    div.innerHTML = `
-                        <input type="checkbox" id="order-${order.id}" value="${fullAddress}" class="h-4 w-4 rounded border-gray-300 text-blue-600">
-                        <label for="order-${order.id}" class="text-sm"><strong>${order.customer}</strong><br>${fullAddress}</label>
-                    `;
-                    listEl.appendChild(div);
-                });
-            } catch (error) { listEl.innerHTML = `<p class="text-red-500">${error.message}</p>`; }
-        }
-
-        function optimizePlannerRoute() {
-            const origin = document.getElementById('planner-warehouse').value;
-            if (!origin) return showError("נא לבחור נקודת מוצא.");
-
-            const waypoints = Array.from(document.querySelectorAll('#planner-orders-list input:checked'))
-                .map(input => ({ location: input.value, stopover: true }));
-
-            if (waypoints.length === 0) return showError("נא לבחור לפחות הזמנה אחת.");
-
-            const request = {
-                origin: origin,
-                destination: origin, // Round trip
-                waypoints: waypoints,
-                optimizeWaypoints: true,
-                travelMode: google.maps.TravelMode.DRIVING
-            };
-
-            directionsService.route(request, (result, status) => {
-                if (status === 'OK') {
-                    showError(null);
-                    plannerDirectionsRenderer.setDirections(result);
-                    const leg = result.routes[0].legs[0];
-                    const summary = `מסלול אופטימלי דרך ${waypoints.length} תחנות. סה"כ: <strong>${leg.distance.text}</strong>, זמן נסיעה מוערך: <strong>${leg.duration.text}</strong>`;
-                    document.getElementById('planner-summary').innerHTML = summary;
-                } else { showError(`שגיאה בחישוב מסלול: ${status}`); }
-            });
-        }
-        
-        // --- NEW ORDER FORM ---
-        function updateNewOrderMap() {
-             const origin = document.getElementById('warehouse').value;
-             const destination = `${document.getElementById('street').value} ${document.getElementById('street_number').value}, ${document.getElementById('city').value}`.trim();
-             if (!origin || !destination) return;
-             directionsService.route({
-                origin, destination, travelMode: google.maps.TravelMode.DRIVING
-             }, (result, status) => {
-                if (status === 'OK') newOrderDirectionsRenderer.setDirections(result);
-             });
-        }
-
-        async function saveNewOrder() {
-            // Logic adapted from previous version
-            const payload = {
-                customer: document.getElementById('customer').value,
-                date: document.getElementById('date').value,
-                time: document.getElementById('time').value,
-                city: document.getElementById('city').value,
-                street: document.getElementById('street').value,
-                street_number: document.getElementById('street_number').value,
-                delivery_type: document.getElementById('delivery_type').value,
-                warehouse: document.getElementById('warehouse').value,
-                notes: document.getElementById('notes').value
-            };
-             try {
-                const result = await fetch(SCRIPT_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'addOrder', payload })
-                }).then(res => res.json());
-                if (result.status !== 'success') throw new Error(result.message);
-                alert('הזמנה נשמרה בהצלחה!');
-                // Optionally reset form
-            } catch (error) { showError(`שגיאה בשמירת הזמנה: ${error.message}`); }
-        }
-
-        // --- Generic Helpers ---
-        async function fetchData(action) {
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=${action}`);
-                if (!response.ok) throw new Error(`Network Error: ${response.statusText}`);
-                const result = await response.json();
-                if (result.status === 'error') throw new Error(result.message);
-                return result.data;
-            } catch (error) {
-                showError(`Failed to fetch ${action}: ${error.message}`);
-                throw error;
+            initMaps = function() {
+                const centerOfIsrael = { lat: 31.7, lng: 35.2 };
+                plannerMap = new google.maps.Map(document.getElementById("planner-map"), { zoom: 8, center: centerOfIsrael });
+                plannerDirectionsRenderer = new google.maps.DirectionsRenderer({ map: plannerMap });
+                newOrderMap = new google.maps.Map(document.getElementById("new-order-map"), { zoom: 8, center: centerOfIsrael });
+                newOrderDirectionsRenderer = new google.maps.DirectionsRenderer({ map: newOrderMap });
+                directionsService = new google.maps.DirectionsService();
+                setupEventListeners();
+                loadInitialData();
+                handleTabClick(document.getElementById('tab-dashboard'));
             }
-        }
 
-        function showError(message) {
-            const banner = document.getElementById('error-banner');
-            banner.textContent = message;
-            banner.classList.toggle('hidden', !message);
-        }
+            async function loadInitialData() {
+                try {
+                    initialData = await fetchData('getInitialData');
+                    populateCommonDropdowns();
+                } catch (error) { showError(`שגיאה בטעינת נתונים בסיסיים: ${error.message}`); }
+            }
 
-        function populateSelect(selectEl, options, placeholder) {
-            selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-            options.forEach(opt => selectEl.add(new Option(opt, opt)));
-            selectEl.disabled = false;
-        }
+            function populateCommonDropdowns() {
+                populateSelect(document.getElementById('planner-warehouse'), initialData.warehouses, "בחר מחסן מוצא");
+                populateSelect(document.getElementById('warehouse'), initialData.warehouses, "בחר מחסן...");
+                populateSelect(document.getElementById('delivery_type'), initialData.deliveryTypes, "בחר סוג הובלה...");
+                populateSelect(document.getElementById('city'), initialData.cities, "בחר עיר...");
+                populateDatalist(document.getElementById('customers-list'), initialData.customers.map(c => c.name));
+            }
 
-        function populateDatalist(datalistEl, options) {
-            datalistEl.innerHTML = '';
-            options.forEach(opt => {
-                const optionEl = document.createElement('option');
-                optionEl.value = opt;
-                datalistEl.appendChild(optionEl);
-            });
-        }
-        
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
+            function setupEventListeners() {
+                document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => handleTabClick(tab)));
+                document.getElementById('planner-date').addEventListener('change', loadOrdersForPlanner);
+                document.getElementById('btn-optimize-route').addEventListener('click', optimizePlannerRoute);
+                ['street', 'street_number', 'city', 'warehouse'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', debounce(updateNewOrderMap, 800));
+                });
+                document.getElementById('btn-save-order').addEventListener('click', saveNewOrder);
+            }
 
+            function handleTabClick(clickedTab) {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                clickedTab.classList.add('active');
+                const contentId = `content-${clickedTab.id.split('-')[1]}`;
+                document.getElementById(contentId).classList.add('active');
+                if (clickedTab.id === 'tab-dashboard') loadDashboardData();
+            }
+
+            async function loadDashboardData() {
+                try {
+                    const analytics = await fetchData('getDashboardAnalytics');
+                    document.getElementById('total-orders-stat').textContent = analytics.totalOrders;
+                    createChart('cities-chart', 'bar', analytics.topCities.labels, analytics.topCities.data, 'הזמנות לפי עיר');
+                    createChart('types-chart', 'doughnut', analytics.deliveryTypes.labels, analytics.deliveryTypes.data, 'התפלגות הובלות');
+                    createChart('customers-chart', 'bar', analytics.topCustomers.labels, analytics.topCustomers.data, 'לקוחות מובילים');
+                } catch (error) { showError(`שגיאה בטעינת הדשבורד: ${error.message}`); }
+            }
+            
+            function createChart(canvasId, type, labels, data, label) {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                if (charts[canvasId]) charts[canvasId].destroy();
+                charts[canvasId] = new Chart(ctx, {
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label, data: data,
+                            backgroundColor: type === 'doughnut' ? ['#3b82f6', '#ef4444', '#f97316', '#84cc16', '#a855f7', '#14b8a6'] : '#3b82f6',
+                            borderColor: '#ffffff', borderWidth: type === 'doughnut' ? 2 : 0,
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: true, indexAxis: type === 'bar' ? 'y' : 'x' }
+                });
+            }
+            
+            async function loadOrdersForPlanner() {
+                const date = document.getElementById('planner-date').value;
+                if (!date) return;
+                const listEl = document.getElementById('planner-orders-list');
+                listEl.innerHTML = '<p>טוען הזמנות...</p>';
+                try {
+                    const orders = await fetchData(`getOrdersByDate&date=${date}`);
+                    if (orders.length === 0) {
+                        listEl.innerHTML = '<p class="text-slate-500">לא נמצאו הזמנות לתאריך זה.</p>';
+                        return;
+                    }
+                    listEl.innerHTML = '';
+                    orders.forEach(order => {
+                        const fullAddress = `${order.street || ''} ${order.street_number || ''}, ${order.city || ''}`.trim();
+                        const id = order.id || `order_${Math.random()}`; // Fallback id
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center gap-3 p-2 border rounded-md';
+                        div.innerHTML = `<input type="checkbox" id="${id}" value="${fullAddress}" class="h-4 w-4 rounded border-gray-300 text-blue-600"><label for="${id}" class="text-sm"><strong>${order.customer}</strong><br>${fullAddress}</label>`;
+                        listEl.appendChild(div);
+                    });
+                } catch (error) { listEl.innerHTML = `<p class="text-red-500">${error.message}</p>`; }
+            }
+
+            function optimizePlannerRoute() {
+                const origin = document.getElementById('planner-warehouse').value;
+                if (!origin) return showError("נא לבחור נקודת מוצא.");
+                const waypoints = Array.from(document.querySelectorAll('#planner-orders-list input:checked')).map(input => ({ location: input.value, stopover: true }));
+                if (waypoints.length === 0) return showError("נא לבחור לפחות הזמנה אחת.");
+                const request = { origin: origin, destination: origin, waypoints: waypoints, optimizeWaypoints: true, travelMode: google.maps.TravelMode.DRIVING };
+                directionsService.route(request, (result, status) => {
+                    if (status === 'OK') {
+                        showError(null);
+                        plannerDirectionsRenderer.setDirections(result);
+                        const route = result.routes[0];
+                        let totalDistance = 0, totalDuration = 0;
+                        route.legs.forEach(leg => { totalDistance += leg.distance.value; totalDuration += leg.duration.value; });
+                        const summary = `מסלול אופטימלי דרך ${waypoints.length} תחנות. סה"כ: <strong>${(totalDistance / 1000).toFixed(1)} ק"מ</strong>, זמן נסיעה מוערך: <strong>${Math.round(totalDuration / 60)} דקות</strong>`;
+                        document.getElementById('planner-summary').innerHTML = summary;
+                    } else { showError(`שגיאה בחישוב מסלול: ${status}`); }
+                });
+            }
+            
+            function updateNewOrderMap() {
+                 const origin = document.getElementById('warehouse').value;
+                 const destination = `${document.getElementById('street').value} ${document.getElementById('street_number').value}, ${document.getElementById('city').value}`.trim();
+                 if (!origin || !destination.replace(/,/g, '').trim()) return;
+                 directionsService.route({ origin, destination, travelMode: google.maps.TravelMode.DRIVING }, (result, status) => {
+                    if (status === 'OK') newOrderDirectionsRenderer.setDirections(result);
+                 });
+            }
+
+            async function saveNewOrder() {
+                const payload = {
+                    customer: document.getElementById('customer').value, date: document.getElementById('date').value,
+                    time: document.getElementById('time').value, city: document.getElementById('city').value,
+                    street: document.getElementById('street').value, street_number: document.getElementById('street_number').value,
+                    delivery_type: document.getElementById('delivery_type').value, warehouse: document.getElementById('warehouse').value,
+                    notes: document.getElementById('notes').value
+                };
+                if (!payload.customer || !payload.date || !payload.city || !payload.street) return showError("נא למלא שדות חובה.");
+                try {
+                    const result = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addOrder', payload }) }).then(res => res.json());
+                    if (result.status !== 'success') throw new Error(result.message);
+                    alert('הזמנה נשמרה בהצלחה!');
+                } catch (error) { showError(`שגיאה בשמירת הזמנה: ${error.message}`); }
+            }
+
+            async function fetchData(action) {
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?action=${action}`);
+                    if (!response.ok) throw new Error(`Network Error: ${response.statusText}`);
+                    const result = await response.json();
+                    if (result.status === 'error') throw new Error(result.message);
+                    return result.data;
+                } catch (error) {
+                    showError(`Failed to fetch ${action}: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            function showError(message) {
+                const banner = document.getElementById('error-banner');
+                banner.textContent = message;
+                banner.classList.toggle('hidden', !message);
+            }
+
+            function populateSelect(selectEl, options, placeholder) {
+                selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+                options.forEach(opt => selectEl.add(new Option(opt, opt)));
+                selectEl.disabled = false;
+            }
+
+            function populateDatalist(datalistEl, options) {
+                datalistEl.innerHTML = '';
+                options.forEach(opt => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = opt;
+                    datalistEl.appendChild(optionEl);
+                });
+            }
+            
+            function debounce(func, delay) {
+                let timeout;
+                return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
+            }
+        })();
     </script>
 </body>
 </html>
+
