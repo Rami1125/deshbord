@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="he">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>שדרוג טופס הזמנה — Admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root{--bg:#f7f8fa;--card:#ffffff;--accent:#0f62fe;--muted:#6b7280}
+    body{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); color:#111; direction:rtl}
+    .container{max-width:1200px;margin:18px auto;padding:18px}
+    .row{display:flex;gap:12px;align-items:flex-start}
+    .col{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,22,39,0.06)}
+    .col.flex1{flex:1}
+    h2{margin:0 0 8px 0;font-size:18px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kpis{display:flex;gap:10px;margin-bottom:12px}
+    .kpi{padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);min-width:140px;text-align:center}
+    .kpi .num{font-size:20px;font-weight:700}
+    #map{height:420px;border-radius:10px;overflow:hidden}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none}
+    .insights{margin-top:10px}
+    .insight{padding:8px;border-radius:8px;background:#fffbe6;border:1px solid #f1e6b8;margin-bottom:8px}
+    .orders-list{max-height:320px;overflow:auto;margin-top:10px}
+    .order-row{padding:8px;border-bottom:1px solid #f1f3f5;display:flex;justify-content:space-between;align-items:center}
+    .lamp{font-size:16px;margin-left:8px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="kpis">
+      <div class="kpi col"><div class="num" id="k_active">0</div><div class="muted">הזמנות פעילות</div></div>
+      <div class="kpi col"><div class="num" id="k_drivers">0</div><div class="muted">נהגים משובצים</div></div>
+      <div class="kpi col"><div class="num" id="k_km">0</div><div class="muted">ק"מ משוער ליום</div></div>
+      <div class="kpi col"><div class="num" id="k_waiting">0</div><div class="muted">ממתינות</div></div>
+    </div>
+
+    <div class="row">
+      <div class="col flex1" style="min-width:380px;">
+        <h2>טופס הזמנה — מהיר</h2>
+        <div class="form-grid">
+          <div>
+            <label>שם לקוח</label>
+            <input id="customerName" placeholder="הקלד או בחר לקוח..." />
+          </div>
+          <div>
+            <label>שם איש קשר</label>
+            <input id="contactName" placeholder="שם איש קשר" />
+          </div>
+          <div>
+            <label>טלפון</label>
+            <input id="phone" placeholder="050-1234567" />
+          </div>
+          <div>
+            <label>סוג הובלה</label>
+            <select id="deliveryType">
+              <option value="משאית">משאית</option>
+              <option value="רכב כבד">רכב כבד</option>
+              <option value="מנוף">מנוף</option>
+              <option value="רגיל">רגיל</option>
+            </select>
+          </div>
+
+          <div>
+            <label>רחוב</label>
+            <input id="street" placeholder="שם רחוב בלבד" />
+          </div>
+          <div>
+            <label>מספר בית</label>
+            <input id="streetNumber" placeholder="מספר בית" />
+          </div>
+          <div style="grid-column:1/3">
+            <label>עיר</label>
+            <select id="city">
+              <option value="" selected>בחר עיר...</option>
+              <option>ת"א</option>
+              <option>חיפה</option>
+              <option>באר שבע</option>
+              <option>ירושלים</option>
+            </select>
+          </div>
+
+          <div style="grid-column:1/3">
+            <label>הערות נוספות</label>
+            <textarea id="notes" rows="3" placeholder="הערות, תנאים, שעות..." ></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <a class="btn" id="btnSave">שמור הזמנה</a>
+          <a class="btn" id="btnShowRoute" style="background:#10a37f">הצג מסלול על המפה</a>
+          <a class="btn" id="btnSuggest" style="background:#ef7c00">הצעות שילוב</a>
+        </div>
+
+        <div class="insights" id="insights"></div>
+      </div>
+
+      <div class="col" style="width:580px;">
+        <h2>מפה חכמה + מצב תנועה</h2>
+        <div id="map"></div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <div style="flex:1">נקודת מוצא (מחסן): <strong id="warehouseLabel">מחסן ראשי</strong></div>
+          <div>מרחק: <strong id="mapDistance">-</strong></div>
+          <div>זמן נסיעה: <strong id="mapDuration">-</strong></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <h3 style="margin:8px 0">הודעות תנועה (און־ליין)</h3>
+          <div id="trafficFeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="col" style="flex:1">
+        <h2>רשימת הזמנות</h2>
+        <div class="orders-list" id="ordersList"></div>
+      </div>
+      <div class="col" style="width:360px">
+        <h2>הצעות לשילוב/ייעול</h2>
+        <div id="suggestions"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // === CONFIG ===
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbydeMAM_ixXd-cVaf9x4AaQ2oxFgICDtXSESmuPxHkSttB2zKrDJrtNNdbZNfe3utgTRw/exec';
+    // warehouse coordinates (example) - change to your real warehouse
+    const WAREHOUSE = {lat:32.0853, lng:34.7818}; // תל אביב
+
+    // Mock customers data - replace with fetch from GAS endpoint getCustomers
+    let customersData = [
+      {name:'לקוח א', phone:'050-1112223', contact:'יוסי כהן', street:'הרצל', number:'12', city:'ת"א'},
+      {name:'לקוח ב', phone:'050-5556667', contact:'שרה לוי', street:'הירקון', number:'45', city:'ת"א'}
+    ];
+
+    // state
+    let orders = []; // will be loaded from server
+    let map, markersLayer, routeLine;
+
+    // === UI refs ===
+    const customerName = document.getElementById('customerName');
+    const contactName = document.getElementById('contactName');
+    const phone = document.getElementById('phone');
+    const street = document.getElementById('street');
+    const streetNumber = document.getElementById('streetNumber');
+    const city = document.getElementById('city');
+    const deliveryType = document.getElementById('deliveryType');
+    const notes = document.getElementById('notes');
+    const btnSave = document.getElementById('btnSave');
+    const btnShowRoute = document.getElementById('btnShowRoute');
+    const btnSuggest = document.getElementById('btnSuggest');
+    const ordersList = document.getElementById('ordersList');
+    const suggestions = document.getElementById('suggestions');
+    const insightsEl = document.getElementById('insights');
+    const trafficFeed = document.getElementById('trafficFeed');
+
+    // === init map ===
+    function initMap(){
+      map = L.map('map').setView([WAREHOUSE.lat, WAREHOUSE.lng], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(map);
+      markersLayer = L.layerGroup().addTo(map);
+
+      // warehouse marker
+      L.marker([WAREHOUSE.lat, WAREHOUSE.lng]).addTo(map).bindPopup('מחסן ראשי');
+    }
+
+    // emoji marker helper
+    function emojiMarker(lat,lng,emoji,txt){
+      const icon = L.divIcon({className:'emoji-marker', html:`<div style="font-size:24px">${emoji}</div>`});
+      return L.marker([lat,lng],{icon}).bindPopup(txt);
+    }
+
+    // parse street like "הרצל 12" -> [street,number]
+    function parseStreet(full){
+      if(!full) return ['',''];
+      const m = full.trim().match(/^(.*?)[,\s]+(\d+\w*)$/);
+      if(m) return [m[1].trim(), m[2].trim()];
+      // fallback: try last token numeric
+      const parts = full.trim().split(' ');
+      const last = parts[parts.length-1];
+      if(/^[0-9]/.test(last)){
+        parts.pop();
+        return [parts.join(' '), last];
+      }
+      return [full, ''];
+    }
+
+    // autofill when customer selected (exact or fuzzy)
+    customerName.addEventListener('input', ()=>{
+      const v = customerName.value.trim();
+      if(!v) return;
+      const exact = customersData.find(c=>c.name===v);
+      if(exact){
+        contactName.value = exact.contact||'';
+        phone.value = exact.phone||'';
+        street.value = exact.street||'';
+        streetNumber.value = exact.number||'';
+        // select city if exact
+        if(exact.city) for(let i=0;i<city.options.length;i++) if(city.options[i].text===exact.city) city.selectedIndex=i;
+      } else {
+        // fuzzy: find startsWith
+        const cand = customersData.find(c=>c.name.startsWith(v));
+        if(cand){
+          contactName.value = cand.contact||'';
+          phone.value = cand.phone||'';
+        }
+      }
+    });
+
+    // save order to server (GAS)
+    async function saveOrder(){
+      const payload = {
+        action:'saveOrder',
+        customer: customerName.value.trim(),
+        contact: contactName.value.trim(),
+        phone: phone.value.trim(),
+        street: street.value.trim(),
+        street_number: streetNumber.value.trim(),
+        city: city.value,
+        delivery_type: deliveryType.value,
+        notes: notes.value.trim(),
+        timestamp: new Date().toISOString()
+      };
+
+      // try to geocode/address to latlng via Nominatim (free) for demo (rate limits)
+      let latlng = await geocodeAddress(payload.street, payload.street_number, payload.city);
+      if(latlng){ payload.lat = latlng.lat; payload.lng = latlng.lng; }
+
+      // attempt to call GAS
+      try{
+        const url = GAS_URL + '?action=saveOrder';
+        const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const data = await res.json();
+        console.log('saved',data);
+        // reload orders
+        await loadOrders();
+        showInsight('ההזמנה נשמרה בהצלחה ✅');
+      }catch(e){
+        console.error('save failed',e);
+        showInsight('שגיאה בשמירה — בדוק חיבור לשרת', true);
+      }
+    }
+
+    // load orders from GAS
+    async function loadOrders(){
+      try{
+        const res = await fetch(GAS_URL + '?action=getActiveOrders');
+        const json = await res.json();
+        orders = Array.isArray(json) ? json : (json.result || []);
+      }catch(e){
+        console.warn('load orders failed',e);
+        // fallback demo
+        orders = [
+          {id:1,customer:'לקוח א',street:'הרצל',street_number:'12',city:'ת"א',lat:32.072, lng:34.792, status:'פעיל',distance_km:3,duration_min:12},
+          {id:2,customer:'לקוח ב',street:'הירקון',street_number:'45',city:'ת"א',lat:32.089, lng:34.780, status:'ממתין',distance_km:6,duration_min:18}
+        ];
+      }
+      renderOrders();
+      computeKPIs();
+      drawMarkers();
+    }
+
+    function renderOrders(){
+      ordersList.innerHTML='';
+      orders.forEach(o=>{
+        const div = document.createElement('div');
+        div.className='order-row';
+        const left = document.createElement('div');
+        left.innerHTML = `<strong>${o.customer}</strong> <div style="font-size:12px;color:${o.status==='ממתין'? '#ef4444':'#111'}">${o.street} ${o.street_number} — ${o.city}</div>`;
+        const right = document.createElement('div');
+        const lamp = document.createElement('span'); lamp.className='lamp'; lamp.textContent='💡';
+        if(o.suggested) lamp.title='יש הצעה לשילוב';
+        right.innerHTML = `<div style="text-align:left">${o.distance_km||'-'} ק"מ<br><small>${o.duration_min||'-'} דק'</small></div>`;
+        right.prepend(lamp);
+        div.appendChild(left); div.appendChild(right);
+        div.addEventListener('click', ()=>{ focusOnOrder(o); });
+        ordersList.appendChild(div);
+      });
+    }
+
+    function computeKPIs(){
+      const active = orders.filter(o=>o.status==='פעיל').length;
+      const drivers = Math.min(5,Math.max(1, Math.floor(active/2)));
+      const km = orders.reduce((s,o)=>s+(o.distance_km||0),0);
+      const waiting = orders.filter(o=>o.status==='ממתין').length;
+      document.getElementById('k_active').textContent = active;
+      document.getElementById('k_drivers').textContent = drivers;
+      document.getElementById('k_km').textContent = km;
+      document.getElementById('k_waiting').textContent = waiting;
+    }
+
+    function drawMarkers(){
+      markersLayer.clearLayers();
+      orders.forEach(o=>{
+        if(o.lat && o.lng){
+          const m = emojiMarker(o.lat, o.lng, '📌', `${o.customer} — ${o.street} ${o.street_number}`);
+          m.addTo(markersLayer);
+        }
+      });
+      map.fitBounds(markersLayer.getBounds() || [[WAREHOUSE.lat, WAREHOUSE.lng]] , {maxZoom:13});
+    }
+
+    async function focusOnOrder(o){
+      if(!o.lat || !o.lng) {
+        showInsight('אין מיקום גיאוגרפי להזמנה זו', true);
+        return;
+      }
+      map.setView([o.lat,o.lng],13);
+      // draw route from warehouse
+      await drawRoute([WAREHOUSE.lat, WAREHOUSE.lng], [o.lat, o.lng]);
+    }
+
+    // draw route - for demo use OSRM public or straight polyline if API limited
+    async function drawRoute(a,b){
+      // remove old
+      if(routeLine) map.removeLayer(routeLine);
+      // try OSRM demo
+      try{
+        const url = `https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const j = await res.json();
+        if(j.code==='Ok'){
+          const coords = j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+          routeLine = L.polyline(coords, {weight:4}).addTo(map);
+          const dist = (j.routes[0].distance/1000).toFixed(1);
+          const dur = Math.round(j.routes[0].duration/60);
+          document.getElementById('mapDistance').textContent = dist + ' ק"מ';
+          document.getElementById('mapDuration').textContent = dur + " דק'";
+          return;
+        }
+      }catch(e){ console.warn('osrm failed',e); }
+      // fallback straight line
+      routeLine = L.polyline([a,b], {dashArray:'6 6', weight:3}).addTo(map);
+      const d = haversineDistance(a[0],a[1],b[0],b[1]).toFixed(1);
+      document.getElementById('mapDistance').textContent = d + ' ק"מ';
+      document.getElementById('mapDuration').textContent = Math.round(d/40*60) + " דק'"; // assume avg 40km/h
+    }
+
+    function haversineDistance(lat1,lon1,lat2,lon2){
+      function toRad(v){return v*Math.PI/180}
+      const R=6371; const dLat=toRad(lat2-lat1); const dLon=toRad(lon2-lon1);
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+      return R*c;
+    }
+
+    function showInsight(msg, isError=false){
+      const div = document.createElement('div'); div.className='insight'; div.textContent = msg;
+      if(isError) div.style.background='#ffecec';
+      insightsEl.prepend(div);
+      setTimeout(()=>{ if(div.parentNode) div.remove(); }, 8000);
+    }
+
+    // geocode via nominatim (free, rate-limited) for demo only
+    async function geocodeAddress(st, num, cityName){
+      if(!st) return null;
+      const q = encodeURIComponent(`${st} ${num || ''} ${cityName || ''} ישראל`);
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
+        const j = await res.json();
+        if(j && j[0]) return {lat:parseFloat(j[0].lat), lng:parseFloat(j[0].lon)};
+      }catch(e){console.warn('geocode failed',e)}
+      return null;
+    }
+
+    // suggestions algorithm (very simple clustering by city + time window)
+    function generateSuggestions(){
+      suggestions.innerHTML='';
+      const byCity = {};
+      orders.forEach(o=>{
+        const key = o.city || 'לא ידוע';
+        byCity[key] = byCity[key] || []; byCity[key].push(o);
+      });
+      Object.keys(byCity).forEach(cityKey=>{
+        const arr = byCity[cityKey];
+        if(arr.length>1){
+          const card = document.createElement('div'); card.className='order-row';
+          card.innerHTML = `<div><strong>הצעה לשילוב באזור ${cityKey}</strong><div style="font-size:12px">${arr.length} נקודות — חיסכון משוער: ${Math.max(1,arr.length-1)*5} ק"מ</div></div><div><a class="btn" onclick='acceptSuggestion()'>העבר לנהג</a></div>`;
+          suggestions.appendChild(card);
+        }
+      });
+      if(!suggestions.firstChild) suggestions.textContent='אין הצעות כרגע.';
+    }
+
+    function acceptSuggestion(){ showInsight('הצעה הועברה לביצוע (דמו)'); }
+
+    // dummy traffic feed - in prod connect to traffic APIs or RSS
+    function loadTrafficFeed(){
+      trafficFeed.innerHTML='';
+      const sample = [
+        {text:'עומס במחלף קק"ל לכיוון דרום — מומלץ לעקוף', city:'ת"א'},
+        {text:'עבודות בכביש 4 בין נתניה לקריית אונו — איטיות', city:'ת"א'},
+        {text:'איסור כניסה למשאית בכביש פנימי בחיפה', city:'חיפה'}
+      ];
+      sample.forEach(s=>{
+        const d = document.createElement('div'); d.className='insight'; d.textContent = s.text; trafficFeed.appendChild(d);
+      });
+    }
+
+    // === events ===
+    btnSave.addEventListener('click', saveOrder);
+    btnShowRoute.addEventListener('click', ()=>{
+      // build latlng from current address via geocode
+      (async ()=>{
+        const g = await geocodeAddress(street.value, streetNumber.value, city.value);
+        if(g) drawRoute([WAREHOUSE.lat, WAREHOUSE.lng],[g.lat,g.lng]); else showInsight('לא נמצאה מיקום לגאוקודינג', true);
+      })();
+    });
+    btnSuggest.addEventListener('click', generateSuggestions);
+
+    // init
+    initMap(); loadOrders(); loadTrafficFeed();
+
+    // expose for debug in page
+    window._orders = orders;
+  </script>
+</body>
+</html>
