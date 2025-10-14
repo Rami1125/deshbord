@@ -15,6 +15,7 @@
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600;}
     input,select,textarea{width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;transition:all 0.2s;background-color:#fafbfc;}
     input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;background-color:white;box-shadow:0 0 0 2px rgba(0,82,204,0.2);}
+    select:disabled { background-color: #f4f5f7; color: #a5adba; }
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
     textarea{height:70px;resize:vertical;}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border:1px solid transparent;border-radius:4px;cursor:pointer;font-weight:600;transition:all 0.2s;font-size:14px;}
@@ -51,8 +52,8 @@
           <div style="grid-column: span 2;"><label for="city">עיר</label><input id="city" type="text" required></div>
           <div><label for="date">תאריך</label><input id="date" type="date" required></div>
           <div><label for="time">שעה</label><input id="time" type="time" required></div>
-          <div><label for="delivery_type">סוג הובלה</label><select id="delivery_type" required></select></div>
-          <div><label for="warehouse">מחסן מוצא</label><select id="warehouse" required></select></div>
+          <div><label for="delivery_type">סוג הובלה</label><select id="delivery_type" required disabled><option>טוען נתונים...</option></select></div>
+          <div><label for="warehouse">מחסן מוצא</label><select id="warehouse" required disabled><option>טוען נתונים...</option></select></div>
           <div style="grid-column: span 2;"><label for="driver">נהג</label><select id="driver" required><option value="עלי">עלי</option><option value="חכמת">חכמת</option></select></div>
           <div style="grid-column: span 2;"><label for="notes">הערות</label><textarea id="notes"></textarea></div>
         </div>
@@ -91,7 +92,6 @@
   let map;
   let geocoder;
   let directionsService;
-  let directionsRenderer;
   let warehouses = [];
   let routePolylines = [];
   let currentRoutes = [];
@@ -135,15 +135,14 @@
   }
 
   async function loadInitialData() {
-    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL' || SCRIPT_URL === '') {
       showStatus("אנא הגדר את כתובת ה-URL של Apps Script", "error");
       return;
     }
     await Promise.all([
       loadWarehouses(),
       loadDeliveryTypes(),
-      loadCustomers(),
-      loadOrders()
+      loadCustomers()
     ]);
   }
 
@@ -154,7 +153,9 @@
     try {
       const response = await fetch(`${SCRIPT_URL}?action=${action}`);
       if (!response.ok) throw new Error(`Network response was not ok for ${action}`);
-      return await response.json();
+      const data = await response.json();
+      if (data.status === 'error') throw new Error(data.message);
+      return data;
     } catch (error) {
       console.error('Fetch Error:', error);
       showStatus(`שגיאה בטעינת נתונים: ${error.message}`, 'error');
@@ -165,25 +166,44 @@
   async function loadWarehouses() {
     const settings = await fetchData('getSettings');
     if (settings && Array.isArray(settings)) {
-      warehouses = settings.filter(s => s.key.startsWith('warehouse_')).map(s => ({ name: s.key, address: s.value }));
-      dom.warehouse.innerHTML = warehouses.map(w => `<option value="${w.address}">${w.address}</option>`).join('');
-      // Geocode warehouses for later use
-      for (const w of warehouses) {
-          const coords = await geocodeAddress(w.address);
-          w.coords = coords;
+      warehouses = settings.filter(s => s.key && s.key.startsWith('warehouse_')).map(s => ({ name: s.key, address: s.value }));
+      if (warehouses.length > 0) {
+        dom.warehouse.innerHTML = warehouses.map(w => `<option value="${w.address}">${w.address}</option>`).join('');
+        dom.warehouse.disabled = false;
+        for (const w of warehouses) {
+            const coords = await geocodeAddress(w.address);
+            w.coords = coords;
+        }
+      } else {
+        dom.warehouse.innerHTML = '<option>לא נמצאו מחסנים</option>';
       }
     }
   }
 
   async function loadDeliveryTypes() {
     const types = await fetchData('getDeliveryTypes');
-    if (types && Array.isArray(types)) {
+    if (types && Array.isArray(types) && types.length > 0) {
       dom.deliveryType.innerHTML = types.map(t => `<option value="${t}">${t}</option>`).join('');
+      dom.deliveryType.disabled = false;
+    } else {
+      dom.deliveryType.innerHTML = '<option>לא נמצאו סוגים</option>';
     }
   }
 
-  async function loadCustomers() { /* ... unchanged ... */ }
-  async function loadOrders() { /* ... for loading existing orders on map ... */ }
+  async function loadCustomers() {
+    const customers = await fetchData('getCustomers');
+    if (customers && Array.isArray(customers)) {
+        const list = document.getElementById('customers-list');
+        list.innerHTML = '';
+        customers.forEach(c => {
+            if (c.name) {
+                const option = document.createElement('option');
+                option.value = c.name;
+                list.appendChild(option);
+            }
+        });
+    }
+  }
   
   // =================================================================
   // CORE LOGIC: ROUTING & MAP
@@ -198,7 +218,7 @@
     const destinationAddress = `${dom.street.value} ${dom.streetNumber.value}, ${dom.city.value}`;
 
     if (!startWarehouse || !startWarehouse.coords) {
-      showStatus('לא ניתן למצוא את נקודת המוצא', 'error');
+      showStatus('לא ניתן למצוא את נקודת המוצא. ודא שהמחסנים נטענו כראוי.', 'error');
       return;
     }
 
@@ -277,7 +297,6 @@
 
   function getRouteWarnings(route) {
     let warnings = [];
-    // This is a simulation. Real-world implementation would require more complex data.
     if (dom.deliveryType.value.includes('מנוף') && dom.city.value.toLowerCase().includes('תל אביב')) {
         warnings.push('נדרש אישור כניסת מנוף לת"א.');
     }
@@ -286,7 +305,6 @@
     }
     return warnings.map(w => `<div class="warning">${w}</div>`).join('');
   }
-
 
   function clearRoutes() {
     routePolylines.forEach(p => p.remove());
@@ -306,7 +324,7 @@
         return;
     }
     
-    btnSave.disabled = true;
+    dom.btnSave.disabled = true;
     showStatus('שומר הזמנה...', 'loading');
 
     const selectedRoute = currentRoutes[selectedRouteIndex].legs[0];
@@ -330,12 +348,11 @@
         body: JSON.stringify({ action: 'addOrder', payload: orderData })
       });
       showStatus('הזמנה נשמרה בהצלחה!', 'success');
-      // Optionally reset form
     } catch (error) {
       console.error('Save Error:', error);
       showStatus(`שגיאה בשמירת הזמנה: ${error.message}`, 'error');
     } finally {
-        btnSave.disabled = false;
+        dom.btnSave.disabled = false;
     }
   }
 
@@ -366,8 +383,8 @@
   function isFormValid(checkAddressOnly = false) {
       const requiredFields = checkAddressOnly ? [dom.street, dom.streetNumber, dom.city] : Object.values(dom).filter(el => el.hasAttribute('required'));
       for (const field of requiredFields) {
-          if (!field.value.trim()) {
-              showStatus(`שדה חובה חסר: ${field.labels[0].textContent}`, 'error');
+          if (!field.value.trim() || field.disabled) {
+              showStatus(`שדה חובה חסר או לא נטען: ${field.labels[0].textContent}`, 'error');
               field.focus();
               return false;
           }
