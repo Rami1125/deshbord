@@ -55,14 +55,14 @@
             <!-- Drivers Columns -->
             <div class="w-full md:w-1/2">
                 <div class="flex items-center gap-4 mb-4">
-                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי" class="w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <img src="https://i.pravatar.cc/150?u=ali" alt="עלי" class="w-16 h-16 rounded-full border-4 border-white shadow-md">
                     <h2 class="text-2xl font-bold text-slate-800">עלי</h2>
                 </div>
                 <div id="ali-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
             </div>
             <div class="w-full md:w-1/2">
                  <div class="flex items-center gap-4 mb-4">
-                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת" class="w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <img src="https://i.pravatar.cc/150?u=hakmat" alt="חכמת" class="w-16 h-16 rounded-full border-4 border-white shadow-md">
                     <h2 class="text-2xl font-bold text-slate-800">חכמת</h2>
                 </div>
                 <div id="hakmat-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
@@ -71,7 +71,7 @@
     </div>
     
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwvsXJoCpPqIQs30fuyC7MtnYesG4KUWuOqtN3QPfMmVCmaEqOYKtljjozMPnH0PKhaOg/exec'; // 👈 הדבק פה את כתובת הסקריפט
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0RzJrdXLRpuHS6dz2wpteH6c0Pyo4kr6dlydgbCUlaedGAm0Y2j1ByiEjLYs9Rm3tRw/exec'; // 👈 הדבק פה את כתובת הסקריפט
 
         // --- AUTHENTICATION ---
         document.getElementById('login-button').addEventListener('click', () => {
@@ -115,7 +115,7 @@
 
         async function loadAndPlaceOrders() {
             try {
-                const { aliOrders, hakmatOrders } = await runGAS('getTeamData');
+                const { aliOrders, hakmatOrders } = await runGAS({action: 'getTeamData'});
                 placeOrders(aliOrders, 'ali-timeline');
                 placeOrders(hakmatOrders, 'hakmat-timeline');
             } catch (error) { alert(`שגיאה בטעינת הזמנות: ${error.message}`); }
@@ -160,16 +160,19 @@
             if (orderCard && newTime) {
                 slot.querySelector('div:last-child').appendChild(orderCard);
                 try {
-                    await runGAS('updateOrderTime', { orderId, newTime });
-                    alert(`הזמנה ${orderId} עודכנה לשעה ${newTime}`);
+                    await runGAS({action: 'updateOrderTime', payload: { orderId, newTime }});
+                    alert(`הזמנה עודכנה לשעה ${newTime}`);
                 } catch (error) { alert(`שגיאה בעדכון השעה: ${error.message}`); }
             }
         }
         
-        function runGAS(action, payload) {
+        function runGAS(params) {
              return new Promise((resolve, reject) => {
-                const options = { method: 'POST', body: JSON.stringify({ action, payload }) };
-                fetch(SCRIPT_URL, options)
+                const isGet = params.action.startsWith('get');
+                const url = isGet ? `${SCRIPT_URL}?action=${params.action}` : SCRIPT_URL;
+                const options = isGet ? {} : { method: 'POST', body: JSON.stringify(params) };
+
+                fetch(url, options)
                     .then(res => res.json())
                     .then(response => {
                         if (response.status === 'success') resolve(response.data);
