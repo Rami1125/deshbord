@@ -15,198 +15,113 @@
         .tab-content.active { display: block; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-        #planner-map { height: 450px; border-radius: 0.5rem; background: #e2e8f0; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .table-action-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
     </style>
 </head>
 <body class="text-slate-800">
     <div class="container mx-auto p-4 max-w-screen-2xl">
         <header class="mb-6"><h1 class="text-4xl font-bold text-slate-900">מרכז בקרה לוגיסטי</h1></header>
         <div class="border-b border-slate-200 mb-6">
-            <nav class="flex space-x-4 -mb-px" aria-label="Tabs">
-                <a id="tab-dashboard" class="tab active"><i class="fa-solid fa-chart-pie mr-2"></i>לוח בקרה</a>
-                <a id="tab-orders" class="tab"><i class="fa-solid fa-tasks mr-2"></i>ניהול הזמנות</a>
-                <a id="tab-planner" class="tab"><i class="fa-solid fa-route mr-2"></i>תכנון מסלול יומי</a>
+            <nav id="tabs-nav" class="flex space-x-4 -mb-px" aria-label="Tabs">
+                <a data-tab="dashboard" class="tab active"><i class="fa-solid fa-chart-pie mr-2"></i>לוח בקרה</a>
+                <a data-tab="orders" class="tab"><i class="fa-solid fa-tasks mr-2"></i>ניהול הזמנות</a>
+                <a data-tab="planner" class="tab"><i class="fa-solid fa-route mr-2"></i>תכנון מסלול יומי</a>
             </nav>
         </div>
         <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"></div>
 
-        <!-- Dashboard Content -->
         <div id="content-dashboard" class="tab-content active">...</div>
-        
-        <!-- Order Management Content (NEW) -->
-        <div id="content-orders" class="tab-content">
-            <div class="grid grid-cols-12 gap-6">
-                <div class="col-span-12 lg:col-span-4 card p-6">
-                     <h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה חדשה</h2>
-                     <form id="order-form" class="space-y-4">
-                        <input type="hidden" id="id" name="id">
-                        <div><label for="customer">לקוח</label><input type="text" id="customer" name="customer" list="customers-list" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <datalist id="customers-list"></datalist>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label for="date">תאריך</label><input type="date" id="date" name="date" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                            <div><label for="time">שעה</label><input type="time" id="time" name="time" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        </div>
-                        <div><label for="city">עיר</label><select id="city" name="city" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="col-span-2"><label for="street">רחוב</label><input type="text" id="street" name="street" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                            <div><label for="street_number">מספר</label><input type="text" id="street_number" name="street_number" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label for="delivery_type">סוג הובלה</label><select id="delivery_type" name="delivery_type" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                            <div><label for="warehouse">מחסן</label><select id="warehouse" name="warehouse" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                        </div>
-                        <div><label for="notes">הערות</label><textarea id="notes" name="notes" rows="2" class="mt-1 block w-full rounded-md border-gray-300"></textarea></div>
-                        <div class="flex gap-4">
-                            <button id="btn-save-order" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">שמור הזמנה</button>
-                            <button id="btn-clear-form" type="button" class="w-full bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300">נקה טופס</button>
-                        </div>
-                     </form>
-                </div>
-                <div class="col-span-12 lg:col-span-8 card p-6">
-                    <h2 class="text-2xl font-semibold mb-4">רשימת הזמנות פתוחות</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50"><tr>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">לקוח</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">כתובת</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">תאריך</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">פעולות</th>
-                            </tr></thead>
-                            <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200">
-                                <!-- Rows will be injected by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Planner Content -->
+        <div id="content-orders" class="tab-content">...</div>
         <div id="content-planner" class="tab-content">...</div>
     </div>
 
-    <!-- Modals -->
-    <div id="view-modal" class="modal-overlay hidden">
-        <div class="card w-full max-w-lg p-6 relative">
-            <button onclick="closeModal('view-modal')" class="absolute top-4 left-4 text-2xl">&times;</button>
-            <h2 class="text-2xl font-semibold mb-4">פרטי הזמנה</h2>
-            <div id="view-modal-content" class="space-y-2"></div>
-            <hr class="my-4">
-            <h3 class="text-lg font-semibold">ניתוח היסטורי</h3>
-            <div id="view-modal-history" class="text-sm"></div>
-        </div>
-    </div>
-    <div id="archive-modal" class="modal-overlay hidden">
-        <div class="card w-full max-w-md p-6 relative">
-            <h2 class="text-2xl font-semibold mb-4">סגירת הזמנה</h2>
-            <p class="mb-4">נא להזין זמני יציאה וחזרה בפועל.</p>
-            <input type="hidden" id="archive-order-id">
-            <div class="space-y-4">
-                <div><label for="departure-time">שעת יציאה</label><input type="time" id="departure-time" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                <div><label for="return-time">שעת חזרה</label><input type="time" id="return-time" class="mt-1 block w-full rounded-md border-gray-300"></div>
-            </div>
-            <div class="mt-6 flex gap-4">
-                <button id="btn-confirm-archive" class="w-full bg-green-600 text-white py-2 rounded-lg">אשר וסגור</button>
-                <button onclick="closeModal('archive-modal')" class="w-full bg-slate-200 py-2 rounded-lg">ביטול</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Modals and Templates can be defined here -->
+    <div id="view-modal" class="modal-overlay hidden"> ... </div>
+    <div id="archive-modal" class="modal-overlay hidden"> ... </div>
+    
+    <!-- SCRIPT SECTION -->
     <script>
-        // Use placeholders for API keys
-        const API_KEY = 'https://script.google.com/macros/s/AKfycbwDL6f5ZXdD-WCGVMreJzPHi3P-OxDkVv73fycSGG6u9eY_tEcJLQWJaZFuPleUPOrRhw/exec';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDL6f5ZXdD-WCGVMreJzPHi3P-OxDkVv73fycSGG6u9eY_tEcJLQWJaZFuPleUPOrRhw/exec';
+        // =================================================================
+        // ==  IMPORTANT: PASTE YOUR KEYS HERE                          ==
+        // =================================================================
+        
+        // This is your Google Maps API Key. It should start with "AIza..."
+        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 PASTE YOUR GOOGLE MAPS API KEY
+        
+        // This is your Apps Script deployment URL.
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu1p19fHqnQQRWJw9o5UI5mnCJ_-S3p934dTAN80_qRnLonlJ-AinhyjYR3WutzkOH/exec'; // 👈 PASTE YOUR SCRIPT URL
+        
+        // =================================================================
     </script>
-    <script async src=`https://maps.googleapis.com/maps/api/js?key=${AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps}&callback=initMaps&libraries=places`></script>
-
     <script>
-    // Full application script will go here...
-    // To keep this readable, I'll summarize the key functions.
-    // The full, correct script would be much longer.
-
-    // Global state
-    let allOrders = [];
-    let initialData = {};
+        // This loads the Google Maps script dynamically AFTER the keys are defined
+        (function() {
+            if (typeof google === 'object' && typeof google.maps === 'object') {
+                window.initMaps();
+            } else {
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMaps&libraries=places`;
+                script.async = true;
+                script.defer = true;
+                document.head.appendChild(script);
+            }
+        })();
+    </script>
     
-    // This will be wrapped in window.initMaps in the full version
-    document.addEventListener('DOMContentLoaded', () => {
-        // Mock init for snippet
-        console.log("DOM loaded, initializing app logic.");
-        // In real app, this is called by Google Maps callback
-        // setupEventListeners();
-        // loadInitialData();
-        // handleTabClick(document.getElementById('tab-dashboard'));
-    });
-    
-    function setupEventListeners() {
-        // Tabs
-        document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (e) => handleTabClick(e.currentTarget)));
-        
-        // Order Form
-        document.getElementById('order-form').addEventListener('submit', handleSaveOrder);
-        document.getElementById('btn-clear-form').addEventListener('click', clearOrderForm);
-        
-        // Archive Modal
-        document.getElementById('btn-confirm-archive').addEventListener('click', confirmArchive);
-    }
-    
-    async function loadInitialData() {
-        // ... fetches all initial data including allOrders
-    }
-    
-    function renderOrdersTable() {
-        const tableBody = document.getElementById('orders-table-body');
-        tableBody.innerHTML = ''; // Clear table
-        allOrders.forEach(order => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">${order.customer}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${order.city}, ${order.street} ${order.street_number}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${order.date}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 space-x-reverse">
-                    <button onclick="handleView('${order.id}')" title="תצוגה"><i class="fa-solid fa-eye text-blue-500"></i></button>
-                    <button onclick="handleEdit('${order.id}')" title="עריכה"><i class="fa-solid fa-pencil text-yellow-500"></i></button>
-                    <button onclick="handleDuplicate('${order.id}')" title="שכפול"><i class="fa-solid fa-copy text-gray-500"></i></button>
-                    <button onclick="showArchiveModal('${order.id}')" title="סגירת הזמנה"><i class="fa-solid fa-check text-green-500"></i></button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
-    }
+    <script>
+        // The main application logic will be wrapped in the initMaps function
+        // to ensure Google Maps is loaded first.
+        window.initMaps = function() {
+            
+            let allOrders = [];
+            let initialData = {};
+            let charts = {};
+            let plannerMap, newOrderMap, directionsService, plannerDirectionsRenderer, newOrderDirectionsRenderer;
 
-    function handleSaveOrder(event) {
-        event.preventDefault();
-        // ... logic to get form data
-        // ... checks if it's a new order or an update (based on hidden id field)
-        // ... calls google.script.run with 'addOrder' or 'updateOrder'
-    }
-    
-    function handleEdit(orderId) {
-        const order = allOrders.find(o => o.id == orderId);
-        // ... populate form with order data
-        document.getElementById('form-title').textContent = 'עריכת הזמנה';
-    }
+            // All your application functions (setupEventListeners, loadInitialData, renderOrdersTable, etc.)
+            // will now be defined *inside* this initMaps function.
+            
+            function setupEventListeners() {
+                document.getElementById('tabs-nav').addEventListener('click', (e) => {
+                    if (e.target.matches('.tab')) {
+                        handleTabClick(e.target);
+                    }
+                });
+                document.getElementById('order-form').addEventListener('submit', handleSaveOrder);
+                // ... all other event listeners
+            }
+            
+            function handleTabClick(clickedTab) {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                clickedTab.classList.add('active');
+                const tabName = clickedTab.dataset.tab;
+                const contentEl = document.getElementById(`content-${tabName}`);
+                if(contentEl) contentEl.classList.add('active');
+                
+                if (tabName === 'dashboard') {
+                    loadDashboardData();
+                }
+            }
+            
+            // ... the rest of the JavaScript logic from the previous turn goes here ...
+            // (loadInitialData, renderOrdersTable, handleSaveOrder, handleEdit, etc.)
+            
+            // Initialize maps
+            const centerOfIsrael = { lat: 31.7, lng: 35.2 };
+            plannerMap = new google.maps.Map(document.getElementById("planner-map") || document.createElement('div'), { zoom: 8, center: centerOfIsrael });
+            newOrderMap = new google.maps.Map(document.getElementById("new-order-map") || document.createElement('div'), { zoom: 8, center: centerOfIsrael });
+            directionsService = new google.maps.DirectionsService();
+            plannerDirectionsRenderer = new google.maps.DirectionsRenderer({ map: plannerMap });
+            newOrderDirectionsRenderer = new google.maps.DirectionsRenderer({ map: newOrderMap });
 
-    // ... other handler functions (duplicate, view, archive)
-
-    function clearOrderForm() {
-        document.getElementById('order-form').reset();
-        document.getElementById('id').value = '';
-        document.getElementById('form-title').textContent = 'יצירת הזמנה חדשה';
-    }
-
-    function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
-    function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
-
-    // Mock functions for snippet demonstration
-    function handleTabClick(tab) { console.log(`Switching to ${tab.id}`); }
-    function handleView(id) { console.log(`Viewing order ${id}`); }
-    function handleDuplicate(id) { console.log(`Duplicating order ${id}`); }
-    function showArchiveModal(id) { console.log(`Archiving order ${id}`); }
-    function confirmArchive() { console.log('Confirming archive...'); }
-    
-    // ... Full initMaps and other functions would go here
+            // Start the app
+            setupEventListeners();
+            loadInitialData();
+            handleTabClick(document.querySelector('.tab.active'));
+        }
     </script>
 </body>
 </html>
