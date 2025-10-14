@@ -10,10 +10,10 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <style>
         :root {
-            --bg-color: #f0f5fa; /* Lighter blue-ish background */
+            --bg-color: #f0f5fa;
             --header-bg: #ffffff;
             --card-bg: #ffffff;
-            --primary-color: #3b82f6; /* Vivid Blue */
+            --primary-color: #3b82f6;
             --primary-light: #eff6ff;
             --text-color: #1e293b;
             --text-light: #64748b;
@@ -35,19 +35,20 @@
 
         .dashboard-container { display: flex; height: 100%; flex-direction: column; }
         
-        /* --- Header --- */
         .header {
             background-color: var(--header-bg);
             padding: 15px 25px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
+            gap: 15px;
         }
         .header-title h1 { margin: 0; font-size: 1.5rem; }
         .header-title p { margin: 0; color: var(--text-light); font-size: 0.9rem; }
-        .header-actions { display: flex; align-items: center; gap: 15px; }
+        .header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .header-actions .date-picker { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-main); }
         .header-actions button {
             background-color: var(--primary-color); color: white; border: none; padding: 10px 15px;
@@ -56,20 +57,16 @@
         }
         .header-actions button:hover { background-color: #2563eb; }
 
-        /* --- Scheduling Board --- */
         .scheduling-board {
             display: grid;
-            grid-template-columns: 1fr; /* Default to 1 column */
+            grid-template-columns: 1fr;
             gap: 20px;
             padding: 20px;
             flex-grow: 1;
-            overflow: hidden;
+            overflow: auto;
         }
-        /* Responsive layout for bigger screens */
         @media (min-width: 1024px) {
-            .scheduling-board {
-                grid-template-columns: 1fr 1fr;
-            }
+            .scheduling-board { grid-template-columns: 1fr 1fr; }
         }
 
         .driver-column {
@@ -79,7 +76,7 @@
             flex-direction: column;
             box-shadow: var(--shadow);
             overflow: hidden;
-            height: 100%;
+            min-height: 400px; /* Ensure columns are visible on small viewports */
         }
         .driver-header {
             display: flex; align-items: center; padding: 15px;
@@ -111,7 +108,6 @@
         .order-card-customer { font-weight: 500; font-size: 0.9rem; }
         .order-card-address { font-size: 0.8rem; color: #64748b; }
 
-        /* --- Modal for Order Form --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5); display: flex; justify-content: center;
@@ -129,9 +125,9 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .close-modal { background:none; border:none; font-size:1.5rem; cursor:pointer; }
         
-        .form-layout { display: grid; grid-template-columns: 1fr 300px; gap: 25px; overflow-y: auto; padding: 5px; }
-        @media (max-width: 768px) {
-            .form-layout { grid-template-columns: 1fr; }
+        .form-layout { display: grid; grid-template-columns: 1fr; gap: 25px; overflow-y: auto; padding: 5px; }
+        @media (min-width: 768px) {
+            .form-layout { grid-template-columns: 1fr 300px; }
         }
         
         .form-group label { font-weight: 500; display: block; margin-bottom: 8px; }
@@ -139,12 +135,11 @@
             width: 100%; padding: 12px; font-size: 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; background: #fafafa; font-family: var(--font-main);
         }
-        #map-container { height: 200px; border-radius: 12px; background: #eee; margin-bottom: 15px; }
+        #map-container { height: 200px; border-radius: 12px; background: #eee; margin-bottom: 15px; z-index: 1; }
         .insights-card { background: var(--primary-light); padding: 15px; border-radius: 12px; }
         .insight { display: flex; align-items: center; margin-bottom: 10px; }
         .insight i { color: var(--primary-color); font-size: 1.2rem; margin-left: 10px; }
 
-        /* Logger ("Snitch") Styling */
         #logger-container {
             position: fixed; bottom: 15px; left: 15px; z-index: 9999;
             display: flex; flex-direction: column; gap: 10px;
@@ -238,16 +233,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzUeFaV_N2a1G5U-cz5VRepqXuLXWlWy8QqsMkrCjX-czOCzokv9cUzkretMo-YY5JJ/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwm0N0l1cCqXt7-7VFD15UokUWZYvT3310iAwBf0XSNipI-A30cR7it4690rL_Zzncn6g/exec';
     let allOrders = [], customersData = [], citiesData = [];
     let map;
 
-    // --- Logger ("Snitch") Utility ---
     const Logger = {
         _container: null,
-        init() {
-            this._container = document.getElementById('logger-container');
-        },
+        init() { this._container = document.getElementById('logger-container'); },
         log(message, type = 'info', duration = 5000) {
             const entry = document.createElement('div');
             entry.className = `log-entry ${type}`;
@@ -266,8 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     Logger.init();
 
-    // --- INITIALIZATION ---
-    function initializeDateTime() { /* ... unchanged ... */ }
+    function initializeDateTime() {
+        const now = new Date();
+        const datePicker = document.getElementById('datePicker');
+        datePicker.value = now.toISOString().split('T')[0];
+        const update = () => {
+            document.getElementById('currentDateTime').textContent = new Date().toLocaleString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        };
+        update();
+        setInterval(update, 60000);
+    }
     
     async function initializeApp() {
         initializeDateTime();
@@ -286,13 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             Logger.error('כשל בטעינה ראשונית של המערכת.', error);
-            document.body.innerHTML = `<h1>שגיאה קריטית</h1><p>לא ניתן היה לטעון את נתוני המערכת. ודא שהגדרות השיתוף ב-Google Sheet תקינות.</p><p><small>${error.message}</small></p>`;
+            document.body.innerHTML = `<h1>שגיאה קריטית</h1><p>לא ניתן היה לטעון את נתוני המערכת. ודא שהגדרות השיתוף ב-Google Sheet תקינות ושהסקריפט פורסם מחדש.</p><p><small>${error.message}</small></p>`;
         }
         
         setupEventListeners();
     }
     
-    // --- DATA LOADING & RENDERING ---
     async function loadOrdersForDate(date) {
         try {
             Logger.log(`טוען הזמנות לתאריך ${date}...`, 'info');
@@ -306,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSchedulingBoard() {
         document.querySelectorAll('.order-card').forEach(card => card.remove());
-
         let stats = { hakmat: { orders: 0, km: 0 }, ali: { orders: 0, km: 0 } };
 
         allOrders.forEach(order => {
@@ -319,8 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeSlot.appendChild(orderCard);
                 stats[driverKey].orders++;
                 const city = citiesData.find(c => c['עיר'] === order['עיר']);
-                if (city) {
-                    stats[driverKey].km += parseFloat(city['מרחק מהוד השרון (ק"מ)']) || 0;
+                if (city && city['מרחק מהוד השרון (ק"מ)']) {
+                    stats[driverKey].km += parseFloat(city['מרחק מהוד השרון (ק"מ)']);
                 }
             }
         });
@@ -331,15 +329,40 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ali-km-total').innerHTML = `<strong>${stats.ali.km.toFixed(1)}</strong> ק"מ`;
     }
 
-    function createOrderCard(order) { /* ... unchanged ... */ }
-    function generateTimeSlots() { /* ... unchanged ... */ }
+    function createOrderCard(order) {
+        const div = document.createElement('div');
+        div.className = 'order-card';
+        div.draggable = true;
+        div.dataset.orderId = order['חותמת זמן'];
+        div.innerHTML = `<div class="order-card-customer">${order['לקוח']}</div><div class="order-card-address">${order['כתובת אספקה']}</div>`;
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
+        div.addEventListener('click', () => openModalForEdit(order['חותמת זמן']));
+        return div;
+    }
 
-    // --- DRAG & DROP LOGIC ---
+    function generateTimeSlots() {
+        const timelines = document.querySelectorAll('.timeline');
+        timelines.forEach(timeline => {
+            timeline.innerHTML = '';
+            for (let hour = 6; hour < 18; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.innerHTML = `<div class="time-label">${time}</div><div class="drop-zone" data-time="${time}" data-driver="${timeline.id.split('-')[1]}"></div>`;
+                    timeline.appendChild(timeSlot);
+                }
+            }
+        });
+    }
+
     let draggedItem = null;
-    function handleDragStart(e) { /* ... unchanged ... */ }
-    function handleDragEnd() { /* ... unchanged ... */ }
-    function handleDragOver(e) { /* ... unchanged ... */ }
-    function handleDragLeave(e) { /* ... unchanged ... */ }
+    function handleDragStart(e) { draggedItem = this; setTimeout(() => this.classList.add('dragging'), 0); }
+    function handleDragEnd() { this.classList.remove('dragging'); draggedItem = null; }
+    function handleDragOver(e) { e.preventDefault(); this.parentElement.classList.add('drag-over'); }
+    function handleDragLeave(e) { this.parentElement.classList.remove('drag-over'); }
+
     async function handleDrop(e) {
         e.preventDefault();
         this.parentElement.classList.remove('drag-over');
@@ -347,26 +370,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const orderId = draggedItem.dataset.orderId;
             const newTime = this.dataset.time;
             const newDriver = this.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
-            
-            this.appendChild(draggedItem); // Optimistic UI update
+            this.appendChild(draggedItem);
             
             try {
                 await postToBackend('updateOrderSchedule', { orderId, newTime, newDriver });
                 Logger.success('שיבוץ עודכן בהצלחה!');
-                await loadOrdersForDate(document.getElementById('datePicker').value); // Refresh data
+                await loadOrdersForDate(document.getElementById('datePicker').value);
             } catch(error) {
                 Logger.error('שגיאה בעדכון השיבוץ.', error);
-                await loadOrdersForDate(document.getElementById('datePicker').value); // Revert UI
+                await loadOrdersForDate(document.getElementById('datePicker').value);
             }
         }
     }
 
-    // --- MODAL & FORM LOGIC ---
     const modal = document.getElementById('orderModal');
     
     function initializeMap() {
         if (!map) {
-            map = L.map('map-container').setView([32.15, 34.85], 10); // Centered on Gush Dan
+            map = L.map('map-container').setView([32.15, 34.85], 10);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         }
     }
@@ -380,45 +401,64 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('orderDriver').value = driver;
         document.getElementById('insights-content').innerHTML = '<p>בחר עיר לקבלת תובנות</p>';
         modal.classList.add('visible');
-        setTimeout(() => initializeMap(), 10);
+        setTimeout(() => { if (map) map.invalidateSize(); else initializeMap(); }, 10);
     }
     
     function openModalForEdit(orderId) {
         const order = allOrders.find(o => o['חותמת זמן'] === orderId);
-        if(!order) return;
+        if(!order) {
+            Logger.error('Order not found for editing.');
+            return;
+        }
         
         document.getElementById('form-title').textContent = "עריכת הזמנה";
-        // Fill form fields...
         document.getElementById('orderId').value = order['חותמת זמן'];
         document.getElementById('orderCustomer').value = order['לקוח'];
         document.getElementById('orderAddress').value = order['כתובת אספקה'];
         document.getElementById('orderCity').value = order['עיר'] || '';
         document.getElementById('orderDriver').value = order['נהג'];
-        document.getElementById('orderDate').value = new Date(order['תאריך']).toISOString().split('T')[0];
+        document.getElementById('orderDate').value = order['תאריך'];
         document.getElementById('orderTime').value = order['שעה'];
         document.getElementById('orderWarehouse').value = order['מחסן'];
         
-        // Trigger city change to load insights
         document.getElementById('orderCity').dispatchEvent(new Event('change'));
-
         modal.classList.add('visible');
-        setTimeout(() => initializeMap(), 10);
+        setTimeout(() => { if (map) map.invalidateSize(); else initializeMap(); }, 10);
     }
 
     window.closeModal = () => modal.classList.remove('visible');
     
-    function populateFormDatalists() { /* ... unchanged ... */ }
+    function populateFormDatalists() {
+        const customerDatalist = document.getElementById('customers-list');
+        customerDatalist.innerHTML = '';
+        customersData.forEach(c => customerDatalist.innerHTML += `<option value="${c['שם לקוח']}"></option>`);
+        
+        const citySelect = document.getElementById('orderCity');
+        citySelect.innerHTML = '<option value="">בחר עיר...</option>';
+        citiesData.forEach(c => citySelect.innerHTML += `<option value="${c['עיר']}">${c['עיר']}</option>`);
+    }
     
-    // --- EVENT LISTENERS ---
     function setupEventListeners() {
-        /* ... existing listeners ... */
+        document.getElementById('datePicker').addEventListener('change', (e) => loadOrdersForDate(e.target.value));
+        document.getElementById('addNewOrderBtn').addEventListener('click', () => openModalForNew('חכמת', '09:00'));
+
+        document.querySelectorAll('.timeline').forEach(timeline => {
+            timeline.addEventListener('click', (e) => {
+                if (e.target.classList.contains('drop-zone') && e.target.children.length === 0) {
+                     const driver = e.target.dataset.driver === 'hakmat' ? 'חכמת' : 'עלי';
+                     openModalForNew(driver, e.target.dataset.time);
+                }
+            });
+            timeline.addEventListener('dragover', handleDragOver);
+            timeline.addEventListener('dragleave', handleDragLeave);
+            timeline.addEventListener('drop', handleDrop);
+        });
 
         document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitOrderBtn');
             btn.disabled = true; btn.textContent = 'שומר...';
             
-            // FIX: Ensure the data object keys match the Google Sheet headers exactly
             const orderData = {
                 'id': document.getElementById('orderId').value,
                 'לקוח': document.getElementById('orderCustomer').value,
@@ -445,25 +485,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('orderCity').addEventListener('change', async (e) => {
             const cityName = e.target.value;
             const insightsContent = document.getElementById('insights-content');
-            if (!cityName) {
+            const city = citiesData.find(c => c['עיר'] === cityName);
+            if (!city) {
                 insightsContent.innerHTML = '<p>בחר עיר לקבלת תובנות</p>';
                 return;
             }
-            insightsContent.innerHTML = '<p>טוען מידע...</p>';
-            try {
-                const trafficInfo = await fetchFromBackend('getTrafficInfo', { destination: cityName });
-                insightsContent.innerHTML = `
-                    <div class="insight"><i class="fas fa-road"></i> <span><strong>מרחק:</strong> ${trafficInfo.distance}</span></div>
-                    <div class="insight"><i class="fas fa-car"></i> <span><strong>זמן נסיעה:</strong> ${trafficInfo.duration_in_traffic}</span></div>
-                `;
-            } catch (error) {
-                 Logger.error('כשל בקבלת מידע על העיר.', error);
-                 insightsContent.innerHTML = '<p style="color:red;">לא ניתן לקבל מידע.</p>';
-            }
+            insightsContent.innerHTML = `
+                <div class="insight"><i class="fas fa-road"></i> <span><strong>מרחק:</strong> ${city['מרחק מהוד השרון (ק"מ)']} ק"מ</span></div>
+                <div class="insight"><i class="fas fa-car"></i> <span><strong>זמן נסיעה (ממוצע):</strong> ${city['זמן נסיעה משוער (דקות)']} דקות</span></div>
+            `;
         });
     }
 
-    // --- API HELPERS (with logging) ---
     async function fetchFromBackend(action, params = {}) {
         const url = new URL(BACKEND_URL);
         url.searchParams.append('action', action);
