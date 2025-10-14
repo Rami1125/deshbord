@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול לוגיסטיקה V3</title>
+    <title>מערכת ניהול לוגיסטיקה V3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -29,17 +29,40 @@
             </nav>
         </div>
         <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"></div>
+
         <main>
-            <div id="content-dashboard" class="tab-content active"></div>
-            <div id="content-orders" class="tab-content"></div>
-            <div id="content-planner" class="tab-content"></div>
+            <!-- STABLE ARCHITECTURE: All tab skeletons are rendered on page load -->
+            <div id="content-dashboard" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="card p-6 col-span-full"><h2 class="text-xl font-semibold">סקירה כללית</h2><p>סה"כ הזמנות: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p></div>
+                    <div class="card p-6 lg:col-span-2"><h2 class="text-xl font-semibold">ערים מובילות</h2><canvas id="cities-chart"></canvas></div>
+                    <div class="card p-6"><h2 class="text-xl font-semibold">סוגי הובלה</h2><canvas id="types-chart"></canvas></div>
+                    <div class="card p-6"><h2 class="text-xl font-semibold">לקוחות מובילים</h2><canvas id="customers-chart"></canvas></div>
+                </div>
+            </div>
+            <div id="content-orders" class="tab-content">
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4 card p-6"><h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה</h2><form id="order-form" class="space-y-4"><!-- Form fields here --></form></div>
+                    <div class="col-span-12 lg:col-span-8 card p-6">
+                         <h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2>
+                         <div id="new-order-map" class="w-full h-64 rounded-lg bg-slate-200 mb-4"></div>
+                         <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr>...</tr></thead><tbody id="orders-table-body"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+            <div id="content-planner" class="tab-content">
+                 <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-4 card p-6">...</div>
+                    <div class="col-span-8 card p-4"><div id="planner-map" class="w-full h-[500px] rounded-lg bg-slate-200"></div>...</div>
+                </div>
+            </div>
         </main>
     </div>
     <div id="modal-container"></div>
     
     <script>
-        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 הדבק פה את מפתח המפות (מתחיל ב-AIza)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAZFlaLDIl0EiCpx4S68SkWfdMC-r-qjpjI2PU_Kekpj4S9w8XMWhmhahL_t_st1TC9w/exec'; // 👈 הדבק פה את כתובת הסקריפט
+        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 PASTE YOUR GOOGLE MAPS API KEY
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAZFlaLDIl0EiCpx4S68SkWfdMC-r-qjpjI2PU_Kekpj4S9w8XMWhmhahL_t_st1TC9w/exec'; // 👈 PASTE YOUR SCRIPT URL
     </script>
     <script async defer src=`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initApp&libraries=places`></script>
 
@@ -59,24 +82,20 @@
                 orders: document.getElementById('content-orders'),
                 planner: document.getElementById('content-planner'),
             },
-            modals: document.getElementById('modal-container'),
+            maps: {
+                planner: document.getElementById('planner-map'),
+                newOrder: document.getElementById('new-order-map'),
+            }
         };
         
         function initialize() {
-            renderSkeletons();
+            directionsService = new google.maps.DirectionsService();
             setupEventListeners();
             loadInitialData().then(() => {
                 handleTabClick(document.querySelector('.tab.active'));
             });
         }
         
-        function renderSkeletons() {
-            elements.content.dashboard.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-4 gap-6"><div class="card p-6 col-span-full"><h2 class="text-xl font-semibold">סקירה כללית</h2><p>סה"כ הזמנות: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p></div><div class="card p-6 lg:col-span-2"><h2 class="text-xl font-semibold">ערים מובילות</h2><canvas id="cities-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">סוגי הובלה</h2><canvas id="types-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">לקוחות מובילים</h2><canvas id="customers-chart"></canvas></div></div>`;
-            elements.content.orders.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-12 lg:col-span-4 card p-6"><h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה</h2><form id="order-form" class="space-y-4"><!-- Form fields will be injected --></form></div><div class="col-span-12 lg:col-span-8 card p-6"><h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2><div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">לקוח</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">כתובת</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">תאריך</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">פעולות</th></tr></thead><tbody id="orders-table-body"></tbody></table></div></div></div>`;
-            elements.content.planner.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-4 card p-6"><h2 class="text-xl font-semibold mb-4">בחר הזמנות</h2><div class="space-y-4">...</div><button id="btn-optimize-route" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg">חשב מסלול</button></div><div class="col-span-8 card p-4"><div id="planner-map" class="w-full h-[500px] rounded-lg bg-slate-200"></div>...</div></div>`;
-            console.log("UI Skeletons rendered.");
-        }
-
         function setupEventListeners() {
             elements.nav.addEventListener('click', e => {
                 if (e.target.closest('.tab')) handleTabClick(e.target.closest('.tab'));
@@ -98,13 +117,13 @@
             tab.classList.add('active');
             elements.content[tabName].classList.add('active');
 
-            // Initialize maps and render content only when tab is first viewed
+            // Initialize maps only ONCE when their tab is first viewed
             if (tabName === 'orders' && !newOrderMap) {
-                newOrderMap = new google.maps.Map(document.getElementById("new-order-map-container") || createMapContainer('orders'));
+                newOrderMap = new google.maps.Map(elements.maps.newOrder, { zoom: 8, center: { lat: 31.7, lng: 35.2 } });
                 newOrderDR = new google.maps.DirectionsRenderer({ map: newOrderMap });
                 renderOrderManagement();
             } else if (tabName === 'planner' && !plannerMap) {
-                plannerMap = new google.maps.Map(document.getElementById("planner-map"));
+                plannerMap = new google.maps.Map(elements.maps.planner, { zoom: 8, center: { lat: 31.7, lng: 35.2 } });
                 plannerDR = new google.maps.DirectionsRenderer({ map: plannerMap });
                 renderPlanner();
             } else if (tabName === 'dashboard') {
@@ -113,26 +132,15 @@
         }
         
         function renderDashboard() { /* ... Chart logic ... */ }
-        function renderOrderManagement() { 
-             const form = document.getElementById('order-form');
-             // render form fields dynamically
-             // render table
-             renderOrdersTable();
-             // attach event listeners for the form
-        }
+        function renderOrderManagement() { /* ... Order form and table logic ... */ }
         function renderPlanner() { /* ... Planner logic ... */ }
-
-        function renderOrdersTable() {
-            const tableBody = document.getElementById('orders-table-body');
-            if (!tableBody) return;
-            tableBody.innerHTML = allOrders.map(order => `...`).join('');
-        }
         
         function runGAS(action, payload) {
              return new Promise((resolve, reject) => {
-                const url = `${SCRIPT_URL}?action=${action}`;
-                const options = payload ? { method: 'POST', body: JSON.stringify({ action, payload }) } : { method: 'GET' };
-                fetch(payload ? SCRIPT_URL : url, options)
+                const isGet = action.startsWith('get');
+                const url = isGet && payload ? `${SCRIPT_URL}?action=${action}&${new URLSearchParams(payload)}` : `${SCRIPT_URL}?action=${action}`;
+                const options = isGet ? { method: 'GET' } : { method: 'POST', body: JSON.stringify({ action, payload }) };
+                fetch(isGet ? url : SCRIPT_URL, options)
                     .then(res => res.json())
                     .then(response => {
                         if (response.status === 'error') reject(new Error(response.message));
@@ -147,8 +155,6 @@
             elements.errorBanner.classList.remove('hidden');
         }
 
-        // --- Initialize the App ---
-        directionsService = new google.maps.DirectionsService();
         initialize();
     }
     </script>
