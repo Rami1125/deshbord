@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>📋סידור ח.סבן</title>
+    <title>📋 דוח בוקר - זכוכית מתקדמת</title>
     
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -991,6 +991,7 @@
         function populateDeliveryTypeDropdowns() {
             const dropdown = document.getElementById('orderOperationType');
             if (dropdown) {
+                dropdown.innerHTML = ''; // Clear existing options
                 deliveryTypes.forEach(type => {
                     const option = document.createElement('option');
                     option.value = type;
@@ -1286,7 +1287,7 @@
         }
 
         async function saveOrderAndNotify(orderData) {
-            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbw1h0aKRTyJWm05Y9dr_89lxBdl9oNkeHQF36DYkx0f-ZYtbPZa9ooFfDIefyAlv5Vvug/exec';
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyp67xLLvUSf0EZM04N5dqXyCecUDuI-RJeXwemxH9bfgpR7TXETZNu7zxwBRb8c-LA/exec';
             try {
                 await fetch(BACKEND_URL, {
                     method: 'POST',
@@ -1350,9 +1351,18 @@
             for (let hour = 6; hour < 18; hour++) {
                 ['00', '30'].forEach(minute => {
                     const time = `${String(hour).padStart(2, '0')}:${minute}`;
-                    board.appendChild(Object.assign(document.createElement('div'), { className: 'schedule-time-slot', textContent: time }));
+                    
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'schedule-time-slot';
+                    timeSlot.textContent = time;
+                    board.appendChild(timeSlot);
+
                     ['ali', 'hakmat'].forEach(driver => {
-                        board.appendChild(Object.assign(document.createElement('div'), { className: 'schedule-driver-column', dataset: { driver, time } }));
+                        const column = document.createElement('div');
+                        column.className = 'schedule-driver-column';
+                        column.dataset.driver = driver;
+                        column.dataset.time = time;
+                        board.appendChild(column);
                     });
                 });
             }
