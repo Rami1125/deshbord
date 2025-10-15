@@ -3,745 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מרכז בקרה לוגיסטי חכם - גרסה משודרגת</title>
+    <title>מערכת ניהול סידור עבודה</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2C3E50">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2C3E50/FFFFFF?text=Work&font=sans">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f0f2f5; }
-        .card { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #pano { width: 100%; height: 250px; border-radius: 8px; background-color: #e5e7eb; margin-top: 1rem; }
-        .route-option.selected { border-color: #2563eb; background-color: #eff6ff; }
-        .price-breakdown { transition: all 0.3s ease; }
-        .price-breakdown.hidden { opacity: 0; height: 0; overflow: hidden; }
-        .price-breakdown:not(.hidden) { opacity: 1; height: auto; }
-        .glow { box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
+        :root {
+            --primary-blue: #0066cc;
+            --light-blue: #f0f8ff;
+            --white: #ffffff;
+            --dark-color: #2C3E50;
+            --accent-color: #E74C3C;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+        }
+        body {
+            font-family: 'Assistant', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--dark-color);
+        }
+        .task-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .task-card:hover {
+            transform: translateY(-4px);
+        }
+        .btn-primary {
+            background-color: var(--primary-blue);
+        }
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        .btn-accent {
+            background-color: var(--accent-color);
+        }
+        #loading-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
     </style>
 </head>
-<body class="text-gray-800">
-    <div class="container mx-auto p-4 max-w-7xl">
-        <header class="mb-6 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <i class="fa-solid fa-truck-fast text-blue-600"></i>
-                לוח בקרה לוגיסטי מתקדם
-            </h1>
-            <div class="flex items-center gap-3">
-                <div id="current-time" class="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full"></div>
-                <div id="connection-status" class="flex items-center gap-1 text-sm">
-                    <i class="fa-solid fa-circle text-green-500"></i>
-                    <span>מחובר</span>
-                </div>
-            </div>
-        </header>
-        
-        <div id="error-banner" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <!-- פאנל הזמנה ומחירון -->
-            <main class="lg:col-span-4 space-y-6">
-                <div class="card p-6 space-y-4">
-                    <h2 class="text-xl font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-file-invoice text-blue-500"></i>
-                        פרטי הזמנה
-                    </h2>
-                    
-                    <div>
-                        <label for="customer" class="text-sm font-medium text-gray-600">לקוח</label>
-                        <input type="text" id="customer" name="customer" list="customers-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <datalist id="customers-list"></datalist>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="date" class="text-sm font-medium text-gray-600">תאריך</label>
-                            <input type="date" id="date" name="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label for="time" class="text-sm font-medium text-gray-600">שעה</label>
-                            <input type="time" id="time" name="time" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label for="city" class="text-sm font-medium text-gray-600">עיר</label>
-                        <select id="city" name="city" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option>טוען ערים...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-2">
-                            <label for="street" class="text-sm font-medium text-gray-600">רחוב</label>
-                            <input type="text" id="street" name="street" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label for="street_number" class="text-sm font-medium text-gray-600">מספר</label>
-                            <input type="text" id="street_number" name="street_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="delivery_type" class="text-sm font-medium text-gray-600">סוג הובלה</label>
-                            <select id="delivery_type" name="delivery_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
-                                <option>טוען...</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="warehouse" class="text-sm font-medium text-gray-600">מחסן מוצא</label>
-                            <select id="warehouse" name="warehouse" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
-                                <option>טוען...</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label for="notes" class="text-sm font-medium text-gray-600">הערות</label>
-                        <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
-                    </div>
-                    
-                    <button id="btn-save-order" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 glow">
-                        <i class="fa-solid fa-floppy-disk"></i> שמור הזמנה
-                        <div id="save-spinner" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
-                    </button>
-                </div>
-                
-                <!-- מחשבון מחירים -->
-                <div id="price-calculator" class="card p-6 space-y-4 hidden">
-                    <h2 class="text-xl font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-calculator text-green-500"></i>
-                        מחשבון מחירים
-                    </h2>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium">מחיר בסיס:</span>
-                            <span id="base-price">₪0</span>
-                        </div>
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium">תוספת מרחק:</span>
-                            <span id="distance-surcharge">₪0</span>
-                        </div>
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium">תוספת סוג הובלה:</span>
-                            <span id="delivery-type-surcharge">₪0</span>
-                        </div>
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium">תוספת עומס תנועה:</span>
-                            <span id="traffic-surcharge">₪0</span>
-                        </div>
-                        <hr class="my-2">
-                        <div class="flex justify-between items-center text-lg font-bold">
-                            <span>סה"כ לתשלום:</span>
-                            <span id="total-price" class="text-blue-600">₪0</span>
-                        </div>
-                    </div>
-                    
-                    <button id="btn-toggle-breakdown" class="w-full text-blue-600 font-medium py-2 rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-receipt"></i> הצג פירוט מחיר
-                        <i id="breakdown-arrow" class="fa-solid fa-chevron-down text-xs"></i>
-                    </button>
-                    
-                    <div id="price-breakdown" class="price-breakdown hidden bg-blue-50 p-4 rounded-lg text-sm">
-                        <h3 class="font-semibold mb-2">פירוט חישוב מחיר:</h3>
-                        <div class="space-y-1">
-                            <div class="flex justify-between">
-                                <span>מחיר בסיסי:</span>
-                                <span id="breakdown-base">₪50</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>עלות לק"מ:</span>
-                                <span id="breakdown-per-km">₪2.5</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>ק"מ במסלול:</span>
-                                <span id="breakdown-km">0</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>מכפיל סוג הובלה:</span>
-                                <span id="breakdown-type-multiplier">1.0x</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>מכפיל עומס תנועה:</span>
-                                <span id="breakdown-traffic-multiplier">1.0x</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-            
-            <!-- מפה ותצוגת רחוב -->
-            <section class="lg:col-span-8 space-y-6">
-                <div class="card p-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-semibold flex items-center gap-2">
-                            <i class="fa-solid fa-map-location-dot text-green-500"></i>
-                            תכנון מסלול
-                        </h2>
-                        <div class="flex gap-2">
-                            <button id="btn-refresh-routes" class="text-blue-600 hover:text-blue-800 transition">
-                                <i class="fa-solid fa-rotate"></i> רענן מסלולים
-                            </button>
-                        </div>
-                    </div>
-                    <div id="map" class="w-full h-[400px] rounded-lg"></div>
-                    <div id="pano"></div>
-                </div>
-                
-                <!-- סטטיסטיקות מסלול -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="card p-4 text-center">
-                        <div class="text-2xl font-bold text-blue-600" id="route-distance">0 ק"מ</div>
-                        <div class="text-sm text-gray-500">מרחק משוער</div>
-                    </div>
-                    <div class="card p-4 text-center">
-                        <div class="text-2xl font-bold text-green-600" id="route-duration">0 דק'</div>
-                        <div class="text-sm text-gray-500">זמן משוער</div>
-                    </div>
-                    <div class="card p-4 text-center">
-                        <div class="text-2xl font-bold text-purple-600" id="route-price">₪0</div>
-                        <div class="text-sm text-gray-500">מחיר משוער</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-        
-        <!-- פאנל מידע נוסף -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-            <div id="routes-info-container" class="card p-6 hidden">
-                <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-route text-blue-500"></i>
-                    מסלולים מומלצים
-                </h2>
-                <div id="routes-info" class="space-y-3"></div>
-            </div>
-            
-            <div id="live-alerts-container" class="card p-6 hidden">
-                <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i>
-                    התראות בזמן אמת
-                </h2>
-                <div id="live-alerts" class="space-y-2 text-sm"></div>
-            </div>
-            
-            <div id="optimization-container" class="card p-6 hidden">
-                <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-lightbulb text-orange-500"></i>
-                    הצעות לייעול
-                </h2>
-                <div id="optimization-suggestions" class="space-y-2 text-sm"></div>
+<body class="text-white">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 flex items-center justify-center hidden">
+        <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </div>
+
+    <!-- Screen 0: Login -->
+    <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="text-center w-full max-w-sm">
+            <svg class="w-24 h-24 mx-auto mb-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <h1 class="text-4xl font-bold mb-2">סידור עבודה</h1>
+            <p class="text-gray-400 mb-8">התחברות למערכת</p>
+            <div class="space-y-4">
+                <input id="username" type="text" placeholder="שם משתמש" class="w-full bg-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
+                <input id="password" type="password" placeholder="סיסמה" class="w-full bg-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
+                <button onclick="handleLogin()" class="w-full btn-primary text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">
+                    כניסה
+                </button>
+                <p id="login-error" class="text-red-400 h-4"></p>
             </div>
         </div>
     </div>
+
+    <!-- Screen 1: Driver Selection (Dashboard) -->
+    <div id="driver-selection-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- Dashboard content here -->
+        <div class="text-center w-full max-w-md">
+             <h1 class="text-4xl font-bold mb-2">לוח בקרה</h1>
+            <p class="text-gray-400 mb-8">בחר נהג להצגת הסידור היומי</p>
+            <div class="space-y-4">
+                <button onclick="showSchedule('חכמת')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
+                    חכמת (מנוף)
+                </button>
+                <button onclick="showSchedule('עלי')" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
+                    עלי (פריקה ידנית)
+                </button>
+                 <button onclick="showSchedule('מנוף')" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
+                    נהג מנוף נוסף
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Schedule View -->
+    <div id="schedule-screen" class="hidden min-h-screen flex flex-col">
+        <header class="bg-gray-800 p-4 shadow-md sticky top-0 z-10">
+             <div class="max-w-4xl mx-auto flex items-center justify-between">
+                <button onclick="showScreen('driver-selection-screen')" class="p-2 rounded-md hover:bg-gray-700 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H3"></path></svg>
+                </button>
+                <div class="text-center">
+                    <h2 id="driver-name-header" class="text-xl font-bold"></h2>
+                    <p id="date-header" class="text-sm text-gray-400"></p>
+                </div>
+                <div class="w-10"></div>
+            </div>
+            <div class="max-w-4xl mx-auto flex items-center justify-between mt-4">
+                <button onclick="changeDate(1)" class="w-1/3 bg-gray-700 hover:bg-gray-600 font-semibold py-2 px-4 rounded-r-lg transition">הבא &larr;</button>
+                <button onclick="setCurrentDateToToday()" class="w-1/3 btn-primary hover:opacity-90 font-bold py-2 px-4 transition">היום</button>
+                <button onclick="changeDate(-1)" class="w-1/3 bg-gray-700 hover:bg-gray-600 font-semibold py-2 px-4 rounded-l-lg transition">&rarr; הקודם</button>
+            </div>
+        </header>
+        <main id="task-list" class="flex-grow p-4 space-y-4 max-w-4xl mx-auto w-full"></main>
+    </div>
     
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps&callback=onGoogleMapsApiLoad&libraries=places"></script>
+    <!-- Floating Action Button to Add Order -->
+    <button id="fab-add-order" onclick="openAddOrderModal()" class="hidden fixed bottom-6 left-6 btn-primary text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold z-20">
+        +
+    </button>
+
+    <!-- Modal for adding a new order -->
+    <div id="add-order-modal" class="fixed inset-0 bg-black bg-opacity-70 z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
+            <button onclick="closeAddOrderModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold mb-4">הוספת הזמנה חדשה</h2>
+            <form id="add-order-form" class="space-y-3">
+                <select name="driver" class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
+                    <option>חכמת</option>
+                    <option>עלי</option>
+                    <option>מנוף</option>
+                </select>
+                <input type="date" name="date" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
+                <input type="time" name="time" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
+                <input type="text" name="customer" placeholder="לקוח" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
+                <input type="text" name="address" placeholder="כתובת" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
+                 <select name="warehouse" class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
+                    <option>מחסן 4 החרש</option>
+                    <option>מחסן 1 התלמיד</option>
+                </select>
+                <button type="submit" class="w-full btn-success text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">שמור ושדר</button>
+            </form>
+        </div>
+    </div>
+
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtQoHtQNkqZYDeDsEr0qqh9DJ1-zgaqDmmWd98la9Sx25LPeEcQoCdFDUK-Htm2xhQoQ/exec';
-        
-        let map, directionsService, directionsRenderer, panorama;
-        let selectedRouteData = null;
-        let debounceTimer;
-        let currentRoutes = [];
-        let priceData = {
-            basePrice: 50,
-            perKm: 2.5,
-            deliveryTypeMultipliers: {
-                'רגילה': 1.0,
-                'דחופה': 1.5,
-                'שבירה': 1.8,
-                'מקרר': 2.0
-            },
-            trafficMultipliers: {
-                'low': 1.0,
-                'medium': 1.2,
-                'high': 1.5
-            }
+        // --- CONFIGURATION ---
+        // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
+        const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+        // --- STATE MANAGEMENT ---
+        let appState = {
+            isLoggedIn: false,
+            currentScreen: 'login-screen',
+            currentDriver: null,
+            currentDate: new Date(),
+            orders: [],
+            isLoading: false,
         };
 
-        window.onGoogleMapsApiLoad = function() {
-            const elements = {
-                customer: document.getElementById('customer'), customersList: document.getElementById('customers-list'),
-                deliveryType: document.getElementById('delivery_type'), warehouse: document.getElementById('warehouse'),
-                street: document.getElementById('street'), street_number: document.getElementById('street_number'),
-                city: document.getElementById('city'), date: document.getElementById('date'), time: document.getElementById('time'),
-                notes: document.getElementById('notes'), btnSaveOrder: document.getElementById('btn-save-order'),
-                saveSpinner: document.getElementById('save-spinner'), routesInfo: document.getElementById('routes-info'),
-                routesInfoContainer: document.getElementById('routes-info-container'), liveAlerts: document.getElementById('live-alerts'),
-                liveAlertsContainer: document.getElementById('live-alerts-container'), optimizationSuggestions: document.getElementById('optimization-suggestions'),
-                optimizationContainer: document.getElementById('optimization-container'), errorBanner: document.getElementById('error-banner'),
-                priceCalculator: document.getElementById('price-calculator'), basePrice: document.getElementById('base-price'),
-                distanceSurcharge: document.getElementById('distance-surcharge'), deliveryTypeSurcharge: document.getElementById('delivery-type-surcharge'),
-                trafficSurcharge: document.getElementById('traffic-surcharge'), totalPrice: document.getElementById('total-price'),
-                btnToggleBreakdown: document.getElementById('btn-toggle-breakdown'), priceBreakdown: document.getElementById('price-breakdown'),
-                breakdownArrow: document.getElementById('breakdown-arrow'), breakdownBase: document.getElementById('breakdown-base'),
-                breakdownPerKm: document.getElementById('breakdown-per-km'), breakdownKm: document.getElementById('breakdown-km'),
-                breakdownTypeMultiplier: document.getElementById('breakdown-type-multiplier'), breakdownTrafficMultiplier: document.getElementById('breakdown-traffic-multiplier'),
-                routeDistance: document.getElementById('route-distance'), routeDuration: document.getElementById('route-duration'),
-                routePrice: document.getElementById('route-price'), btnRefreshRoutes: document.getElementById('btn-refresh-routes'),
-                currentTime: document.getElementById('current-time'), connectionStatus: document.getElementById('connection-status')
-            };
+        // --- DOM Elements ---
+        const screens = {
+            login: document.getElementById('login-screen'),
+            driverSelection: document.getElementById('driver-selection-screen'),
+            schedule: document.getElementById('schedule-screen'),
+        };
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const driverNameHeader = document.getElementById('driver-name-header');
+        const dateHeader = document.getElementById('date-header');
+        const taskList = document.getElementById('task-list');
+        const fab = document.getElementById('fab-add-order');
+        const addOrderModal = document.getElementById('add-order-modal');
+        const addOrderForm = document.getElementById('add-order-form');
 
-            function initializeMap() {
-                const centerOfIsrael = { lat: 31.7, lng: 35.2 };
-                map = new google.maps.Map(document.getElementById("map"), {
-                    zoom: 8, 
-                    center: centerOfIsrael, 
-                    streetViewControl: false, 
-                    mapTypeControl: false,
-                    styles: [
-                        {
-                            "featureType": "road",
-                            "elementType": "geometry",
-                            "stylers": [{"color": "#f5f5f5"}]
-                        },
-                        {
-                            "featureType": "road.arterial",
-                            "elementType": "labels.text.fill",
-                            "stylers": [{"color": "#757575"}]
-                        },
-                        {
-                            "featureType": "road.highway",
-                            "elementType": "geometry",
-                            "stylers": [{"color": "#dadada"}]
-                        }
-                    ]
-                });
-                directionsService = new google.maps.DirectionsService();
-                directionsRenderer = new google.maps.DirectionsRenderer({ 
-                    map, 
-                    suppressMarkers: false,
-                    markerOptions: {
-                        icon: {
-                            url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNy41ODIgMiA0IDUuNTgyIDQgMTBDNCAxNi4wODggMTIgMjIgMTIgMjJDMTIgMjIgMjAgMTYuMDg4IDIwIDEwQzIwIDUuNTgyIDE2LjQxOCAyIDEyIDJaTTEyIDEyQzEwLjg5NiAxMiAxMCAxMS4xMDQgMTAgMTBDMTAgOC44OTYgMTAuODk2IDggMTIgOEMxMy4xMDQgOCAxNCA4Ljg5NiAxNCAxMEMxNCAxMS4xMDQgMTMuMTA0IDEyIDEyIDEyWiIgZmlsbD0iIzI1NjNlYiIvPgo8L3N2Zz4K',
-                            scaledSize: new google.maps.Size(24, 24)
-                        }
-                    },
-                    polylineOptions: { 
-                        strokeColor: '#2563eb', 
-                        strokeWeight: 6,
-                        strokeOpacity: 0.8
-                    } 
-                });
-                panorama = new google.maps.StreetViewPanorama(document.getElementById("pano"));
-            }
+        // --- MOCK API (SIMULATION) ---
+        // This function simulates calls to your Google Apps Script backend.
+        // It allows us to build the UI without a live backend.
+        // Once your backend is ready, we will replace `mockApiCall` with a real `fetch` call.
+        async function mockApiCall(body) {
+            console.log("Mock API Call:", body);
+            const { action } = body;
 
-            async function loadInitialData() {
-                try {
-                    const [warehouses, deliveryTypes, customers, cities] = await Promise.all([
-                        fetchData('getSettings'), fetchData('getDeliveryTypes'),
-                        fetchData('getCustomers'), fetchData('getCities')
-                    ]);
-                    populateSelect(elements.warehouse, warehouses.filter(w => w.key.startsWith('warehouse_')).map(w => w.value), "בחר מחסן...");
-                    populateSelect(elements.deliveryType, deliveryTypes, "בחר סוג הובלה...");
-                    populateSelect(elements.city, cities.sort(), "בחר עיר...");
-                    populateDatalist(elements.customersList, customers.map(c => c.name));
-                    
-                    // הגדרת ערכי ברירת מחדל
-                    const today = new Date().toISOString().split('T')[0];
-                    elements.date.value = today;
-                    
-                    const now = new Date();
-                    const hours = now.getHours().toString().padStart(2, '0');
-                    const minutes = now.getMinutes().toString().padStart(2, '0');
-                    elements.time.value = `${hours}:${minutes}`;
-                    
-                } catch (error) { showError(`שגיאה בטעינת נתונים: ${error.message}`); }
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            switch (action) {
+                case 'getOrders':
+                    return {
+                        status: 'success',
+                        data: [
+                            // Using the new data structure with Emojis as keys
+                            { id: 1, "🚛 נהג:": "חכמת", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "08:00", "📦 מחסן:": "החרש", "🧾 סטטוס:": "בטיפול⏳", "🙋‍♂️לקוח": "קובי פרופילים", "🎯כתובת אספקה": "מתן" },
+                            { id: 2, "🚛 נהג:": "עלי", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "09:30", "📦 מחסן:": "התלמיד", "🧾 סטטוס:": "מוכנה✔️", "🙋‍♂️לקוח": "קדם גלעד/הידיד", "🎯כתובת אספקה": "כפר סבא" },
+                            { id: 3, "🚛 נהג:": "עלי", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "11:00", "📦 מחסן:": "התלמיד", "🧾 סטטוס:": "בטיפול⏳", "🙋‍♂️לקוח": "זבולון-עדירן/חדד", "🎯כתובת אספקה": "בני דרור" },
+                            { id: 4, "🚛 נהג:": "חכמת", "🗓️ תאריך:": "16/10/2025", "⏰ שעה:": "10:00", "📦 מחסן:": "החרש", "🧾 סטטוס:": "מוכנה✔️", "🙋‍♂️לקוח": "לקוח לדוגמה", "🎯כתובת אספקה": "תל אביב" },
+                        ]
+                    };
+                case 'broadcastOrder':
+                     console.log("Broadcasting order:", body.order);
+                     return {
+                        status: 'success',
+                        data: {
+                            message: 'Data broadcasted successfully (mock)',
+                            broadcastId: `BRC_${Date.now()}`
+                        }
+                     };
+                default:
+                    return { status: 'error', message: 'Unknown action' };
             }
-            
-            async function fetchData(action) {
-                if (!SCRIPT_URL) throw new Error("כתובת ה-URL של הסקריפט אינה מוגדרת.");
-                const response = await fetch(`${SCRIPT_URL}?action=${action}`);
-                if (!response.ok) throw new Error(`שגיאת רשת: ${response.status}`);
+        }
+
+        // --- API-FACING FUNCTIONS ---
+        async function apiCall(body) {
+            setLoading(true);
+            try {
+                // When you have the real URL, uncomment the fetch and remove the mockApiCall
+                /*
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Network response was not ok.');
                 const result = await response.json();
-                if (result.status === 'error') throw new Error(`שגיאת שרת (${action}): ${result.message}`);
-                return result.data;
+                */
+                const result = await mockApiCall(body); // Using the mock for now
+                
+                if (result.status === 'success') {
+                    return result.data;
+                } else {
+                    throw new Error(result.message || 'API Error');
+                }
+            } catch (error) {
+                console.error("API Call failed:", error);
+                alert(`שגיאה בתקשורת עם השרת: ${error.message}`);
+                return null;
+            } finally {
+                setLoading(false);
             }
+        }
 
-            function populateSelect(selectEl, options, placeholder) {
-                selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-                options.forEach(opt => selectEl.add(new Option(opt, opt)));
-                selectEl.disabled = false;
+        // --- UI & LOGIC FUNCTIONS ---
+        function setLoading(isLoading) {
+            appState.isLoading = isLoading;
+            if (isLoading) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
             }
+        }
+        
+        function showScreen(screenId) {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+            if(screens[screenId]) {
+                 screens[screenId].classList.remove('hidden');
+            } else {
+                // Fallback for dynamically named screens
+                 document.getElementById(screenId).classList.remove('hidden');
+            }
+            appState.currentScreen = screenId;
 
-            function populateDatalist(datalistEl, options) {
-                datalistEl.innerHTML = '';
-                options.forEach(opt => datalistEl.appendChild(new Option(undefined, opt)));
+            // Show FAB only on schedule and dashboard screens
+            if (screenId === 'schedule-screen' || screenId === 'driver-selection-screen') {
+                fab.classList.remove('hidden');
+            } else {
+                fab.classList.add('hidden');
             }
+        }
 
-            function handleAddressChange() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(calculateAndDisplayRoutes, 800);
-            }
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
             
-            async function calculateAndDisplayRoutes() {
-                selectedRouteData = null;
-                const originAddress = elements.warehouse.value;
-                const destinationAddress = `${elements.street.value} ${elements.street_number.value}, ${elements.city.value}`;
-                if (!originAddress || !elements.street.value || !elements.city.value) return;
-
-                directionsService.route({
-                    origin: originAddress, 
-                    destination: destinationAddress,
-                    travelMode: google.maps.TravelMode.DRIVING, 
-                    provideRouteAlternatives: true,
-                    drivingOptions: {
-                        departureTime: new Date(),
-                        trafficModel: 'bestguess'
-                    }
-                }, (result, status) => {
-                    if (status === 'OK') {
-                        showError(null);
-                        currentRoutes = result.routes;
-                        directionsRenderer.setDirections(result);
-                        const leg = result.routes[0].legs[0];
-                        panorama.setPosition(leg.end_location);
-                        map.setCenter(leg.end_location); 
-                        map.setZoom(14);
-                        displayRoutesInfo(result.routes);
-                        displayLiveAlerts(result.routes[0]);
-                        displayOptimizations();
-                        updateRouteStats(leg);
-                        calculatePrice(leg);
-                        elements.priceCalculator.classList.remove('hidden');
-                    } else { 
-                        showError(`שגיאה בחישוב מסלול: ${status}.`); 
-                        elements.priceCalculator.classList.add('hidden');
-                    }
-                });
+            // IMPORTANT: This is a simple, insecure, client-side login for demonstration only.
+            // In a real application, authentication should be handled on the server.
+            if (username === 'סידור' && password === 'סבן') {
+                appState.isLoggedIn = true;
+                errorEl.textContent = '';
+                showScreen('driverSelection');
+            } else {
+                errorEl.textContent = 'שם משתמש או סיסמה שגויים';
             }
+        }
+        
+        function formatToDDMMYYYY(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        async function renderSchedule() {
+            if (!appState.currentDriver) return;
+
+            driverNameHeader.textContent = `סידור לנהג: ${appState.currentDriver}`;
+            dateHeader.textContent = appState.currentDate.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
-            function displayRoutesInfo(routes) {
-                elements.routesInfo.innerHTML = '';
-                routes.slice(0, 3).forEach((route, index) => {
-                    const leg = route.legs[0];
-                    const card = document.createElement('div');
-                    card.className = `route-option border p-3 rounded-lg cursor-pointer transition-all ${index === 0 ? 'selected border-blue-700 bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}`;
-                    card.innerHTML = `
-                        <div class="font-bold flex justify-between">
-                            <span>מסלול ${index + 1}</span>
-                            <span>${leg.duration.text}</span>
-                        </div>
-                        <div class="text-sm text-gray-600 flex justify-between mt-1">
-                            <span>${leg.distance.text}</span>
-                            <span>${route.summary}</span>
+            // In a real scenario, we would fetch data for the specific date.
+            // For this mock, we fetch all data and then filter it.
+            const allOrders = await apiCall({ action: 'getOrders' });
+            if (!allOrders) return;
+
+            const currentDateStr = formatToDDMMYYYY(appState.currentDate);
+            const filteredTasks = allOrders.filter(task => {
+                const driverKey = "🚛 נהג:";
+                const dateKey = "🗓️ תאריך:";
+                return task[driverKey] === appState.currentDriver && task[dateKey] === currentDateStr;
+            });
+            
+            filteredTasks.sort((a, b) => a["⏰ שעה:"].localeCompare(b["⏰ שעה:"]));
+
+            taskList.innerHTML = '';
+            if (filteredTasks.length === 0) {
+                taskList.innerHTML = `<div class="text-center py-16 px-4 text-gray-400">אין משימות להצגה בתאריך זה.</div>`;
+            } else {
+                filteredTasks.forEach(task => {
+                    const status = task["🧾 סטטוס:"];
+                    const statusColor = status.includes('מוכנה') ? 'border-green-500' : 'border-yellow-500';
+                    const taskCard = document.createElement('div');
+                    taskCard.className = `task-card bg-gray-800 p-5 rounded-xl shadow-lg border-r-4 ${statusColor}`;
+                    taskCard.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="text-2xl font-bold text-indigo-400">${task["⏰ שעה:"]}</div>
+                                <div>
+                                    <h3 class="text-lg font-semibold">${task["🙋‍♂️לקוח"]}</h3>
+                                    <p class="text-gray-400">${task["🎯כתובת אספקה"]}</p>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium">${status}</div>
                         </div>
                     `;
-                    card.addEventListener('click', () => {
-                        directionsRenderer.setRouteIndex(index);
-                        selectedRouteData = { 
-                            distance_km: leg.distance.text, 
-                            duration_min: leg.duration.text,
-                            route_index: index
-                        };
-                        document.querySelectorAll('.route-option').forEach(el => {
-                            el.classList.remove('selected', 'border-blue-700', 'bg-blue-50');
-                            el.classList.add('border-gray-300');
-                        });
-                        card.classList.add('selected', 'border-blue-700', 'bg-blue-50');
-                        card.classList.remove('border-gray-300');
-                        updateRouteStats(leg);
-                        calculatePrice(leg);
-                    });
-                    elements.routesInfo.appendChild(card);
+                    taskList.appendChild(taskCard);
                 });
-                elements.routesInfoContainer.classList.remove('hidden', 'fade-in');
-                void elements.routesInfoContainer.offsetWidth;
-                elements.routesInfoContainer.classList.add('fade-in');
-                selectedRouteData = { 
-                    distance_km: routes[0].legs[0].distance.text, 
-                    duration_min: routes[0].legs[0].duration.text,
-                    route_index: 0
-                };
             }
+        }
 
-            function displayLiveAlerts(route) {
-                elements.liveAlerts.innerHTML = '';
-                let hasAlerts = false;
-                
-                // בדיקת עומס תנועה
-                if (route.legs[0].duration_in_traffic) {
-                    const trafficDuration = route.legs[0].duration_in_traffic.value;
-                    const normalDuration = route.legs[0].duration.value;
-                    const trafficRatio = trafficDuration / normalDuration;
-                    
-                    if (trafficRatio > 1.3) {
-                        elements.liveAlerts.innerHTML += `
-                            <div class="flex items-start gap-2 p-2 bg-red-50 rounded-md">
-                                <i class="fa-solid fa-car-burst text-red-500 mt-1"></i>
-                                <p>עומס תנועה כבד - זמן נסיעה ארוך ב-${Math.round((trafficRatio - 1) * 100)}% מהרגיל</p>
-                            </div>`;
-                        hasAlerts = true;
-                    } else if (trafficRatio > 1.1) {
-                        elements.liveAlerts.innerHTML += `
-                            <div class="flex items-start gap-2 p-2 bg-yellow-50 rounded-md">
-                                <i class="fa-solid fa-car-side text-yellow-500 mt-1"></i>
-                                <p>עומס תנועה בינוני - זמן נסיעה ארוך ב-${Math.round((trafficRatio - 1) * 100)}% מהרגיל</p>
-                            </div>`;
-                        hasAlerts = true;
-                    }
-                }
-                
-                // בדיקת אזורי בנייה
-                if (route.warnings && route.warnings.length > 0) {
-                    route.warnings.forEach(warning => {
-                        if (warning.includes('construction') || warning.includes('closure') || warning.includes('work')) {
-                            elements.liveAlerts.innerHTML += `
-                                <div class="flex items-start gap-2 p-2 bg-orange-50 rounded-md">
-                                    <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-1"></i>
-                                    <p>${warning}</p>
-                                </div>`;
-                            hasAlerts = true;
-                        }
-                    });
-                }
-                
-                // בדיקת מזג אוויר (סימולציה)
-                const weatherAlerts = checkWeatherAlerts();
-                if (weatherAlerts) {
-                    elements.liveAlerts.innerHTML += weatherAlerts;
-                    hasAlerts = true;
-                }
-                
-                elements.liveAlertsContainer.classList.toggle('hidden', !hasAlerts);
-                if(hasAlerts) {
-                    void elements.liveAlertsContainer.offsetWidth;
-                    elements.liveAlertsContainer.classList.add('fade-in');
-                }
-            }
+        async function showSchedule(driverName) {
+            appState.currentDriver = driverName;
+            await setCurrentDateToToday();
+            showScreen('schedule');
+        }
 
-            function checkWeatherAlerts() {
-                // סימולציה של התראות מזג אוויר
-                const alerts = [];
-                const hour = new Date().getHours();
-                
-                // סימולציה של גשם בשעות מסוימות
-                if (hour >= 6 && hour <= 12) {
-                    alerts.push(`
-                        <div class="flex items-start gap-2 p-2 bg-blue-50 rounded-md">
-                            <i class="fa-solid fa-cloud-rain text-blue-500 mt-1"></i>
-                            <p>גשם קל צפוי באזור - נהג בזהירות</p>
-                        </div>
-                    `);
-                }
-                
-                // סימולציה של רוחות חזקות
-                if (hour >= 14 && hour <= 18) {
-                    alerts.push(`
-                        <div class="flex items-start gap-2 p-2 bg-purple-50 rounded-md">
-                            <i class="fa-solid fa-wind text-purple-500 mt-1"></i>
-                            <p>רוחות חזקות צפויות - נא להיזהר בנהיגה</p>
-                        </div>
-                    `);
-                }
-                
-                return alerts.join('');
-            }
+        async function setCurrentDateToToday() {
+            appState.currentDate = new Date();
+            // For demo, set to a date with data
+            appState.currentDate = new Date('2025-10-15');
+            await renderSchedule();
+        }
 
-            function displayOptimizations() {
-                elements.optimizationSuggestions.innerHTML = '';
-                let hasSuggestion = false;
-                const currentHour = new Date().getHours();
-                
-                // הצעות על בסיס שעת היום
-                if ((currentHour >= 7 && currentHour <= 9) || (currentHour >= 16 && currentHour <= 18)) {
-                    elements.optimizationSuggestions.innerHTML += `
-                        <div class="flex items-start gap-2 p-2 bg-orange-50 rounded-md">
-                            <i class="fa-solid fa-clock text-orange-500 mt-1"></i>
-                            <p>נסיעה בשעות העומס. שקלו יציאה מחוץ לשעות 07-09 או 16-18 לחיסכון בזמן.</p>
-                        </div>`;
-                    hasSuggestion = true;
-                }
-                
-                // הצעות על בסיס סוג הובלה
-                const deliveryType = elements.deliveryType.value;
-                if (deliveryType === 'שבירה') {
-                    elements.optimizationSuggestions.innerHTML += `
-                        <div class="flex items-start gap-2 p-2 bg-green-50 rounded-md">
-                            <i class="fa-solid fa-boxes-packing text-green-500 mt-1"></i>
-                            <p>להובלת פריטים שבירים - ודאו ריפוד מתאים ואריזה בטוחה.</p>
-                        </div>`;
-                    hasSuggestion = true;
-                }
-                
-                if (deliveryType === 'מקרר') {
-                    elements.optimizationSuggestions.innerHTML += `
-                        <div class="flex items-start gap-2 p-2 bg-blue-50 rounded-md">
-                            <i class="fa-solid fa-snowflake text-blue-500 mt-1"></i>
-                            <p>להובלה בקירור - ודאו טמפרטורה מתאימה ומערכת קירור תקינה.</p>
-                        </div>`;
-                    hasSuggestion = true;
-                }
-                
-                elements.optimizationContainer.classList.toggle('hidden', !hasSuggestion);
-                if(hasSuggestion) {
-                    void elements.optimizationContainer.offsetWidth;
-                    elements.optimizationContainer.classList.add('fade-in');
-                }
-            }
-            
-            function updateRouteStats(leg) {
-                elements.routeDistance.textContent = leg.distance.text;
-                elements.routeDuration.textContent = leg.duration.text;
-            }
-            
-            function calculatePrice(leg) {
-                // חילוץ קילומטרים מהמחרוזת
-                const distanceText = leg.distance.text;
-                const distanceKm = parseFloat(distanceText.replace('ק"מ', '').replace(',', '').trim());
-                
-                // חישוב על בסיס מרחק
-                const basePrice = priceData.basePrice;
-                const distanceCost = distanceKm * priceData.perKm;
-                
-                // חישוב על בסיס סוג הובלה
-                const deliveryType = elements.deliveryType.value;
-                const typeMultiplier = priceData.deliveryTypeMultipliers[deliveryType] || 1.0;
-                const typeSurcharge = (basePrice + distanceCost) * (typeMultiplier - 1);
-                
-                // חישוב על בסיס עומס תנועה
-                const currentHour = new Date().getHours();
-                let trafficMultiplier = 1.0;
-                if ((currentHour >= 7 && currentHour <= 9) || (currentHour >= 16 && currentHour <= 18)) {
-                    trafficMultiplier = priceData.trafficMultipliers.high;
-                } else if ((currentHour >= 10 && currentHour <= 12) || (currentHour >= 14 && currentHour <= 15)) {
-                    trafficMultiplier = priceData.trafficMultipliers.medium;
-                }
-                const trafficSurcharge = (basePrice + distanceCost + typeSurcharge) * (trafficMultiplier - 1);
-                
-                // חישוב סופי
-                const total = basePrice + distanceCost + typeSurcharge + trafficSurcharge;
-                
-                // עדכון תצוגה
-                elements.basePrice.textContent = `₪${basePrice}`;
-                elements.distanceSurcharge.textContent = `₪${distanceCost.toFixed(2)}`;
-                elements.deliveryTypeSurcharge.textContent = `₪${typeSurcharge.toFixed(2)}`;
-                elements.trafficSurcharge.textContent = `₪${trafficSurcharge.toFixed(2)}`;
-                elements.totalPrice.textContent = `₪${total.toFixed(2)}`;
-                elements.routePrice.textContent = `₪${total.toFixed(2)}`;
-                
-                // עדכון פירוט מחיר
-                elements.breakdownBase.textContent = `₪${basePrice}`;
-                elements.breakdownPerKm.textContent = `₪${priceData.perKm}`;
-                elements.breakdownKm.textContent = `${distanceKm.toFixed(1)}`;
-                elements.breakdownTypeMultiplier.textContent = `${typeMultiplier.toFixed(1)}x`;
-                elements.breakdownTrafficMultiplier.textContent = `${trafficMultiplier.toFixed(1)}x`;
-            }
-            
-            async function saveOrder() {
-                const required = [elements.customer, elements.street, elements.city, elements.deliveryType, elements.warehouse, elements.date];
-                const isValid = required.every(el => el.value ? (el.classList.remove('border-red-500'), true) : (el.classList.add('border-red-500'), false));
-                if (!isValid) return showError("נא למלא שדות חובה.");
-                if (!selectedRouteData) return showError("יש לחשב מסלול לפני שמירה.");
-                
-                elements.saveSpinner.classList.remove('hidden');
-                elements.btnSaveOrder.disabled = true;
+        async function changeDate(days) {
+            appState.currentDate.setDate(appState.currentDate.getDate() + days);
+            await renderSchedule();
+        }
 
-                try {
-                    // FIX: Collect data directly from elements
-                    const payload = {
-                        customer: elements.customer.value,
-                        street: elements.street.value,
-                        street_number: elements.street_number.value,
-                        city: elements.city.value,
-                        delivery_type: elements.deliveryType.value,
-                        warehouse: elements.warehouse.value,
-                        date: elements.date.value,
-                        time: elements.time.value,
-                        notes: elements.notes.value,
-                        distance_km: selectedRouteData.distance_km,
-                        duration_min: selectedRouteData.duration_min,
-                        route_index: selectedRouteData.route_index
-                    };
-                    
-                    const response = await fetch(`${SCRIPT_URL}?action=createOrder`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (!response.ok) throw new Error(`שגיאת רשת: ${response.status}`);
-                    const result = await response.json();
-                    
-                    if (result.status === 'success') {
-                        showError(null);
-                        alert("ההזמנה נשמרה בהצלחה!");
-                        resetForm();
-                    } else {
-                        throw new Error(result.message || "שגיאה לא ידועה");
-                    }
-                } catch (error) {
-                    showError(`שגיאה בשמירת ההזמנה: ${error.message}`);
-                } finally {
-                    elements.saveSpinner.classList.add('hidden');
-                    elements.btnSaveOrder.disabled = false;
+        function openAddOrderModal() {
+            const dateInput = addOrderForm.querySelector('input[name="date"]');
+            const timeInput = addOrderForm.querySelector('input[name="time"]');
+            
+            // Pre-fill with current date and time
+            const now = new Date();
+            dateInput.value = now.toISOString().split('T')[0];
+            timeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            addOrderModal.classList.remove('hidden');
+        }
+        
+        function closeAddOrderModal() {
+            addOrderModal.classList.add('hidden');
+        }
+        
+        addOrderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(addOrderForm);
+            const order = {
+                driver: formData.get('driver'),
+                date: formData.get('date').split('-').reverse().join('/'), // Format to DD/MM/YYYY
+                time: formData.get('time'),
+                warehouse: formData.get('warehouse'),
+                status: "בטיפול⏳", // Default status
+                customer: formData.get('customer'),
+                address: formData.get('address'),
+                broadcastTo: ['orders', 'morning', formData.get('driver').toLowerCase()]
+            };
+            
+            const result = await apiCall({ action: 'broadcastOrder', order: order });
+            
+            if (result) {
+                alert(`הזמנה שודרה בהצלחה! ID: ${result.broadcastId}`);
+                closeAddOrderModal();
+                // If the new order is for the currently viewed schedule, refresh it
+                if (order.driver === appState.currentDriver && order.date === formatToDDMMYYYY(appState.currentDate)) {
+                    await renderSchedule();
                 }
             }
-            
-            function resetForm() {
-                elements.customer.value = '';
-                elements.street.value = '';
-                elements.street_number.value = '';
-                elements.city.value = '';
-                elements.deliveryType.value = '';
-                elements.warehouse.value = '';
-                elements.notes.value = '';
-                elements.priceCalculator.classList.add('hidden');
-                elements.routesInfoContainer.classList.add('hidden');
-                elements.liveAlertsContainer.classList.add('hidden');
-                elements.optimizationContainer.classList.add('hidden');
-                directionsRenderer.set('directions', null);
-                map.setCenter({ lat: 31.7, lng: 35.2 });
-                map.setZoom(8);
-            }
-            
-            function showError(message) {
-                if (!message) {
-                    elements.errorBanner.classList.add('hidden');
-                    return;
-                }
-                elements.errorBanner.textContent = message;
-                elements.errorBanner.classList.remove('hidden');
-            }
-            
-            function updateCurrentTime() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const dateString = now.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                elements.currentTime.textContent = `${dateString} | ${timeString}`;
-            }
-            
-            function togglePriceBreakdown() {
-                const isHidden = elements.priceBreakdown.classList.contains('hidden');
-                elements.priceBreakdown.classList.toggle('hidden', !isHidden);
-                elements.breakdownArrow.className = isHidden ? 'fa-solid fa-chevron-up text-xs' : 'fa-solid fa-chevron-down text-xs';
-                elements.btnToggleBreakdown.innerHTML = isHidden ? 
-                    '<i class="fa-solid fa-receipt"></i> הסתר פירוט מחיר <i id="breakdown-arrow" class="fa-solid fa-chevron-up text-xs"></i>' : 
-                    '<i class="fa-solid fa-receipt"></i> הצג פירוט מחיר <i id="breakdown-arrow" class="fa-solid fa-chevron-down text-xs"></i>';
-            }
+        });
 
-            // אתחול
-            initializeMap();
-            loadInitialData();
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
 
-            // מאזינים לאירועים
-            [elements.street, elements.street_number, elements.city].forEach(el => {
-                el.addEventListener('input', handleAddressChange);
-            });
-            elements.warehouse.addEventListener('change', handleAddressChange);
-            elements.deliveryType.addEventListener('change', () => {
-                if (selectedRouteData) {
-                    const leg = currentRoutes[selectedRouteData.route_index].legs[0];
-                    calculatePrice(leg);
-                }
-            });
-            elements.btnSaveOrder.addEventListener('click', saveOrder);
-            elements.btnToggleBreakdown.addEventListener('click', togglePriceBreakdown);
-            elements.btnRefreshRoutes.addEventListener('click', calculateAndDisplayRoutes);
-        };
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen('login');
+        });
+
     </script>
 </body>
 </html>
+
