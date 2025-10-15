@@ -16,7 +16,7 @@
     <!-- External Libraries & Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="httpshttps://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 
     <!-- OneSignal SDK for Push Notifications -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -415,42 +415,101 @@
         }
         .dropdown-item:hover { background-color: #f0f0f0; }
 
-        /* Admin Page Styles */
+        /* --- Admin Page & Modal Upgrades --- */
         #adminPage .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-align: right;
+            position: relative;
         }
-        #adminPage label {
+        #adminPage .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 500;
+            color: var(--dark-color);
+            font-size: 1.1rem;
         }
-        #adminPage input, #adminPage select {
+        #adminPage .form-group i {
+            position: absolute;
+            right: 15px;
+            top: 48px;
+            color: #aaa;
+        }
+        #adminPage .form-group input, 
+        #adminPage .form-group select {
             width: 100%;
-            padding: 12px;
+            padding: 12px 40px 12px 12px;
             border: 1px solid #ccc;
-            border-radius: 8px;
+            border-radius: 12px;
             box-sizing: border-box;
             font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #adminPage .form-group input:focus, 
+        #adminPage .form-group select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(69, 135, 222, 0.2);
         }
         #adminPage button {
-            background-color: var(--secondary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             padding: 15px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             width: 100%;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
         #adminPage button:hover {
-            background-color: var(--dark-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
+        #adminPage button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
         #adminLoginModal .modal-content {
-            max-width: 350px;
+            max-width: 380px;
+            text-align: center;
         }
+        #adminLoginModal h2 {
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 20px;
+        }
+        #adminLoginModal .form-group {
+            text-align: right;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        #adminLoginModal .form-group i {
+             position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+        #adminLoginModal input, #adminLoginModal select {
+             width: 100%;
+            padding: 12px 40px 12px 12px;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #adminLoginModal button {
+             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+             color: white;
+             padding: 12px;
+             font-size: 1.1rem;
+             border: none;
+             border-radius: 12px;
+             width: 100%;
+             cursor: pointer;
+        }
+
 
     </style>
 </head>
@@ -491,42 +550,42 @@
             <div id="aliPage" class="page-content"></div>
             <div id="warehousePage" class="page-content"></div>
 
-            <!-- Admin Page (New) -->
+            <!-- Admin Page (Upgraded) -->
             <div id="adminPage" class="page-content">
                 <div class="summary-card" style="margin-bottom: 20px;">
                     <h3><i class="fas fa-plus-circle"></i> יצירת הזמנה חדשה</h3>
                     <form id="createOrderForm">
                         <div class="form-group">
-                            <label for="orderDate">תאריך</label>
+                            <label for="orderDate"><i class="fas fa-calendar-alt"></i> תאריך</label>
                             <input type="date" id="orderDate" required>
                         </div>
                         <div class="form-group">
-                            <label for="orderTime">שעה</label>
+                            <label for="orderTime"><i class="fas fa-clock"></i> שעה</label>
                             <input type="time" id="orderTime" required>
                         </div>
                         <div class="form-group">
-                            <label for="orderCustomer">לקוח</label>
+                            <label for="orderCustomer"><i class="fas fa-user"></i> לקוח</label>
                             <input type="text" id="orderCustomer" placeholder="שם הלקוח" required>
                         </div>
                          <div class="form-group">
-                            <label for="orderAddress">כתובת</label>
+                            <label for="orderAddress"><i class="fas fa-map-marker-alt"></i> כתובת</label>
                             <input type="text" id="orderAddress" placeholder="עיר, רחוב, מספר בית" required>
                         </div>
                         <div class="form-group">
-                            <label for="orderWarehouse">מחסן</label>
+                            <label for="orderWarehouse"><i class="fas fa-warehouse"></i> מחסן</label>
                             <select id="orderWarehouse" required>
                                 <option value="התלמיד">התלמיד</option>
                                 <option value="החרש">החרש</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="orderDriver">נהג</label>
+                            <label for="orderDriver"><i class="fas fa-truck"></i> נהג</label>
                             <select id="orderDriver" required>
                                 <option value="hakmat">חכמת</option>
                                 <option value="ali">עלי</option>
                             </select>
                         </div>
-                        <button type="submit">צור הזמנה ושלח התראה</button>
+                        <button type="submit" id="createOrderBtn">צור הזמנה ושלח התראה</button>
                     </form>
                 </div>
                 <div class="summary-card">
@@ -576,19 +635,20 @@
             <p id="passwordError" style="color: var(--accent-color); display: none;">סיסמה שגויה.</p>
         </div>
     </div>
+    <!-- Admin Login Modal (Upgraded) -->
     <div id="adminLoginModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('adminLoginModal')">&times;</button>
-            <h2>כניסת מנהל</h2>
+            <h2><i class="fas fa-user-shield"></i> כניסת מנהל</h2>
             <div class="form-group">
-                <label for="adminUsername">שם משתמש</label>
+                <i class="fas fa-user"></i>
                 <select id="adminUsername">
                     <option value="ראמי">ראמי</option>
                     <option value="יואב">יואב</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="adminPassword">סיסמה</label>
+                <i class="fas fa-lock"></i>
                 <input type="password" id="adminPassword" placeholder="סיסמה">
             </div>
             <button onclick="checkAdminLogin()">התחבר</button>
@@ -615,18 +675,19 @@
         
         const sheetId = '1T3Q_N-R9YPuJMsfflq8Z9wFMVkiXEa-DxD5GV0WHsck';
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // API Key for READ operations only
-        const aliRange = 'כתיבת הזמנה לסידור - Orders!A2:P';
-        const hakmatRange = 'כתיבת הזמנה לסידור - Orders!A2:P';
+        const ordersRange = 'כתיבת הזמנה לסידור - Orders!A2:P'; // Single range for all orders
         const WHATSAPP_PASSWORD = "1125";
         const ADMIN_PASSWORD = "1125";
 
         let allAliOrders = [], allHakmatOrders = [], morningChartInstance = null;
         
         async function initializeApp() {
-            [allAliOrders, allHakmatOrders] = await Promise.all([
-                fetchOrdersData(aliRange),
-                fetchOrdersData(hakmatRange)
-            ]);
+            const allOrders = await fetchOrdersData();
+            
+            // Filter orders for each driver based on the 'driver' column (L)
+            allAliOrders = allOrders.filter(order => order.driver && order.driver.includes('עלי'));
+            allHakmatOrders = allOrders.filter(order => order.driver && order.driver.includes('חכמת'));
+            
             renderDashboard();
             setupNavListeners();
             activatePageAndNav('mainPage', 'main-nav-button');
@@ -640,18 +701,34 @@
             renderMorningChart();
         }
 
-        async function fetchOrdersData(range) {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+        async function fetchOrdersData() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${ordersRange}?key=${apiKey}`;
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 return (data.values || [])
-                    .filter(row => row.length >= 6 && row[1])
-                    .map(row => ({ 
-                        date: row[0], time: row[1], warehouse: row[2], status: row[3], 
-                        customer: row[4], address: row[5], operationType: row[6] || '' 
-                    }))
+                    .filter(row => row.length > 10 && row[2] && row[10]) // Filter for valid rows (must have customer and time)
+                    .map(row => {
+                        // Construct full address from parts, handling empty values
+                        const street = row[4] || '';
+                        const streetNumber = row[5] || '';
+                        const city = row[6] || '';
+                        const addressParts = [street, streetNumber, city].filter(part => part && part.trim() !== '');
+                        const fullAddress = addressParts.join(' ').replace(/ ,$/, '').trim();
+
+                        return { 
+                            // Map columns to object properties based on the new structure
+                            customer:       row[2] || 'N/A',         // Column C
+                            address:        fullAddress || 'N/A',    // Columns E, F, G
+                            operationType:  row[7] || 'N/A',         // Column H
+                            warehouse:      row[8] || 'N/A',         // Column I
+                            date:           row[9] || 'N/A',         // Column J
+                            time:           row[10] || 'N/A',        // Column K
+                            driver:         row[11] || 'N/A',        // Column L
+                            status:         row[15] || 'חדשה'      // Column P
+                        };
+                    })
                     .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -757,6 +834,10 @@
                  page.innerHTML = `<div class="driver-section-title"><img src="${avatar}" alt="${driverName}" class="driver-avatar">נהג: ${driverName}</div><div id="${driverName}OnlyTimeline" class="timeline-grid"></div>`;
                  renderOrders(orders, `${driverName}OnlyTimeline`, driverName);
             }
+            // New: Prefill form when admin page is activated
+            if (pageId === 'adminPage') {
+                prefillOrderForm();
+            }
         }
 
         function setupNavListeners() {
@@ -849,10 +930,29 @@
                 errorEl.style.display = 'block';
             }
         }
+        
+        // New Function: Prefills the order form with current date and time
+        function prefillOrderForm() {
+            const now = new Date();
+            const dateInput = document.getElementById('orderDate');
+            const timeInput = document.getElementById('orderTime');
+
+            // Format date as YYYY-MM-DD for the input
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+
+            // Format time as HH:MM for the input
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            timeInput.value = `${hours}:${minutes}`;
+        }
 
         async function handleCreateOrder(event) {
             event.preventDefault();
             const form = event.target;
+            const button = document.getElementById('createOrderBtn');
             const orderData = {
                 date: form.orderDate.value,
                 time: form.orderTime.value,
@@ -860,23 +960,28 @@
                 address: form.orderAddress.value,
                 warehouse: form.orderWarehouse.value,
                 driver: form.orderDriver.value, // 'ali' or 'hakmat'
-                // Add default values for other columns if needed
                 status: 'חדשה', 
                 operationType: 'הובלה' 
             };
             
-            // Show a non-blocking notification
-            showAppNotification('יוצר הזמנה חדשה...');
-
-            const success = await saveOrderAndNotify(orderData);
+            // Show loading state on button
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שולח...';
             
-            if (success) {
-                showAppNotification('ההזמנה נוצרה ונשלחה התראה בהצלחה!', 'success');
-                form.reset();
-                // Refresh data
-                initializeApp();
-            } else {
-                showAppNotification('שגיאה ביצירת ההזמנה. אנא נסה שוב.', 'error');
+            try {
+                const success = await saveOrderAndNotify(orderData);
+                if (success) {
+                    showAppNotification('ההזמנה נוצרה ונשלחה התראה בהצלחה!', 'success');
+                    form.reset();
+                    prefillOrderForm(); // Re-fill for the next order
+                    initializeApp(); // Refresh data
+                } else {
+                    showAppNotification('שגיאה ביצירת ההזמנה. אנא נסה שוב.', 'error');
+                }
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = 'צור הזמנה ושלח התראה';
             }
         }
         
@@ -894,22 +999,30 @@
         }
 
         async function saveOrderAndNotify(orderData) {
-            const BACKEND_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+            // IMPORTANT: Replace this placeholder with your actual Google Apps Script Web App URL
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxXplSfvzeJ1GSOex82iWZM61DohSdXYfQRu8fy4CnBQAHKqLdD0MB4AWzgFTEip0Fu/exec';
             
             console.log('Sending order to backend:', orderData);
             
+            if (BACKEND_URL.includes('הדבק כאן')) {
+                showAppNotification('שגיאה: יש להגדיר כתובת שרת בכדי לשמור הזמנות.', 'error');
+                console.error('Backend URL is not configured.');
+                return false;
+            }
+
             try {
-                /*
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                      // No Content-Type header needed for this type of request to Apps Script
+                    },
                     body: JSON.stringify(orderData),
-                    mode: 'no-cors'
+                    mode: 'no-cors' // Use no-cors for simple POST requests to Apps Script
                 });
+
+                // With no-cors, we can't read the response, but we assume it was successful.
+                // The actual success/error handling should be managed within the Apps Script.
                 console.log('Request sent to backend.');
-                */
-                
-                console.log("סימולציה: הבקשה נשלחה לשרת בהצלחה.");
                 return true; 
 
             } catch (error) {
@@ -946,3 +1059,6 @@
     </script>
 </body>
 </html>
+
+
+
