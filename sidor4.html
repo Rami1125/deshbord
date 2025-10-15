@@ -2,173 +2,174 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול לוגיסטיקה V3.3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>סידור עבודה</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
-        body { font-family: 'Rubik', sans-serif; background-color: #f1f5f9; }
-        .tab { cursor: pointer; padding: 10px 20px; border-bottom: 4px solid transparent; }
-        .tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        /* * רקע האפליקציה. מומלץ להשתמש בתמונה עדינה ולא רועשת.
+         * מידות מומלצות: 1920x1080 פיקסלים.
+         * החלף את הלינק הבא בלינק לתמונה שלך.
+         */
+        body { 
+            font-family: 'Rubik', sans-serif; 
+            background-color: #e2e8f0;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+        }
+        .app-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .timeline-slot { min-height: 80px; border-left: 3px solid #cbd5e1; }
+        .order-item { cursor: grab; transition: all 0.2s ease-in-out; }
+        .order-item:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .drop-active { background-color: #93c5fd !important; }
+        .driver-avatar { object-fit: cover; object-position: center; }
     </style>
 </head>
-<body class="text-slate-800">
-    <div class="container mx-auto p-4 max-w-screen-2xl">
-        <header class="mb-6"><h1 class="text-4xl font-bold text-slate-900">מרכז בקרה לוגיסטי</h1></header>
-        <div class="border-b border-slate-200 mb-6">
-            <nav id="tabs-nav" class="flex space-x-4 -mb-px">
-                <a data-tab="dashboard" class="tab active"><i class="fa-solid fa-chart-pie mr-2"></i>לוח בקרה</a>
-                <a data-tab="orders" class="tab"><i class="fa-solid fa-tasks mr-2"></i>ניהול הזמנות</a>
-                <a data-tab="planner" class="tab"><i class="fa-solid fa-route mr-2"></i>תכנון מסלול יומי</a>
-            </nav>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: inherit;">
+        <div class="w-full max-w-sm text-center">
+            <img src="https://i.postimg.cc/Yq2N1crt/image.png" alt="לוגו החברה" class="w-32 h-32 rounded-full mx-auto mb-6 shadow-lg">
+            <div class="app-card rounded-xl p-6 shadow-xl">
+                <h1 class="text-2xl font-bold text-slate-800 mb-4">כניסה למערכת</h1>
+                <input type="password" id="password-input" placeholder="הקלד סיסמה" class="w-full text-center p-3 rounded-lg border-2 border-slate-300 focus:border-blue-500 focus:ring-0">
+                <button id="login-button" class="w-full bg-blue-600 text-white font-bold py-3 mt-4 rounded-lg hover:bg-blue-700 transition">כניסה</button>
+            </div>
         </div>
-        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"></div>
-        <main>
-            <div id="content-dashboard" class="tab-content active"></div>
-            <div id="content-orders" class="tab-content"></div>
-            <div id="content-planner" class="tab-content"></div>
-        </main>
     </div>
-    <div id="modal-container"></div>
+
+    <!-- Main App Content (hidden by default) -->
+    <div id="app-content" class="hidden container mx-auto p-2 md:p-4">
+        <header class="flex items-center justify-between mb-4 p-2">
+            <h1 class="text-3xl font-bold text-slate-900">סידור עבודה</h1>
+            <p id="current-date" class="text-sm font-medium text-slate-600"></p>
+        </header>
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="w-full md:w-1/2">
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">עלי</h2>
+                </div>
+                <div id="ali-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+            <div class="w-full md:w-1/2">
+                 <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">חכמת</h2>
+                </div>
+                <div id="hakmat-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+        </div>
+    </div>
     
     <script>
-        console.log("🟢 שלב 1: הקוד מתחיל לרוץ. מגדיר מפתחות.");
-        const API_KEY = 'AIzaSyCbVYMijMs8zH6m4iiSiBfn_RiCMuau9ps'; // 👈 הדבק פה את מפתח המפות (מתחיל ב-AIza)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGIR9P_vzrz2-94y7fJSGARN7MV5bBjtWqberpHi5McsrbHQdEopSYdjVjhWkQbGk_2w/exec'; // 👈 הדבק פה את כתובת הסקריפט
-    </script>
-    <script>
-        (function() {
-            console.log("🔵 שלב 2: מכין בקשה לטעינת גוגל מפות.");
-            if (!API_KEY || !API_KEY.startsWith('AIza')) {
-                console.error("⛔️ כשל קריטי: מפתח ה-API של גוגל מפות אינו תקין או חסר!");
-                document.getElementById('error-banner').textContent = 'שגיאה קריטית: מפתח ה-API של גוגל מפות אינו תקין.';
-                document.getElementById('error-banner').classList.remove('hidden');
+
+        // --- AUTHENTICATION ---
+        document.getElementById('login-button').addEventListener('click', () => {
+            if (document.getElementById('password-input').value === 'סידור') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').classList.remove('hidden');
+                initializeApp();
+            } else {
+                alert('סיסמה שגויה');
+            }
+        });
+
+        // --- APPLICATION LOGIC ---
+        function initializeApp() {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            const aliTimeline = document.getElementById('ali-timeline');
+            const hakmatTimeline = document.getElementById('hakmat-timeline');
+            for (let hour = 6; hour < 20; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    aliTimeline.appendChild(createTimelineSlot(time));
+                    hakmatTimeline.appendChild(createTimelineSlot(time));
+                }
+            }
+            loadAndPlaceOrders();
+        }
+
+        function createTimelineSlot(time) {
+            const slot = document.createElement('div');
+            slot.className = 'timeline-slot p-2 flex';
+            slot.dataset.time = time;
+            slot.innerHTML = `<div class="w-12 text-xs text-slate-500 pt-1">${time}</div><div class="flex-1 min-h-[40px]"></div>`;
+            
+            slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drop-active'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drop-active'));
+            slot.addEventListener('drop', handleDrop);
+            
+            return slot;
+        }
+
+        async function loadAndPlaceOrders() {
+            try {
+                const data = await runGAS({action: 'getTeamData'});
+                placeOrders(data.aliOrders, 'ali-timeline');
+                placeOrders(data.hakmatOrders, 'hakmat-timeline');
+            } catch (error) { alert(`שגיאה בטעינת הזמנות: ${error.message}`); }
+        }
+        
+        function placeOrders(orders, timelineId) {
+            orders.forEach(order => {
+                if (!order.time) return;
+                const orderTime = String(order.time).substring(0, 5);
+                const targetSlot = document.querySelector(`#${timelineId} [data-time="${orderTime}"] > div:last-child`);
+                if (targetSlot) {
+                    targetSlot.appendChild(createOrderCard(order));
+                }
+            });
+        }
+        
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-item bg-white rounded-lg p-3 shadow-md border-l-4 border-blue-500';
+            card.draggable = true;
+            card.dataset.orderId = order.id;
+            card.innerHTML = `<h4 class="font-bold text-slate-800">${order.customer}</h4><p class="text-sm text-slate-600">${order.street} ${order.street_number || ''}, ${order.city}</p>`;
+            card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', order.id); });
+            return card;
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            const slot = e.currentTarget;
+            slot.classList.remove('drop-active');
+            
+            const enteredPassword = prompt("נא להזין סיסמה לביצוע השינוי:");
+            if (enteredPassword !== '1125') {
+                if(enteredPassword) alert('סיסמה שגויה. הפעולה בוטלה.');
                 return;
             }
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initApp&libraries=places`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-            console.log("🟡 שלב 3: נשלחה בקשה לטעינת גוגל מפות. ממתין לתשובה...");
-        })();
-    </script>
-    
-    <script>
-    function initApp() {
-        console.log("✅ שלב 4: הצלחה! גוגל מפות נטען. מתחיל את האפליקציה.");
-        
-        let allOrders = [], initialData = {}, charts = {};
-        let plannerMap, newOrderMap, viewMap, directionsService;
-        let plannerDR, newOrderDR, viewDR;
+            
+            const orderId = e.dataTransfer.getData('text/plain');
+            const newTime = slot.dataset.time;
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
 
-        const elements = { nav: document.getElementById('tabs-nav'), errorBanner: document.getElementById('error-banner'), content: { dashboard: document.getElementById('content-dashboard'), orders: document.getElementById('content-orders'), planner: document.getElementById('content-planner'), }, modals: document.getElementById('modal-container'), };
-        
-        function initialize() {
-            renderSkeletons();
-            setupEventListeners();
-            loadInitialData().then(() => handleTabClick(document.querySelector('.tab.active')));
-        }
-        
-        function renderSkeletons() {
-            elements.content.dashboard.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-4 gap-6"><div class="card p-6 col-span-full"><h2 class="text-xl font-semibold">סקירה כללית</h2><p>סה"כ הזמנות: <span id="total-orders-stat" class="font-bold text-2xl">...</span></p></div><div class="card p-6 lg:col-span-2"><h2 class="text-xl font-semibold">ערים מובילות</h2><canvas id="cities-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">סוגי הובלה</h2><canvas id="types-chart"></canvas></div><div class="card p-6"><h2 class="text-xl font-semibold">לקוחות מובילים</h2><canvas id="customers-chart"></canvas></div></div>`;
-            elements.content.orders.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-12 lg:col-span-4 card p-6"><h2 id="form-title" class="text-2xl font-semibold mb-4">יצירת הזמנה</h2><form id="order-form" class="space-y-4"></form></div><div class="col-span-12 lg:col-span-8 card p-6"><div id="new-order-map" class="w-full h-64 rounded-lg bg-slate-200 mb-4"></div><h2 class="text-2xl font-semibold mb-4">הזמנות פתוחות</h2><div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-right text-xs">לקוח</th><th class="px-6 py-3 text-right text-xs">כתובת</th><th class="px-6 py-3 text-right text-xs">תאריך</th><th class="px-6 py-3 text-right text-xs">פעולות</th></tr></thead><tbody id="orders-table-body"></tbody></table></div></div></div>`;
-            elements.content.planner.innerHTML = `<div class="grid grid-cols-12 gap-6"><div class="col-span-4 card p-6"><h2 class="text-xl font-semibold mb-4">בחר הזמנות</h2><div class="space-y-4"><div class="form-group"><label for="planner-date">תאריך</label><input type="date" id="planner-date"></div><div class="form-group"><label for="planner-warehouse">מחסן</label><select id="planner-warehouse"></select></div><div id="planner-orders-list"></div></div><button id="btn-optimize-route" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg mt-4">חשב מסלול</button></div><div class="col-span-8 card p-4"><div id="planner-map" class="w-full h-[500px] rounded-lg bg-slate-200"></div><div id="planner-summary"></div></div></div>`;
-        }
-
-        function setupEventListeners() {
-            elements.nav.addEventListener('click', e => { if (e.target.closest('.tab')) handleTabClick(e.target.closest('.tab')); });
-        }
-
-        async function loadInitialData() {
-            try {
-                initialData = await runGAS('getInitialData');
-                allOrders = initialData.activeOrders;
-            } catch (error) { showError(error.message); }
-        }
-
-        function handleTabClick(tab) {
-            const tabName = tab.dataset.tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            elements.content[tabName].classList.add('active');
-
-            if (tabName === 'orders' && !newOrderMap) {
-                newOrderMap = new google.maps.Map(document.getElementById("new-order-map"), { zoom: 8, center: { lat: 31.7, lng: 35.2 }, streetViewControl: false, mapTypeControl: false });
-                newOrderDR = new google.maps.DirectionsRenderer({ map: newOrderMap });
-                renderOrderManagement();
-            } else if (tabName === 'planner' && !plannerMap) {
-                plannerMap = new google.maps.Map(document.getElementById("planner-map"), { zoom: 8, center: { lat: 31.7, lng: 35.2 } });
-                plannerDR = new google.maps.DirectionsRenderer({ map: plannerMap });
-                renderPlanner();
-            } else if (tabName === 'dashboard') {
-                renderDashboard();
+            if (orderCard && newTime) {
+                slot.querySelector('div:last-child').appendChild(orderCard);
+                try {
+                    await runGAS({action: 'updateOrderTime', payload: { orderId, newTime }});
+                } catch (error) { alert(`שגיאה בעדכון השעה: ${error.message}`); }
             }
         }
         
-        function renderDashboard() { /* ... Chart logic ... */ }
-        
-        function renderOrderManagement() { 
-            const form = document.getElementById('order-form');
-            if(form.innerHTML !== '') return;
-            
-            form.innerHTML = `
-                <input type="hidden" id="id" name="id">
-                <div><label for="customer" class="text-sm">לקוח</label><input type="text" id="customer" name="customer" list="customers-list" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                <datalist id="customers-list"></datalist>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label for="date" class="text-sm">תאריך</label><input type="date" id="date" name="date" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                    <div><label for="time" class="text-sm">שעה</label><input type="time" id="time" name="time" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                </div>
-                <div><label for="city" class="text-sm">עיר</label><select id="city" name="city" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-2"><label for="street" class="text-sm">רחוב</label><input type="text" id="street" name="street" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                    <div><label for="street_number" class="text-sm">מספר</label><input type="text" id="street_number" name="street_number" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label for="delivery_type" class="text-sm">סוג הובלה</label><select id="delivery_type" name="delivery_type" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                    <div><label for="warehouse" class="text-sm">מחסן</label><select id="warehouse" name="warehouse" class="mt-1 block w-full rounded-md border-gray-300"></select></div>
-                </div>
-                <div><label for="notes" class="text-sm">הערות</label><textarea id="notes" name="notes" rows="2" class="mt-1 block w-full rounded-md border-gray-300"></textarea></div>
-                <div class="flex gap-4"><button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">שמור</button><button type="button" id="btn-clear-form" class="w-full bg-slate-200 py-3 rounded-lg">נקה</button></div>
-            `;
-            
-            populateSelect(form.querySelector('#warehouse'), initialData.warehouses, "בחר מחסן");
-            populateSelect(form.querySelector('#delivery_type'), initialData.deliveryTypes, "בחר סוג");
-            populateSelect(form.querySelector('#city'), initialData.cities, "בחר עיר");
-            populateDatalist(form.querySelector('#customers-list'), initialData.customers.map(c => c.name));
-            
-            renderOrdersTable();
-            form.addEventListener('submit', handleSaveOrder);
-            document.getElementById('btn-clear-form').addEventListener('click', clearOrderForm);
+        function runGAS(params) {
+             return new Promise((resolve, reject) => {
+                const options = { method: 'POST', body: JSON.stringify(params), headers: { 'Content-Type': 'application/json' } };
+                fetch(SCRIPT_URL, options)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === 'success') resolve(response.data);
+                        else reject(new Error(response.message));
+                    })
+                    .catch(error => reject(error));
+             });
         }
-
-        function renderPlanner() { /* ... Planner logic ... */ }
-
-        function renderOrdersTable() {
-             const tableBody = document.getElementById('orders-table-body');
-             tableBody.innerHTML = allOrders.map(order => `<tr><td>${order.customer}</td><td>${order.city}</td><td>${order.date}</td><td>...buttons...</td></tr>`).join('');
-        }
-        
-        function handleSaveOrder(e){ e.preventDefault(); console.log('Saving order...'); }
-        function clearOrderForm(){ document.getElementById('order-form').reset(); }
-        
-        function runGAS(action, payload) { /* ... same as before ... */ }
-        function showError(message) { /* ... same as before ... */ }
-        function populateSelect(el, data, placeholder) { el.innerHTML = `<option value="">${placeholder}</option>` + data.map(d => `<option value="${d}">${d}</option>`).join(''); }
-        function populateDatalist(el, data) { el.innerHTML = data.map(d => `<option value="${d}"></option>`).join(''); }
-
-        // --- Initialize the App ---
-        directionsService = new google.maps.DirectionsService();
-        initialize();
-    }
     </script>
 </body>
 </html>
