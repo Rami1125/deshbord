@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>📋סידור ח.סבן</title>
+    <title>📋 דוח בוקר - זכוכית מתקדמת</title>
     
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -265,7 +265,7 @@
              min-width: 70px;
         }
 
-        .share-button {
+        .share-button, .action-button {
             background-color: #25D366;
             color: white;
             padding: 15px 30px;
@@ -274,7 +274,7 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            margin: 30px auto;
+            margin: 10px auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -285,9 +285,12 @@
             transition: all 0.3s ease;
         }
         
-        .share-button:hover {
+        .share-button:hover, .action-button:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .action-button {
+             background-color: var(--secondary-color);
         }
 
         .summary-grid {
@@ -323,13 +326,28 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 90vw; width: 100%;
             position: relative; transform: scale(0.9); transition: transform 0.3s ease;
             max-height: 85vh; overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         .modal-overlay.visible .modal-content { transform: scale(1); }
         .modal-close-button {
             position: absolute; top: 15px; left: 15px; background: var(--accent-color);
             color: white; border: none; border-radius: 50%; width: 35px; height: 35px;
             font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center;
-            align-items: center;
+            align-items: center; z-index: 10;
+        }
+        .modal-body {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .modal-footer button {
+            flex-grow: 1;
         }
         
         /* Bottom Navigation Bar */
@@ -650,6 +668,34 @@
             width: 40px;
             text-align: center;
         }
+        
+        /* --- Report Generation Modal Styles --- */
+        #selectOrdersModal .list-item {
+            display: grid;
+            grid-template-columns: 30px 1fr 100px 150px;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        #selectOrdersModal .list-item:last-child {
+            border-bottom: none;
+        }
+        #selectOrdersModal .list-item-details {
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        #selectOrdersModal .list-item-details strong {
+            display: block;
+            font-size: 1rem;
+            color: var(--dark-color);
+        }
+        #selectOrdersModal .list-item select {
+            width: 100%;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
 
 
     </style>
@@ -702,9 +748,10 @@
                         <!-- Schedule will be rendered here by JavaScript -->
                     </div>
                 </div>
-                <button class="share-button" id="shareScheduleBtn" style="background-color: var(--secondary-color); margin-top: 20px;">
-                    <i class="fas fa-paper-plane"></i> שלח דוח סופי והתראה
-                </button>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <button class="action-button" id="prepareReportBtn"><i class="fas fa-list-alt"></i> בחר לדוח</button>
+                    <button class="action-button" id="shareScheduleBtn" style="background-color: #28a745;"><i class="fas fa-paper-plane"></i> שלח ועדכן</button>
+                </div>
             </div>
 
 
@@ -730,6 +777,10 @@
                             <input type="text" id="orderAddress" placeholder="עיר, רחוב, מספר בית" required>
                         </div>
                         <div class="form-group">
+                           <label for="orderOperationType"><i class="fas fa-cogs"></i> סוג פריקה</label>
+                           <select id="orderOperationType" required></select>
+                        </div>
+                        <div class="form-group">
                             <label for="orderWarehouse"><i class="fas fa-warehouse"></i> מחסן</label>
                             <select id="orderWarehouse" required>
                                 <option value="התלמיד">התלמיד</option>
@@ -747,9 +798,9 @@
                     </form>
                 </div>
                 <div class="summary-card">
-                     <h3><i class="fab fa-whatsapp"></i> דוח למחר</h3>
-                     <p>הכן ושלח את דוח ההזמנות המלא ליום העבודה הבא.</p>
-                     <button onclick="shareTomorrowReport()"><i class="fab fa-whatsapp"></i> שתף דוח למחר</button>
+                     <h3><i class="fab fa-whatsapp"></i> שתף הזמנות עתידיות</h3>
+                     <p>בסוף היום, שלח סיכום של כל ההזמנות שנוצרו לתאריכים עתידיים.</p>
+                     <button onclick="shareFutureOrders()"><i class="fab fa-whatsapp"></i> שתף הזמנות עתידיות</button>
                 </div>
             </div>
             
@@ -819,13 +870,15 @@
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('orderDetailsModal')">&times;</button>
             <h2 id="modalTitle">פרטי הזמנה</h2>
-            <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
-            <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
-            <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
-            <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
-            <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
-            <p><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> <span id="modalOperationType"></span></p>
-            <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+            <div class="modal-body">
+                <p><strong><i class="far fa-calendar-alt"></i> תאריך:</strong> <span id="modalDate"></span></p>
+                <p><strong><i class="far fa-clock"></i> שעה:</strong> <span id="modalTime"></span></p>
+                <p><strong><i class="fas fa-user"></i> לקוח:</strong> <span id="modalCustomer"></span></p>
+                <p><strong><i class="fas fa-map-marker-alt"></i> כתובת:</strong> <span id="modalAddress"></span></p>
+                <p><strong><i class="fas fa-warehouse"></i> מחסן:</strong> <span id="modalWarehouse"></span></p>
+                <p><strong><i class="fas fa-cogs"></i> סוג פעולה:</strong> <span id="modalOperationType"></span></p>
+                <p><strong><i class="fas fa-info-circle"></i> סטטוס:</strong> <span id="modalStatus"></span></p>
+            </div>
         </div>
     </div>
      <div id="passwordModal" class="modal-overlay">
@@ -833,7 +886,7 @@
             <button class="modal-close-button" onclick="closeModal('passwordModal')">&times;</button>
             <h2>הכנס סיסמה</h2>
             <input type="password" id="passwordInput" placeholder="סיסמה" style="width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center;">
-            <button onclick="checkPassword()" style="padding: 10px 20px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white;">אשר</button>
+            <button onclick="checkPassword()" class="action-button">אשר</button>
             <p id="passwordError" style="color: var(--accent-color); display: none;">סיסמה שגויה.</p>
         </div>
     </div>
@@ -857,12 +910,37 @@
             <p id="adminLoginError" style="color: var(--accent-color); display: none; margin-top: 10px;">פרטי התחברות שגויים.</p>
         </div>
     </div>
-    <!-- NEW: Map Modal -->
+    <!-- Map Modal -->
     <div id="mapModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="closeModal('mapModal')">&times;</button>
             <h2 id="mapModalTitle">מפת הזמנה</h2>
-            <div id="orderMap"></div>
+            <div class="modal-body" id="orderMap"></div>
+        </div>
+    </div>
+    <!-- Drag & Drop Password Modal -->
+    <div id="dragPasswordModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <button class="modal-close-button" onclick="closeModal('dragPasswordModal')">&times;</button>
+            <h2>אישור שינוי סידור</h2>
+            <p>הכנס סיסמה כדי לשמור את השינוי.</p>
+            <input type="password" id="dragPasswordInput" placeholder="סיסמה" style="width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center;">
+            <button onclick="checkDragPassword()" class="action-button">אשר שינוי</button>
+            <p id="dragPasswordError" style="color: var(--accent-color); display: none;">סיסמה שגויה.</p>
+        </div>
+    </div>
+    <!-- Select Orders for Report Modal -->
+    <div id="selectOrdersModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('selectOrdersModal')">&times;</button>
+            <h2>בחר וערוך הזמנות לדוח</h2>
+            <div class="modal-body" id="selectableOrdersList">
+                <!-- Selectable orders will be rendered here -->
+            </div>
+            <div class="modal-footer">
+                <button class="action-button" onclick="saveSelectedOrderChanges()" style="background-color: var(--dark-color);"><i class="fas fa-save"></i> שמור שינויים</button>
+                <button class="share-button" onclick="generateReportFromSelected()"><i class="fab fa-whatsapp"></i> צור דוח</button>
+            </div>
         </div>
     </div>
 
@@ -888,13 +966,19 @@
         const ordersRange = 'כתיבת הזמנה לסידור - Orders!A2:P'; // Single range for all orders
         const WHATSAPP_PASSWORD = "1125";
         const ADMIN_PASSWORD = "1125";
+        const DRAG_DROP_PASSWORD = "1125";
 
         let allOrders = [], allAliOrders = [], allHakmatOrders = [], morningChartInstance = null;
         
+        const deliveryTypes = [
+            "הובלת משאית", "הובלת מנוף", "הובלת מנוף 15 מטר", "משיכה עצמית", 
+            "מוביל חיצוני", "איסוף בלות פסולת", "גישה לאתר+עבודת מנוף", "עבודת מנוף"
+        ];
+        
         async function initializeApp() {
+            populateDeliveryTypeDropdowns();
             allOrders = await fetchOrdersData();
             
-            // Filter orders for each driver based on the 'driver' column (L)
             allAliOrders = allOrders.filter(order => order.driver && order.driver.includes('עלי'));
             allHakmatOrders = allOrders.filter(order => order.driver && order.driver.includes('חכמת'));
             
@@ -902,6 +986,18 @@
             setupNavListeners();
             activatePageAndNav('mainPage', 'main-nav-button');
             document.getElementById('createOrderForm').addEventListener('submit', handleCreateOrder);
+        }
+
+        function populateDeliveryTypeDropdowns() {
+            const dropdown = document.getElementById('orderOperationType');
+            if (dropdown) {
+                deliveryTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    dropdown.appendChild(option);
+                });
+            }
         }
 
         function renderDashboard() {
@@ -920,12 +1016,9 @@
                 
                 return (data.values || [])
                     .map((row, index) => {
-                        // Filter for valid rows (must have customer and time)
-                        if (row.length <= 10 || !row[2] || !row[10]) {
+                        if (row.length <= 10 || !row[1] || !row[2] || !row[10]) {
                             return null;
                         }
-
-                        // Construct full address from parts, handling empty values
                         const street = row[4] || '';
                         const streetNumber = row[5] || '';
                         const city = row[6] || '';
@@ -933,19 +1026,18 @@
                         const fullAddress = addressParts.join(' ').replace(/ ,$/, '').trim();
 
                         return { 
-                            id:             row[1] || `temp-${index}`, // Use ID from Column B
-                            rowNumber:      index + 2, // The actual row number in the sheet (A2 is row 2)
-                            customer:       row[2] || 'N/A',         // Column C
-                            address:        fullAddress || 'N/A',    // Columns E, F, G
-                            operationType:  row[7] || 'N/A',         // Column H
-                            warehouse:      row[8] || 'N/A',         // Column I
-                            date:           row[9] || 'N/A',         // Column J
-                            time:           row[10] || 'N/A',        // Column K
-                            driver:         row[11] || 'N/A',        // Column L
-                            status:         row[15] || 'חדשה'      // Column P
+                            id:             row[1],
+                            customer:       row[2] || 'N/A',
+                            address:        fullAddress || 'N/A',
+                            operationType:  row[7] || 'N/A',
+                            warehouse:      row[8] || 'N/A',
+                            date:           row[9] || 'N/A',
+                            time:           row[10] || 'N/A',
+                            driver:         row[11] || 'N/A',
+                            status:         row[15] || 'חדשה'
                         };
                     })
-                    .filter(order => order !== null) // Remove invalid rows
+                    .filter(order => order !== null)
                     .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -992,7 +1084,7 @@
         function updateSummaryCounts() {
             document.getElementById('aliOrderCount').textContent = allAliOrders.length;
             document.getElementById('hakmatOrderCount').textContent = allHakmatOrders.length;
-            const totalWarehouseOrders = [...allAliOrders, ...allHakmatOrders].filter(o => o.warehouse && o.warehouse.trim() !== '').length;
+            const totalWarehouseOrders = [...allOrders].filter(o => o.warehouse && o.warehouse.trim() !== '').length;
             document.getElementById('totalWarehouseOrderCount').textContent = totalWarehouseOrders;
         }
 
@@ -1042,25 +1134,12 @@
                 schedulePage: '🗓️ סידור עבודה',
                 adminPage: '🛠️ דף ניהול',
                 warehousePage: '📦 מחסן',
-                aliPage: 'נהג: עלי',
-                hakmatPage: 'נהג: חכמת',
                 installPage: '📲 התקנת אפליקציה'
             };
             document.getElementById('headerTitle').textContent = titles[pageId] || '🚛 דוח בוקר';
 
-            if(pageId === 'hakmatPage' || pageId === 'aliPage'){
-                 const orders = (pageId === 'hakmatPage') ? allHakmatOrders : allAliOrders;
-                 const driverName = (pageId === 'hakmatPage') ? 'חכמת' : 'עלי';
-                 const avatar = (pageId === 'hakmatPage') ? 'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg' : 'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg';
-                 page.innerHTML = `<div class="driver-section-title"><img src="${avatar}" alt="${driverName}" class="driver-avatar">נהג: ${driverName}</div><div id="${driverName}OnlyTimeline" class="timeline-grid"></div>`;
-                 renderOrders(orders, `${driverName}OnlyTimeline`, driverName);
-            }
-            if (pageId === 'adminPage') {
-                prefillOrderForm();
-            }
-            if (pageId === 'schedulePage') {
-                renderScheduleBoard();
-            }
+            if (pageId === 'adminPage') prefillOrderForm();
+            if (pageId === 'schedulePage') renderScheduleBoard();
         }
 
         function setupNavListeners() {
@@ -1088,18 +1167,18 @@
                     activatePageAndNav('warehousePage', 'warehouse-nav-button');
                     const filtered = [...allOrders].filter(o => o.warehouse && o.warehouse.includes(type));
                     page.innerHTML = `<div class="driver-section-title"><i class="fas fa-boxes"></i>מחסן: ${type}</div><div id="warehouseTimeline" class="timeline-grid"></div>`;
-                    renderOrders(filtered, 'warehouseTimeline'); // No driver class needed
+                    renderOrders(filtered, 'warehouseTimeline');
                     document.querySelector('.nav-button.warehouse-button').classList.remove('active');
                 };
             });
             
-            // Add listener for the new share button on the schedule page
-            const shareScheduleBtn = document.getElementById('shareScheduleBtn');
-            if(shareScheduleBtn) {
-                shareScheduleBtn.addEventListener('click', handleShareAndNotify);
-            }
+            document.getElementById('shareScheduleBtn').addEventListener('click', handleShareAndNotify);
+            document.getElementById('prepareReportBtn').addEventListener('click', openSelectOrdersModal);
         }
         
+        function showModal(modalId) { document.getElementById(modalId).classList.add('visible'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('visible'); }
+
         function showOrderDetails(order) {
             document.getElementById('modalDate').textContent = order.date || 'N/A';
             document.getElementById('modalTime').textContent = order.time || 'N/A';
@@ -1108,12 +1187,9 @@
             document.getElementById('modalWarehouse').textContent = order.warehouse || 'N/A';
             document.getElementById('modalOperationType').textContent = order.operationType || 'N/A';
             document.getElementById('modalStatus').textContent = order.status || 'N/A';
-            document.getElementById('orderDetailsModal').classList.add('visible');
+            showModal('orderDetailsModal');
         }
         
-        function closeModal(modalId) { document.getElementById(modalId).classList.remove('visible'); }
-        function showPasswordModal() { document.getElementById('passwordModal').classList.add('visible'); }
-
         function checkPassword() {
             if (document.getElementById('passwordInput').value === WHATSAPP_PASSWORD) {
                 closeModal('passwordModal');
@@ -1123,7 +1199,7 @@
             }
         }
         
-        function shareToWhatsApp(aliOrders, hakmatOrders) {
+        function shareToWhatsApp(aliOrders, hakmatOrders, title = '*📋 דוח בוקר - סיכום*') {
             const formatForWhatsApp = (orders, name) => {
                 if (!orders || orders.length === 0) return `*${name}*\nאין הזמנות.`;
                 let msg = `*${name}*\n`;
@@ -1134,45 +1210,32 @@
             };
             const aliMsg = formatForWhatsApp(aliOrders, "עלי");
             const hakmatMsg = formatForWhatsApp(hakmatOrders, "חכמת");
-            const fullMessage = `*📋 דוח בוקר - סיכום*\n\n${aliMsg}\n\n${hakmatMsg}`;
+            const fullMessage = `${title}\n\n${aliMsg}\n\n${hakmatMsg}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
         }
 
         // --- Admin Functionality ---
-
         function showAdminLoginModal() {
             document.getElementById('adminLoginError').style.display = 'none';
             document.getElementById('adminPassword').value = '';
-            document.getElementById('adminLoginModal').classList.add('visible');
+            showModal('adminLoginModal');
         }
 
         function checkAdminLogin() {
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
-            const errorEl = document.getElementById('adminLoginError');
-
             if ((username === 'ראמי' || username === 'יואב') && password === ADMIN_PASSWORD) {
-                errorEl.style.display = 'none';
                 closeModal('adminLoginModal');
                 activatePageAndNav('adminPage', 'admin-nav-button');
             } else {
-                errorEl.style.display = 'block';
+                document.getElementById('adminLoginError').style.display = 'block';
             }
         }
         
         function prefillOrderForm() {
             const now = new Date();
-            const dateInput = document.getElementById('orderDate');
-            const timeInput = document.getElementById('orderTime');
-
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            dateInput.value = `${year}-${month}-${day}`;
-
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            timeInput.value = `${hours}:${minutes}`;
+            document.getElementById('orderDate').value = now.toLocaleDateString('en-CA');
+            document.getElementById('orderTime').value = now.toTimeString().slice(0,5);
         }
 
         async function handleCreateOrder(event) {
@@ -1180,15 +1243,15 @@
             const form = event.target;
             const button = document.getElementById('createOrderBtn');
             const orderData = {
-                action: 'createOrder', // Specify the action for the backend
+                action: 'createOrder',
                 date: form.orderDate.value,
                 time: form.orderTime.value,
                 customer: form.orderCustomer.value,
                 address: form.orderAddress.value,
                 warehouse: form.orderWarehouse.value,
-                driver: form.orderDriver.value,
-                status: 'חדשה', 
-                operationType: 'הובלה' 
+                driver: form.orderDriver.value === 'ali' ? 'עלי' : 'חכמת',
+                operationType: form.orderOperationType.value,
+                status: 'חדשה'
             };
             
             button.disabled = true;
@@ -1197,12 +1260,12 @@
             try {
                 const success = await saveOrderAndNotify(orderData);
                 if (success) {
-                    showAppNotification('ההזמנה נוצרה ונשלחה התראה בהצלחה!', 'success');
+                    showAppNotification('ההזמנה נוצרה בהצלחה!', 'success');
                     form.reset();
                     prefillOrderForm();
-                    await initializeApp(); // Refresh data
+                    await initializeApp();
                 } else {
-                    showAppNotification('שגיאה ביצירת ההזמנה. אנא נסה שוב.', 'error');
+                    showAppNotification('שגיאה ביצירת ההזמנה.', 'error');
                 }
             } finally {
                 button.disabled = false;
@@ -1223,16 +1286,13 @@
         }
 
         async function saveOrderAndNotify(orderData) {
-            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycby3tdXoRLHMI8DliJQZ2_i1_P3JipeHigXK-wkrYu4ClVcSQZbvYxZT-ReLx7IooWQFfQ/exec';
-            console.log('Sending order to backend:', orderData);
-
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbw1h0aKRTyJWm05Y9dr_89lxBdl9oNkeHQF36DYkx0f-ZYtbPZa9ooFfDIefyAlv5Vvug/exec';
             try {
                 await fetch(BACKEND_URL, {
                     method: 'POST',
                     body: JSON.stringify(orderData),
                     mode: 'no-cors'
                 });
-                console.log('Request sent to backend.');
                 return true; 
             } catch (error) {
                 console.error('Failed to send order to backend:', error);
@@ -1240,37 +1300,45 @@
             }
         }
 
-        function shareTomorrowReport() {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
+        function shareFutureOrders() {
+            const todayDateString = new Date().toLocaleDateString('en-CA');
+            const futureOrders = allOrders.filter(o => o.date && o.date > todayDateString);
             
-            const formatDateForComparison = (dateStr) => {
-                if (!dateStr) return null;
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                     return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                }
-                return dateStr;
-            }
-
-            const aliTomorrow = allOrders.filter(o => o.driver.includes('עלי') && formatDateForComparison(o.date) === tomorrowDateString);
-            const hakmatTomorrow = allOrders.filter(o => o.driver.includes('חכמת') && formatDateForComparison(o.date) === tomorrowDateString);
-            
-            if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) {
-                showAppNotification('לא נמצאו הזמנות למחר.', 'info');
+            if (futureOrders.length === 0) {
+                showAppNotification('לא נמצאו הזמנות לתאריכים עתידיים.', 'info');
                 return;
             }
 
-            shareToWhatsApp(aliTomorrow, hakmatTomorrow);
+            const aliFuture = futureOrders.filter(o => o.driver.includes('עלי'));
+            const hakmatFuture = futureOrders.filter(o => o.driver.includes('חכמת'));
+
+            const formatOrderLine = (o) => {
+                const dateParts = o.date.split('-');
+                const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                return `🗓️ ${displayDate} | ⏰ ${o.time || ''} | 👤 ${o.customer || ''} | 📍 ${o.address || ''}\n`;
+            };
+
+            const formatForWhatsApp = (orders, name) => {
+                if (!orders || orders.length === 0) return `*${name}*\nאין הזמנות עתידיות.`;
+                let msg = `*${name}*\n`;
+                orders.sort((a,b) => new Date(a.date) - new Date(b.date) || parseTimeForSorting(a.time) - parseTimeForSorting(b.time)).forEach(o => {
+                    msg += formatOrderLine(o);
+                });
+                return msg;
+            };
+
+            const aliMsg = formatForWhatsApp(aliFuture, "עלי");
+            const hakmatMsg = formatForWhatsApp(hakmatFuture, "חכמת");
+            const fullMessage = `*📋 סיכום הזמנות עתידיות*\n\n${aliMsg}\n\n${hakmatMsg}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
         }
         
         // --- Schedule Board Functionality ---
+        let draggedItemContext = null;
+        
         function renderScheduleBoard() {
             const board = document.getElementById('scheduleBoard');
-            board.innerHTML = ''; // Clear previous content
-
-            // Create Headers
+            board.innerHTML = '';
             const headers = ['שעה', 'עלי', 'חכמת'];
             headers.forEach(text => {
                 const header = document.createElement('div');
@@ -1279,36 +1347,22 @@
                 board.appendChild(header);
             });
 
-            // Create Time Slots and Driver Columns
             for (let hour = 6; hour < 18; hour++) {
                 ['00', '30'].forEach(minute => {
                     const time = `${String(hour).padStart(2, '0')}:${minute}`;
-                    
-                    const timeSlot = document.createElement('div');
-                    timeSlot.className = 'schedule-time-slot';
-                    timeSlot.textContent = time;
-                    board.appendChild(timeSlot);
-
+                    board.appendChild(Object.assign(document.createElement('div'), { className: 'schedule-time-slot', textContent: time }));
                     ['ali', 'hakmat'].forEach(driver => {
-                        const column = document.createElement('div');
-                        column.className = 'schedule-driver-column';
-                        column.dataset.driver = driver;
-                        column.dataset.time = time;
-                        board.appendChild(column);
+                        board.appendChild(Object.assign(document.createElement('div'), { className: 'schedule-driver-column', dataset: { driver, time } }));
                     });
                 });
             }
             
-            // Populate orders into the board
             allOrders.forEach(order => {
                 const driverName = order.driver.includes('עלי') ? 'ali' : (order.driver.includes('חכמת') ? 'hakmat' : null);
                 if (!driverName) return;
-
                 const orderTime = parseOrderTimeForSlot(order.time);
                 const cell = board.querySelector(`.schedule-driver-column[data-driver="${driverName}"][data-time="${orderTime}"]`);
-                if (cell) {
-                    cell.appendChild(createScheduleOrderCard(order));
-                }
+                if (cell) cell.appendChild(createScheduleOrderCard(order));
             });
 
             initSortable();
@@ -1318,7 +1372,7 @@
             const card = document.createElement('div');
             const driverClass = order.driver.includes('עלי') ? 'ali' : 'hakmat';
             card.className = `schedule-order-card ${driverClass}`;
-            card.dataset.orderId = order.id; // Use ID from sheet
+            card.dataset.orderId = order.id;
 
             card.innerHTML = `
                 <p><strong><i class="fas fa-user"></i> ${order.customer}</strong></p>
@@ -1330,129 +1384,201 @@
                 </div>
             `;
             
-            card.querySelector('.details-btn').onclick = (e) => {
-                e.stopPropagation(); // Prevent drag from starting on button click
-                showOrderDetails(order);
-            };
-            card.querySelector('.map-btn').onclick = (e) => {
-                e.stopPropagation();
-                showOrderMap(order);
-            };
-
+            card.querySelector('.details-btn').onclick = (e) => { e.stopPropagation(); showOrderDetails(order); };
+            card.querySelector('.map-btn').onclick = (e) => { e.stopPropagation(); showOrderMap(order); };
             return card;
         }
 
         function initSortable() {
-            const columns = document.querySelectorAll('.schedule-driver-column');
-            columns.forEach(col => {
+            document.querySelectorAll('.schedule-driver-column').forEach(col => {
                 new Sortable(col, {
-                    group: 'orders',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
+                    group: 'orders', animation: 150, ghostClass: 'sortable-ghost',
                     onEnd: (evt) => {
-                        const orderId = evt.item.dataset.orderId;
-                        const newTime = evt.to.dataset.time;
-                        const newDriverName = evt.to.dataset.driver === 'ali' ? 'עלי' : 'חכמת';
-                        
-                        // Find the order and update its data locally
-                        const movedOrder = allOrders.find(o => o.id == orderId);
-                        if(movedOrder) {
-                           movedOrder.time = newTime;
-                           movedOrder.driver = newDriverName;
-                           showAppNotification(`מעדכן הזמנה ${movedOrder.customer}...`, 'info');
-                           updateOrderInBackend(orderId, newTime, newDriverName);
-                        }
+                        if (evt.from === evt.to) return;
+                        draggedItemContext = {
+                            item: evt.item, from: evt.from, to: evt.to,
+                            orderId: evt.item.dataset.orderId,
+                            newTime: evt.to.dataset.time,
+                            newDriver: evt.to.dataset.driver === 'ali' ? 'עלי' : 'חכמת'
+                        };
+                        evt.from.appendChild(evt.item); // Revert visually
+                        showModal('dragPasswordModal');
                     }
                 });
             });
         }
         
-        async function updateOrderInBackend(orderId, newTime, newDriver) {
-            const payload = {
-                action: 'updateOrder',
-                orderId: orderId,
-                newTime: newTime,
-                newDriver: newDriver
-            };
-            const success = await saveOrderAndNotify(payload);
+        function checkDragPassword() {
+            const password = document.getElementById('dragPasswordInput').value;
+            const errorEl = document.getElementById('dragPasswordError');
+            if (password === DRAG_DROP_PASSWORD) {
+                errorEl.style.display = 'none';
+                closeModal('dragPasswordModal');
+                const context = draggedItemContext;
+                if (context) {
+                    context.to.appendChild(context.item); // Visually confirm move
+                    const movedOrder = allOrders.find(o => o.id == context.orderId);
+                    if(movedOrder) {
+                       movedOrder.time = context.newTime;
+                       movedOrder.driver = context.newDriver;
+                       showAppNotification(`מעדכן הזמנה ${movedOrder.customer}...`, 'info');
+                       updateOrderInBackend(context.orderId, { time: context.newTime, driver: context.newDriver });
+                    }
+                }
+            } else {
+                errorEl.style.display = 'block';
+            }
+            document.getElementById('dragPasswordInput').value = '';
+            draggedItemContext = null;
+        }
+
+        async function updateOrderInBackend(orderId, updates) {
+            const success = await saveOrderAndNotify({ action: 'updateOrder', orderId, updates });
             if(success) {
                 showAppNotification('הסידור עודכן בהצלחה!', 'success');
             } else {
                 showAppNotification('שגיאה בעדכון הסידור.', 'error');
-                // Optional: revert the change in the UI if the backend fails
                 initializeApp(); 
             }
         }
         
         function parseOrderTimeForSlot(timeStr) {
-            if (!timeStr || timeStr.toLowerCase().includes('ביחד')) return '07:00'; // Default for "ביחד"
+            if (!timeStr || timeStr.toLowerCase().includes('ביחד')) return '07:00';
             const [hours, minutes] = timeStr.split(':').map(Number);
-            if (isNaN(hours) || isNaN(minutes)) return '06:00'; // Default for invalid time
-
+            if (isNaN(hours) || isNaN(minutes)) return '06:00';
             const roundedMinutes = minutes < 30 ? '00' : '30';
             return `${String(hours).padStart(2, '0')}:${roundedMinutes}`;
         }
         
         function showOrderMap(order) {
             if (!order.address || order.address === 'N/A') {
-                showAppNotification('לא קיימת כתובת עבור הזמנה זו.', 'error');
-                return;
+                showAppNotification('לא קיימת כתובת עבור הזמנה זו.', 'error'); return;
             }
-            // Use the Google Maps embed URL to avoid X-Frame-Options issues
             const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(order.address)}&output=embed`;
             document.getElementById('mapModalTitle').textContent = `מפה - ${order.customer}`;
             document.getElementById('orderMap').innerHTML = `<iframe src="${mapUrl}"></iframe>`;
-            document.getElementById('mapModal').classList.add('visible');
+            showModal('mapModal');
         }
 
         async function handleShareAndNotify(event) {
             const button = event.currentTarget;
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שולח...';
-
             try {
-                // 1. Send Push Notification via Backend
                 showAppNotification('שולח התראה לכל המשתמשים...', 'info');
                 const notifySuccess = await saveOrderAndNotify({ action: 'sendNotification' });
-                if (notifySuccess) {
-                    showAppNotification('ההתראה נשלחה בהצלחה!', 'success');
-                } else {
-                    showAppNotification('שגיאה בשליחת ההתראה.', 'error');
-                }
+                if (notifySuccess) showAppNotification('ההתראה נשלחה בהצלחה!', 'success');
+                else showAppNotification('שגיאה בשליחת ההתראה.', 'error');
 
-                // 2. Format and open WhatsApp
                 const appLink = "https://deshbord.pages.dev/";
                 let message = `*📋 סידור עבודה יומי עודכן*\n\n`;
-                message += `*נהג: עלי*\n`;
-                const aliScheduledOrders = allOrders.filter(o => o.driver.includes('עלי')).sort((a,b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
-                if (aliScheduledOrders.length > 0) {
-                    aliScheduledOrders.forEach(o => {
-                        message += `⏰ ${o.time} | 👤 ${o.customer} | 📍 ${o.address}\n`;
-                    });
-                } else {
-                    message += `אין הזמנות משויכות.\n`;
-                }
-                
-                message += `\n*נהג: חכמת*\n`;
-                const hakmatScheduledOrders = allOrders.filter(o => o.driver.includes('חכמת')).sort((a,b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
-                if (hakmatScheduledOrders.length > 0) {
-                    hakmatScheduledOrders.forEach(o => {
-                        message += `⏰ ${o.time} | 👤 ${o.customer} | 📍 ${o.address}\n`;
-                    });
-                } else {
-                    message += `אין הזמנות משויכות.\n`;
-                }
-
-                message += `\n\n*לצפייה בסידור המלא, לחץ כאן:*\n${appLink}`;
-
+                ['עלי', 'חכמת'].forEach(driver => {
+                    message += `*נהג: ${driver}*\n`;
+                    const scheduledOrders = allOrders.filter(o => o.driver.includes(driver)).sort((a,b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                    if (scheduledOrders.length > 0) {
+                        scheduledOrders.forEach(o => {
+                            message += `⏰ ${o.time} | 👤 ${o.customer} | 📍 ${o.address}\n`;
+                        });
+                    } else {
+                        message += `אין הזמנות משויכות.\n`;
+                    }
+                    message += `\n`;
+                });
+                message += `*לצפייה בסידור המלא, לחץ כאן:*\n${appLink}`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
-
             } finally {
                 button.disabled = false;
-                button.innerHTML = '<i class="fas fa-paper-plane"></i> שלח דוח סופי';
+                button.innerHTML = '<i class="fas fa-paper-plane"></i> שלח ועדכן';
             }
+        }
+
+        // --- Report Generation from List ---
+        function openSelectOrdersModal() {
+            const container = document.getElementById('selectableOrdersList');
+            container.innerHTML = '';
+            const sortedOrders = [...allOrders].sort((a,b) => new Date(b.date) - new Date(a.date)); // Show newest first
+            
+            sortedOrders.forEach(order => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.dataset.orderId = order.id;
+
+                const driverSelect = `<select class="driver-select"><option value="עלי" ${order.driver.includes('עלי') ? 'selected' : ''}>עלי</option><option value="חכמת" ${order.driver.includes('חכמת') ? 'selected' : ''}>חכמת</option></select>`;
+                
+                const opTypeSelect = document.createElement('select');
+                opTypeSelect.className = 'op-type-select';
+                deliveryTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    if (type === order.operationType) option.selected = true;
+                    opTypeSelect.appendChild(option);
+                });
+
+                item.innerHTML = `
+                    <input type="checkbox" class="order-checkbox">
+                    <div class="list-item-details">
+                        <strong>${order.customer}</strong>
+                        <span>${order.date} - ${order.time}</span>
+                    </div>
+                    ${driverSelect}
+                `;
+                item.appendChild(opTypeSelect);
+                container.appendChild(item);
+            });
+            showModal('selectOrdersModal');
+        }
+
+        async function saveSelectedOrderChanges() {
+            const items = document.querySelectorAll('#selectableOrdersList .list-item');
+            const promises = [];
+            showAppNotification('שומר שינויים...', 'info');
+
+            items.forEach(item => {
+                const orderId = item.dataset.orderId;
+                const originalOrder = allOrders.find(o => o.id == orderId);
+
+                const newDriver = item.querySelector('.driver-select').value;
+                const newOpType = item.querySelector('.op-type-select').value;
+                
+                const updates = {};
+                if (originalOrder.driver !== newDriver) updates.driver = newDriver;
+                if (originalOrder.operationType !== newOpType) updates.operationType = newOpType;
+
+                if (Object.keys(updates).length > 0) {
+                    promises.push(updateOrderInBackend(orderId, updates));
+                }
+            });
+
+            await Promise.all(promises);
+            showAppNotification('כל השינויים נשמרו!', 'success');
+            await initializeApp(); // Refresh all data
+            openSelectOrdersModal(); // Re-open modal with fresh data
+        }
+
+        function generateReportFromSelected() {
+            const items = document.querySelectorAll('#selectableOrdersList .list-item');
+            const selectedOrders = [];
+            items.forEach(item => {
+                if (item.querySelector('.order-checkbox').checked) {
+                    const orderId = item.dataset.orderId;
+                    selectedOrders.push(allOrders.find(o => o.id == orderId));
+                }
+            });
+
+            if (selectedOrders.length === 0) {
+                showAppNotification('לא נבחרו הזמנות לדוח.', 'error');
+                return;
+            }
+            
+            const aliSelected = selectedOrders.filter(o => o.driver.includes('עלי'));
+            const hakmatSelected = selectedOrders.filter(o => o.driver.includes('חכמת'));
+            
+            shareToWhatsApp(aliSelected, hakmatSelected, '*📋 דוח הזמנות נבחרות*');
+            closeModal('selectOrdersModal');
         }
 
     </script>
 </body>
 </html>
+
