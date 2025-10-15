@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM - לוח שיבוצים</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚛</text></svg>">
     <style>
         * {
             box-sizing: border-box;
@@ -172,11 +173,17 @@
             border-radius: 4px;
             color: white;
             max-width: 300px;
+            z-index: 1001;
         }
         
         .log-entry.error { background: #f44336; }
         .log-entry.success { background: #4caf50; }
         .log-entry.info { background: #2196f3; }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -187,6 +194,7 @@
         <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
             <input type="date" id="datePicker">
             <button id="addNewOrderBtn">+ הזמנה חדשה</button>
+            <button id="testConnectionBtn">בדיקת חיבור</button>
         </div>
     </div>
 
@@ -307,8 +315,8 @@
                 <div class="form-group">
                     <label>מחסן *</label>
                     <select id="orderWarehouse" required>
-                        <option value="התלמיד">התלמיד 6, הוד השרון</option>
-                        <option value="החרש">החרש 10, הוד השרון</option>
+                        <option value="התלמיד 6, הוד השרון">התלמיד 6, הוד השרון</option>
+                        <option value="החרש 10, הוד השרון">החרש 10, הוד השרון</option>
                     </select>
                 </div>
                 
@@ -323,8 +331,21 @@
     </div>
 
 <script>
-// כתובת ה-URL שלך
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyMQ_eF0NOgm59rYoANbfDamrx0xeBzps728Ocl6Jgql3htJL1rd0NdR4itHSukyBDjpQ/exec';
+// כתובת ה-URL של Google Apps Script
+const BACKEND_BASE = 'https://script.google.com/macros/s/AKfycbz4AwzVnHiTSUTOvJIkmOQ5GfUvVAuKJOIlF5WIh-iyO8ru8XzFIp3ylX_10EfrRZZB/exec';
+
+// פונקציה ליצירת URL עם CORS proxy
+function getBackendURL(params = '') {
+    // נסה מספר proxies שונים
+    const proxies = [
+        `https://api.allorigins.win/get?url=${encodeURIComponent(BACKEND_BASE + params)}`,
+        `https://corsproxy.io/?${encodeURIComponent(BACKEND_BASE + params)}`,
+        `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(BACKEND_BASE + params)}`,
+        BACKEND_BASE + params // נסה ישירות
+    ];
+    
+    return proxies[0]; // התחל עם הראשון
+}
 
 let allOrders = [];
 let customersData = [];
@@ -377,14 +398,19 @@ async function loadOrders(date) {
     try {
         showMessage('טוען הזמנות...', 'info');
         
-        const url = `${BACKEND_URL}?action=getActiveOrders&date=${date}`;
+        const url = getBackendURL(`?action=getActiveOrders&date=${date}`);
         const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`שגיאה: ${response.status}`);
         }
         
-        const result = await response.json();
+        let result = await response.json();
+        
+        // טיפול בתגובת proxy
+        if (result.contents) {
+            result = JSON.parse(result.contents);
+        }
         
         if (result.status === 'success') {
             allOrders = result.data || [];
@@ -473,12 +499,17 @@ function updateKPIs() {
 // טעינת לקוחות
 async function loadCustomers() {
     try {
-        const url = `${BACKEND_URL}?action=getCustomers`;
+        const url = getBackendURL('?action=getCustomers');
         const response = await fetch(url);
         
         if (!response.ok) throw new Error(`שגיאה: ${response.status}`);
         
-        const result = await response.json();
+        let result = await response.json();
+        
+        // טיפול בתגובת proxy
+        if (result.contents) {
+            result = JSON.parse(result.contents);
+        }
         
         if (result.status === 'success') {
             customersData = result.data || [];
@@ -486,6 +517,7 @@ async function loadCustomers() {
         }
     } catch (error) {
         console.error('Error loading customers:', error);
+        showMessage('שגיאה בטעינת הלקוחות', 'error');
         customersData = [];
     }
 }
@@ -493,12 +525,17 @@ async function loadCustomers() {
 // טעינת ערים
 async function loadCities() {
     try {
-        const url = `${BACKEND_URL}?action=getCities`;
+        const url = getBackendURL('?action=getCities');
         const response = await fetch(url);
         
         if (!response.ok) throw new Error(`שגיאה: ${response.status}`);
         
-        const result = await response.json();
+        let result = await response.json();
+        
+        // טיפול בתגובת proxy
+        if (result.contents) {
+            result = JSON.parse(result.contents);
+        }
         
         if (result.status === 'success') {
             citiesData = result.data || [];
@@ -507,8 +544,40 @@ async function loadCities() {
         }
     } catch (error) {
         console.error('Error loading cities:', error);
+        showMessage('שגיאה בטעינת הערים', 'error');
         citiesData = [];
+        
+        // טען ערים מקומית כגיבוי
+        loadLocalCities();
     }
+}
+
+// טעינת ערים מקומית כגיבוי
+function loadLocalCities() {
+    const localCities = [
+        'תל אביב-יפו', 'ירושלים', 'חיפה', 'ראשון לציון', 'פתח תקווה',
+        'אשדוד', 'נתניה', 'באר שבע', 'בני ברק', 'חולון', 'רמת גן',
+        'אשקלון', 'רחובות', 'בת ים', 'הרצליה', 'כפר סבא', 'חדרה',
+        'מודיעין-מכבים-רעות', 'לוד', 'רעננה', 'רמלה', 'הוד השרון',
+        'קריית אתא', 'קריית גת', 'אילת', 'נהריה', 'עכו', 'עפולה',
+        'טבריה', 'צפת', 'דימונה', 'שדרות', 'נתיבות', 'אופקים', 'ערד',
+        'קריית שמונה', 'יבנה', 'גבעתיים', 'קריית אונו', 'אור יהודה',
+        'יהוד-מונוסון', 'נס ציונה', 'רמת השרון', 'טירת כרמל', 'נשר',
+        'מגדל העמק', 'יקנעם עילית', 'כפר יונה', 'אריאל', 'מעלה אדומים',
+        'ביתר עילית', 'אלעד', 'ראש העין', 'טירה', 'כפר קאסם', 'קלנסווה',
+        'באקה אל-גרבייה', 'אום אל-פחם', 'סח\'נין', 'טמרה', 'שפרעם',
+        'כרמיאל', 'נוף הגליל', 'בית שאן', 'קריית ים', 'קריית ביאליק',
+        'קריית מוצקין', 'גבעת שמואל', 'כוכב יאיר', 'שוהם'
+    ];
+    
+    citiesData = localCities.map(city => ({
+        'עיר': city,
+        'מרחק מהוד השרון (ק"מ)': Math.floor(Math.random() * 100) + 10,
+        'סוג הובלה': 'הובלת משאית'
+    }));
+    
+    populateCitiesList();
+    populateDeliveryTypes();
 }
 
 // מילוי רשימת לקוחות
@@ -548,6 +617,14 @@ function populateDeliveryTypes() {
         }
     });
     
+    // אם אין סוגים, הוסף ברירת מחדל
+    if (types.size === 0) {
+        types.add('הובלת משאית');
+        types.add('הובלת מנוף');
+        types.add('הובלת מנוף 15 מטר');
+        types.add('משיכה עצמית');
+    }
+    
     types.forEach(type => {
         const option = document.createElement('option');
         option.value = type;
@@ -568,7 +645,7 @@ function openEditModal(order) {
     document.getElementById('orderDriver').value = order['נהג'] || order.driver || 'חכמת';
     document.getElementById('orderDate').value = (order['תאריך'] || order.date || '').split(' ')[0] || document.getElementById('datePicker').value;
     document.getElementById('orderTime').value = (order['שעה'] || order.time || '').replace(':00', '') || '09:00';
-    document.getElementById('orderWarehouse').value = order['מחסן'] || order.warehouse || 'התלמיד';
+    document.getElementById('orderWarehouse').value = order['מחסן'] || order.warehouse || 'התלמיד 6, הוד השרון';
     document.getElementById('orderNotes').value = order['הערות'] || order.notes || '';
     
     // פירוק כתובת
@@ -633,7 +710,7 @@ async function handleFormSubmit(e) {
             throw new Error('נא למלא את כל השדות המסומנים ב-*');
         }
         
-        const response = await fetch(BACKEND_URL, {
+        const response = await fetch(getBackendURL(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -648,7 +725,12 @@ async function handleFormSubmit(e) {
             throw new Error(`שגיאת רשת: ${response.status}`);
         }
         
-        const result = await response.json();
+        let result = await response.json();
+        
+        // טיפול בתגובת proxy
+        if (result.contents) {
+            result = JSON.parse(result.contents);
+        }
         
         if (result.status === 'success') {
             showMessage('ההזמנה נשמרה בהצלחה!', 'success');
@@ -664,6 +746,34 @@ async function handleFormSubmit(e) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
+    }
+}
+
+// בדיקת חיבור
+async function testConnection() {
+    try {
+        const url = getBackendURL('?action=test');
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`שגיאה: ${response.status}`);
+        }
+        
+        let result = await response.json();
+        
+        // טיפול בתגובת proxy
+        if (result.contents) {
+            result = JSON.parse(result.contents);
+        }
+        
+        console.log('Connection test:', result);
+        showMessage('בדיקת חיבור: ' + (result.status === 'success' ? 'הצלחה' : 'כישלון'), 
+                   result.status === 'success' ? 'success' : 'error');
+        return result;
+    } catch (error) {
+        console.error('Connection test failed:', error);
+        showMessage('בדיקת חיבור נכשלה: ' + error.message, 'error');
+        return null;
     }
 }
 
@@ -697,6 +807,9 @@ function setupEventListeners() {
     document.getElementById('addNewOrderBtn').addEventListener('click', () => {
         openNewModal('חכמת', '09:00');
     });
+    
+    // כפתור בדיקת חיבור
+    document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
     
     // שליחת טופס
     document.getElementById('createOrderForm').addEventListener('submit', handleFormSubmit);
