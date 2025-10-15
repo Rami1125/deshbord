@@ -50,6 +50,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            margin-bottom: 20px;
         }
         .logo {
             width: 80px;
@@ -80,6 +81,48 @@
             font-weight: 500;
             font-size: 1.2rem;
         }
+        
+        /* New styles for installation guide */
+        .install-instructions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            text-align: right;
+        }
+        .install-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        .install-card h3 {
+            font-size: 1.4rem;
+            color: #2C3E50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .install-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .install-steps li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1rem;
+        }
+        .step-icon {
+            font-size: 1.5rem;
+            color: #4587de;
+            width: 30px;
+            text-align: center;
+        }
+        
         .app-link {
             display: inline-block;
             background-color: #28a745;
@@ -89,7 +132,7 @@
             text-decoration: none;
             font-weight: bold;
             font-size: 1.2rem;
-            margin-top: 20px;
+            margin-top: 30px;
             transition: transform 0.2s;
         }
         .app-link:hover {
@@ -101,7 +144,7 @@
 
     <div class="container">
         <h1>מדריך מהיר לצוות ח.סבן 📋</h1>
-        <p>ברוכים הבאים! כדי שתהיו תמיד מעודכנים, עקבו אחר שני השלבים הפשוטים הבאים.</p>
+        <p>ברוכים הבאים! כדי שתהיו תמיד מעודכנים, עקבו אחר השלבים הפשוטים הבאים.</p>
 
         <div class="step">
             <h2><i class="fas fa-bell"></i> שלב 1: קבלת התראות</h2>
@@ -114,12 +157,56 @@
         </div>
 
         <div class="step">
-            <h2><i class="fas fa-eye"></i> שלב 2: צפייה בסידור</h2>
-            <p>סידור העבודה מתעדכן בזמן אמת. תוכלו לצפות בו בכל רגע דרך הקישור:</p>
+            <h2><i class="fas fa-download"></i> שלב 2: התקנת האפליקציה</h2>
+            <p>כדי שהאפליקציה תהיה זמינה תמיד על מסך הבית, כמו אפליקציה רגילה:</p>
+            
+            <div class="install-instructions">
+                <!-- iOS Instructions -->
+                <div class="install-card">
+                    <h3><i class="fab fa-apple"></i> אייפון (דפדפן ספארי)</h3>
+                    <ol class="install-steps">
+                        <li>
+                            <div class="step-icon"><i class="fas fa-share-square"></i></div>
+                            <span>לחצו על כפתור ה**שיתוף**.</span>
+                        </li>
+                        <li>
+                            <div class="step-icon"><i class="fas fa-plus-square"></i></div>
+                            <span>גללו למטה ובחרו **"הוסף למסך הבית"**.</span>
+                        </li>
+                        <li>
+                            <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                            <span>אשרו את השם ולחצו **"הוסף"**.</span>
+                        </li>
+                    </ol>
+                </div>
+                <!-- Android Instructions -->
+                <div class="install-card">
+                    <h3><i class="fab fa-android"></i> אנדרואיד (דפדפן כרום)</h3>
+                     <ol class="install-steps">
+                        <li>
+                            <div class="step-icon"><i class="fas fa-ellipsis-v"></i></div>
+                            <span>לחצו על **תפריט שלוש הנקודות**.</span>
+                        </li>
+                        <li>
+                            <div class="step-icon"><i class="fas fa-mobile-alt"></i></div>
+                            <span>בחרו **"התקנת אפליקציה"**.</span>
+                        </li>
+                        <li>
+                            <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                            <span>לחצו **"התקן"** לסיום.</span>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+             <h2><i class="fas fa-eye"></i> שלב 3: צפייה בסידור</h2>
+            <p>לאחר ההתקנה, היכנסו לאפליקציה כדי לראות את סידור העבודה שמתעדכן בזמן אמת.</p>
             <a href="https://deshbord.pages.dev/" target="_blank" class="app-link">כניסה לאפליקציה</a>
-            <p style="margin-top: 15px;">מומלץ להתקין את האפליקציה על מסך הבית דרך כפתור ה"התקנה" שנמצא בפנים.</p>
         </div>
     </div>
 
 </body>
 </html>
+
