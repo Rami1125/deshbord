@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#4587de">
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/Kj6sq5f9/RR.jpg">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg">
     <link rel="manifest" href="manifest.json">
 
     <!-- External Libraries & Fonts -->
@@ -710,7 +710,7 @@
     
     <div class="app-container">
         <header class="header">
-            <h1 id="headerTitle">🚛 דוח בוקר</h1>
+            <h1 id="headerTitle">📋 סידור ח.סבן</h1>
         </header>
 
         <main class="main-content">
@@ -1131,13 +1131,13 @@
             document.querySelectorAll(`[data-nav-id="${navId}"]`).forEach(b => b.classList.add('active'));
 
             const titles = {
-                mainPage: '🚛 דוח בוקר',
+                mainPage: '🚛 סידור ח.סבן',
                 schedulePage: '🗓️ סידור עבודה',
                 adminPage: '🛠️ דף ניהול',
                 warehousePage: '📦 מחסן',
                 installPage: '📲 התקנת אפליקציה'
             };
-            document.getElementById('headerTitle').textContent = titles[pageId] || '🚛 דוח בוקר';
+            document.getElementById('headerTitle').textContent = titles[pageId] || '📋 סידור ח.סבן';
 
             if (pageId === 'adminPage') prefillOrderForm();
             if (pageId === 'schedulePage') renderScheduleBoard();
@@ -1302,36 +1302,68 @@
         }
 
         function shareFutureOrders() {
-            const todayDateString = new Date().toLocaleDateString('en-CA');
-            const futureOrders = allOrders.filter(o => o.date && o.date > todayDateString);
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowDateString = tomorrow.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const tomorrowDisplayDate = tomorrow.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            const tomorrowOrders = allOrders.filter(o => o.date === tomorrowDateString);
             
-            if (futureOrders.length === 0) {
-                showAppNotification('לא נמצאו הזמנות לתאריכים עתידיים.', 'info');
+            if (tomorrowOrders.length === 0) {
+                showAppNotification('לא נמצאו הזמנות למחר.', 'info');
                 return;
             }
 
-            const aliFuture = futureOrders.filter(o => o.driver.includes('עלי'));
-            const hakmatFuture = futureOrders.filter(o => o.driver.includes('חכמת'));
+            const ordersByDriver = {};
+            const ordersByType = {};
 
-            const formatOrderLine = (o) => {
-                const dateParts = o.date.split('-');
-                const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-                return `🗓️ ${displayDate} | ⏰ ${o.time || ''} | 👤 ${o.customer || ''} | 📍 ${o.address || ''}\n`;
-            };
+            tomorrowOrders.forEach(order => {
+                const driver = order.driver || "לא משויך";
+                const type = order.operationType || "לא ידוע";
 
-            const formatForWhatsApp = (orders, name) => {
-                if (!orders || orders.length === 0) return `*${name}*\nאין הזמנות עתידיות.`;
-                let msg = `*${name}*\n`;
-                orders.sort((a,b) => new Date(a.date) - new Date(b.date) || parseTimeForSorting(a.time) - parseTimeForSorting(b.time)).forEach(o => {
-                    msg += formatOrderLine(o);
-                });
-                return msg;
-            };
+                if (!ordersByDriver[driver]) {
+                    ordersByDriver[driver] = [];
+                }
+                ordersByDriver[driver].push(order);
 
-            const aliMsg = formatForWhatsApp(aliFuture, "עלי");
-            const hakmatMsg = formatForWhatsApp(hakmatFuture, "חכמת");
-            const fullMessage = `*📋 סיכום הזמנות עתידיות*\n\n${aliMsg}\n\n${hakmatMsg}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
+                if (!ordersByType[type]) {
+                    ordersByType[type] = 0;
+                }
+                ordersByType[type]++;
+            });
+
+            let message = `*🚚 סידור עבודה - ${tomorrowDisplayDate} 📋*\n\n`;
+            message += "שלום מחלקת הזמנות,\nסידור העבודה למחר מוכן לצפייה באפליקציה.\n\n";
+            message += "להלן סיכום ההזמנות:\n\n";
+
+            ['עלי', 'חכמת'].forEach(driverName => {
+                const driverOrders = ordersByDriver[driverName] || [];
+                message += `*נהג: ${driverName}* (${driverOrders.length} הזמנות)\n`;
+                if (driverOrders.length > 0) {
+                    driverOrders
+                        .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time))
+                        .forEach(order => {
+                            message += `⏰ ${order.time} | ${order.customer} | ${order.address}\n`;
+                        });
+                } else {
+                    message += `אין הזמנות למחר.\n`;
+                }
+                message += `\n`;
+            });
+            
+            message += "--------------------\n\n";
+
+            message += "*📊 סיכום לפי סוג פריקה:*\n";
+            for (const type in ordersByType) {
+                message += `• ${type}: ${ordersByType[type]} הזמנות\n`;
+            }
+          
+            message += "\n--------------------\n\n";
+          
+            const appLink = "https://deshbord.pages.dev/";
+            message += `*לצפייה בלוח הסידורים המלא ועדכונים בזמן אמת, היכנסו לאפליקציה:*\n${appLink}`;
+
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
         }
         
         // --- Schedule Board Functionality ---
@@ -1494,7 +1526,7 @@
                     }
                     message += `\n`;
                 });
-                message += `*לצפייה בסידור המלא, לחץ כאן:*\n${appLink}`;
+                message += `*לצפייה בסידור המלא ועדכונים בזמן אמת, היכנסו לאפליקציה:*\n${appLink}`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
             } finally {
                 button.disabled = false;
