@@ -16,7 +16,10 @@
     <!-- External Libraries & Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="httpshttps://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <!-- SortableJS for Drag and Drop functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
 
     <!-- OneSignal SDK for Push Notifications -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -510,6 +513,103 @@
              cursor: pointer;
         }
 
+        /* --- Schedule Page Styles --- */
+        .schedule-board-container {
+            overflow-x: auto; /* Allow horizontal scrolling on mobile */
+            padding-bottom: 10px;
+        }
+        .schedule-board {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr; /* Time column, Ali, Hakmat */
+            gap: 5px;
+            min-width: 600px; /* Ensure columns have minimum width */
+        }
+        .schedule-header, .schedule-time-slot, .schedule-driver-column {
+            padding: 10px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.6);
+        }
+        .schedule-header {
+            background-color: var(--dark-color);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            position: sticky;
+            top: -1px; /* Stick to top during scroll */
+            z-index: 10;
+        }
+        .schedule-time-slot {
+            background-color: #e9ecef;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .schedule-driver-column {
+            min-height: 60px; /* Ensure drop zones are always present */
+            border: 1px dashed #ccc;
+            transition: background-color 0.2s;
+        }
+        .schedule-driver-column.sortable-ghost {
+            background-color: rgba(69, 135, 222, 0.2);
+        }
+
+        .schedule-order-card {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        .schedule-order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .schedule-order-card.ali {
+            border-left-color: var(--primary-color);
+        }
+        .schedule-order-card.hakmat {
+            border-left-color: #1abc9c; /* A different color for Hakmat */
+        }
+        .schedule-order-card p {
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .schedule-order-card strong {
+            font-weight: 500;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-top: 8px;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+        .card-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+        .card-actions button:hover {
+            color: var(--dark-color);
+        }
+        #mapModal iframe {
+            width: 100%;
+            height: 60vh;
+            border: 0;
+            border-radius: 10px;
+        }
+
 
     </style>
 </head>
@@ -549,6 +649,20 @@
             <div id="hakmatPage" class="page-content"></div>
             <div id="aliPage" class="page-content"></div>
             <div id="warehousePage" class="page-content"></div>
+            
+            <!-- NEW: Schedule Page -->
+            <div id="schedulePage" class="page-content">
+                <div class="summary-card" style="margin-bottom: 20px;">
+                    <h3><i class="fas fa-calendar-alt"></i> סידור עבודה יומי</h3>
+                    <p>גרור ושחרר הזמנות כדי לשנות שעה או לשייך לנהג אחר.</p>
+                </div>
+                <div class="schedule-board-container">
+                    <div class="schedule-board" id="scheduleBoard">
+                        <!-- Schedule will be rendered here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Admin Page (Upgraded) -->
             <div id="adminPage" class="page-content">
@@ -599,8 +713,7 @@
         <!-- Bottom Navigation Bar -->
         <nav class="bottom-nav">
              <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button"><i class="fas fa-home"></i><span>ראשי</span></button>
-            <button class="nav-button" data-page-id="hakmatPage" data-nav-id="hakmat-nav-button"><img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="Hakmat" class="button-avatar"><span>חכמת</span></button>
-            <button class="nav-button" data-page-id="aliPage" data-nav-id="ali-nav-button"><img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="Ali" class="button-avatar"><span>עלי</span></button>
+            <button class="nav-button" data-page-id="schedulePage" data-nav-id="schedule-nav-button"><i class="fas fa-calendar-alt"></i><span>סידור</span></button>
             <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
                 <i class="fas fa-boxes"></i><span>מחסן</span>
                 <div class="dropdown-menu">
@@ -655,6 +768,14 @@
             <p id="adminLoginError" style="color: var(--accent-color); display: none; margin-top: 10px;">פרטי התחברות שגויים.</p>
         </div>
     </div>
+    <!-- NEW: Map Modal -->
+    <div id="mapModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal('mapModal')">&times;</button>
+            <h2 id="mapModalTitle">מפת הזמנה</h2>
+            <div id="orderMap"></div>
+        </div>
+    </div>
 
 
     <script>
@@ -672,17 +793,17 @@
         });
         
         // --- DATA AND LOGIC ---
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxXplSfvzeJ1GSOex82iWZM61DohSdXYfQRu8fy4CnBQAHKqLdD0MB4AWzgFTEip0Fu/exec';
+        
         const sheetId = '1T3Q_N-R9YPuJMsfflq8Z9wFMVkiXEa-DxD5GV0WHsck';
         const apiKey = 'AIzaSyBFtr1lU60IdVR1hSlDzGBUHz5gfxk5urI'; // API Key for READ operations only
         const ordersRange = 'כתיבת הזמנה לסידור - Orders!A2:P'; // Single range for all orders
         const WHATSAPP_PASSWORD = "1125";
         const ADMIN_PASSWORD = "1125";
 
-        let allAliOrders = [], allHakmatOrders = [], morningChartInstance = null;
+        let allOrders = [], allAliOrders = [], allHakmatOrders = [], morningChartInstance = null;
         
         async function initializeApp() {
-            const allOrders = await fetchOrdersData();
+            allOrders = await fetchOrdersData();
             
             // Filter orders for each driver based on the 'driver' column (L)
             allAliOrders = allOrders.filter(order => order.driver && order.driver.includes('עלי'));
@@ -707,6 +828,7 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
+                let idCounter = 1;
                 return (data.values || [])
                     .filter(row => row.length > 10 && row[2] && row[10]) // Filter for valid rows (must have customer and time)
                     .map(row => {
@@ -718,7 +840,7 @@
                         const fullAddress = addressParts.join(' ').replace(/ ,$/, '').trim();
 
                         return { 
-                            // Map columns to object properties based on the new structure
+                            id:             idCounter++, // Assign a unique ID for drag-drop
                             customer:       row[2] || 'N/A',         // Column C
                             address:        fullAddress || 'N/A',    // Columns E, F, G
                             operationType:  row[7] || 'N/A',         // Column H
@@ -732,12 +854,7 @@
                     .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
             } catch (error) {
                 console.error("Error fetching data:", error);
-                // Use a more subtle notification instead of a blocking alert
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'position: fixed; top: 10px; left: 10px; right: 10px; background-color: #E74C3C; color: white; padding: 15px; border-radius: 8px; z-index: 10001; text-align: center;';
-                errorDiv.textContent = 'שגיאה בטעינת הנתונים. ייתכן שהמידע המוצג אינו עדכני.';
-                document.body.appendChild(errorDiv);
-                setTimeout(() => errorDiv.remove(), 5000);
+                showAppNotification('שגיאה בטעינת הנתונים. ייתכן שהמידע המוצג אינו עדכני.', 'error');
                 return [];
             }
         }
@@ -825,7 +942,15 @@
             
             document.querySelectorAll(`[data-nav-id="${navId}"]`).forEach(b => b.classList.add('active'));
 
-            document.getElementById('headerTitle').textContent = pageId === 'adminPage' ? '🛠️ דף ניהול' : '🚛 דוח בוקר';
+            const titles = {
+                mainPage: '🚛 דוח בוקר',
+                schedulePage: '🗓️ סידור עבודה',
+                adminPage: '🛠️ דף ניהול',
+                warehousePage: '📦 מחסן',
+                aliPage: 'נהג: עלי',
+                hakmatPage: 'נהג: חכמת'
+            };
+            document.getElementById('headerTitle').textContent = titles[pageId] || '🚛 דוח בוקר';
 
             if(pageId === 'hakmatPage' || pageId === 'aliPage'){
                  const orders = (pageId === 'hakmatPage') ? allHakmatOrders : allAliOrders;
@@ -834,9 +959,11 @@
                  page.innerHTML = `<div class="driver-section-title"><img src="${avatar}" alt="${driverName}" class="driver-avatar">נהג: ${driverName}</div><div id="${driverName}OnlyTimeline" class="timeline-grid"></div>`;
                  renderOrders(orders, `${driverName}OnlyTimeline`, driverName);
             }
-            // New: Prefill form when admin page is activated
             if (pageId === 'adminPage') {
                 prefillOrderForm();
+            }
+            if (pageId === 'schedulePage') {
+                renderScheduleBoard();
             }
         }
 
@@ -863,9 +990,9 @@
                     const type = item.dataset.warehouseType;
                     const page = document.getElementById('warehousePage');
                     activatePageAndNav('warehousePage', 'warehouse-nav-button');
-                    const filtered = [...allAliOrders, ...allHakmatOrders].filter(o => o.warehouse && o.warehouse.includes(type));
+                    const filtered = [...allOrders].filter(o => o.warehouse && o.warehouse.includes(type));
                     page.innerHTML = `<div class="driver-section-title"><i class="fas fa-boxes"></i>מחסן: ${type}</div><div id="warehouseTimeline" class="timeline-grid"></div>`;
-                    renderOrders(filtered, 'warehouseTimeline');
+                    renderOrders(filtered, 'warehouseTimeline'); // No driver class needed
                     document.querySelector('.nav-button.warehouse-button').classList.remove('active');
                 };
             });
@@ -931,19 +1058,16 @@
             }
         }
         
-        // New Function: Prefills the order form with current date and time
         function prefillOrderForm() {
             const now = new Date();
             const dateInput = document.getElementById('orderDate');
             const timeInput = document.getElementById('orderTime');
 
-            // Format date as YYYY-MM-DD for the input
             const year = now.getFullYear();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
             dateInput.value = `${year}-${month}-${day}`;
 
-            // Format time as HH:MM for the input
             const hours = now.getHours().toString().padStart(2, '0');
             const minutes = now.getMinutes().toString().padStart(2, '0');
             timeInput.value = `${hours}:${minutes}`;
@@ -959,12 +1083,11 @@
                 customer: form.orderCustomer.value,
                 address: form.orderAddress.value,
                 warehouse: form.orderWarehouse.value,
-                driver: form.orderDriver.value, // 'ali' or 'hakmat'
+                driver: form.orderDriver.value,
                 status: 'חדשה', 
                 operationType: 'הובלה' 
             };
             
-            // Show loading state on button
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שולח...';
             
@@ -973,19 +1096,17 @@
                 if (success) {
                     showAppNotification('ההזמנה נוצרה ונשלחה התראה בהצלחה!', 'success');
                     form.reset();
-                    prefillOrderForm(); // Re-fill for the next order
-                    initializeApp(); // Refresh data
+                    prefillOrderForm();
+                    await initializeApp(); // Refresh data
                 } else {
                     showAppNotification('שגיאה ביצירת ההזמנה. אנא נסה שוב.', 'error');
                 }
             } finally {
-                // Reset button state
                 button.disabled = false;
                 button.innerHTML = 'צור הזמנה ושלח התראה';
             }
         }
         
-        // Helper for non-blocking notifications
         function showAppNotification(message, type = 'info') {
             const notification = document.createElement('div');
             const backgroundColor = type === 'success' ? '#28a745' : (type === 'error' ? '#E74C3C' : '#4587de');
@@ -999,32 +1120,17 @@
         }
 
         async function saveOrderAndNotify(orderData) {
-            // IMPORTANT: Replace this placeholder with your actual Google Apps Script Web App URL
             const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxXplSfvzeJ1GSOex82iWZM61DohSdXYfQRu8fy4CnBQAHKqLdD0MB4AWzgFTEip0Fu/exec';
-            
             console.log('Sending order to backend:', orderData);
-            
-            if (BACKEND_URL.includes('הדבק כאן')) {
-                showAppNotification('שגיאה: יש להגדיר כתובת שרת בכדי לשמור הזמנות.', 'error');
-                console.error('Backend URL is not configured.');
-                return false;
-            }
 
             try {
-                const response = await fetch(BACKEND_URL, {
+                await fetch(BACKEND_URL, {
                     method: 'POST',
-                    headers: { 
-                      // No Content-Type header needed for this type of request to Apps Script
-                    },
                     body: JSON.stringify(orderData),
-                    mode: 'no-cors' // Use no-cors for simple POST requests to Apps Script
+                    mode: 'no-cors'
                 });
-
-                // With no-cors, we can't read the response, but we assume it was successful.
-                // The actual success/error handling should be managed within the Apps Script.
                 console.log('Request sent to backend.');
                 return true; 
-
             } catch (error) {
                 console.error('Failed to send order to backend:', error);
                 return false;
@@ -1034,7 +1140,7 @@
         function shareTomorrowReport() {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowDateString = tomorrow.toLocaleDateString('en-CA'); // YYYY-MM-DD format for easy comparison
+            const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
             
             const formatDateForComparison = (dateStr) => {
                 if (!dateStr) return null;
@@ -1045,8 +1151,8 @@
                 return dateStr;
             }
 
-            const aliTomorrow = allAliOrders.filter(o => formatDateForComparison(o.date) === tomorrowDateString);
-            const hakmatTomorrow = allHakmatOrders.filter(o => formatDateForComparison(o.date) === tomorrowDateString);
+            const aliTomorrow = allOrders.filter(o => o.driver.includes('עלי') && formatDateForComparison(o.date) === tomorrowDateString);
+            const hakmatTomorrow = allOrders.filter(o => o.driver.includes('חכמת') && formatDateForComparison(o.date) === tomorrowDateString);
             
             if (aliTomorrow.length === 0 && hakmatTomorrow.length === 0) {
                 showAppNotification('לא נמצאו הזמנות למחר.', 'info');
@@ -1055,10 +1161,131 @@
 
             shareToWhatsApp(aliTomorrow, hakmatTomorrow);
         }
+        
+        // --- Schedule Board Functionality ---
+        function renderScheduleBoard() {
+            const board = document.getElementById('scheduleBoard');
+            board.innerHTML = ''; // Clear previous content
+
+            // Create Headers
+            const headers = ['שעה', 'עלי', 'חכמת'];
+            headers.forEach(text => {
+                const header = document.createElement('div');
+                header.className = 'schedule-header';
+                header.textContent = text;
+                board.appendChild(header);
+            });
+
+            // Create Time Slots and Driver Columns
+            for (let hour = 6; hour < 18; hour++) {
+                ['00', '30'].forEach(minute => {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'schedule-time-slot';
+                    timeSlot.textContent = time;
+                    board.appendChild(timeSlot);
+
+                    ['ali', 'hakmat'].forEach(driver => {
+                        const column = document.createElement('div');
+                        column.className = 'schedule-driver-column';
+                        column.dataset.driver = driver;
+                        column.dataset.time = time;
+                        board.appendChild(column);
+                    });
+                });
+            }
+            
+            // Populate orders into the board
+            allOrders.forEach(order => {
+                const driverName = order.driver.includes('עלי') ? 'ali' : (order.driver.includes('חכמת') ? 'hakmat' : null);
+                if (!driverName) return;
+
+                const orderTime = parseOrderTimeForSlot(order.time);
+                const cell = board.querySelector(`.schedule-driver-column[data-driver="${driverName}"][data-time="${orderTime}"]`);
+                if (cell) {
+                    cell.appendChild(createScheduleOrderCard(order));
+                }
+            });
+
+            initSortable();
+        }
+
+        function createScheduleOrderCard(order) {
+            const card = document.createElement('div');
+            const driverClass = order.driver.includes('עלי') ? 'ali' : 'hakmat';
+            card.className = `schedule-order-card ${driverClass}`;
+            card.dataset.orderId = order.id;
+
+            card.innerHTML = `
+                <p><strong><i class="fas fa-user"></i> ${order.customer}</strong></p>
+                <p><i class="fas fa-map-marker-alt"></i> ${order.address}</p>
+                <p><i class="fas fa-warehouse"></i> ${order.warehouse}</p>
+                <div class="card-actions">
+                    <button class="details-btn" title="פרטים נוספים"><i class="fas fa-info-circle"></i></button>
+                    <button class="map-btn" title="הצג מפה"><i class="fas fa-map-marked-alt"></i></button>
+                </div>
+            `;
+            
+            card.querySelector('.details-btn').onclick = (e) => {
+                e.stopPropagation(); // Prevent drag from starting on button click
+                showOrderDetails(order);
+            };
+            card.querySelector('.map-btn').onclick = (e) => {
+                e.stopPropagation();
+                showOrderMap(order);
+            };
+
+            return card;
+        }
+
+        function initSortable() {
+            const columns = document.querySelectorAll('.schedule-driver-column');
+            columns.forEach(col => {
+                new Sortable(col, {
+                    group: 'orders',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: (evt) => {
+                        const orderId = evt.item.dataset.orderId;
+                        const newTime = evt.to.dataset.time;
+                        const newDriverName = evt.to.dataset.driver === 'ali' ? 'עלי' : 'חכמת';
+                        
+                        // Find the order and update its data locally
+                        const movedOrder = allOrders.find(o => o.id == orderId);
+                        if(movedOrder) {
+                           movedOrder.time = newTime;
+                           movedOrder.driver = newDriverName;
+                           console.log(`Order ${orderId} moved to ${newDriverName} at ${newTime}`);
+                           showAppNotification(`הזמנה ${movedOrder.customer} הועברה ל${newDriverName} בשעה ${newTime}`, 'info');
+                           // Here you would typically call a function to save this change to the backend.
+                        }
+                    }
+                });
+            });
+        }
+        
+        function parseOrderTimeForSlot(timeStr) {
+            if (!timeStr || timeStr.toLowerCase().includes('ביחד')) return '07:00'; // Default for "ביחד"
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            if (isNaN(hours) || isNaN(minutes)) return '06:00'; // Default for invalid time
+
+            const roundedMinutes = minutes < 30 ? '00' : '30';
+            return `${String(hours).padStart(2, '0')}:${roundedMinutes}`;
+        }
+        
+        function showOrderMap(order) {
+            if (!order.address || order.address === 'N/A') {
+                showAppNotification('לא קיימת כתובת עבור הזמנה זו.', 'error');
+                return;
+            }
+            const mapUrl = `https://maps.google.com/?q=${encodeURIComponent(order.address)}`;
+            document.getElementById('mapModalTitle').textContent = `מפה - ${order.customer}`;
+            document.getElementById('orderMap').innerHTML = `<iframe src="${mapUrl}"></iframe>`;
+            document.getElementById('mapModal').classList.add('visible');
+        }
 
     </script>
 </body>
 </html>
-
-
 
