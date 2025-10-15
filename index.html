@@ -847,6 +847,7 @@
                         const fullAddress = addressParts.join(' ').replace(/ ,$/, '').trim();
 
                         return { 
+                            id:             row[1] || `temp-${index}`, // Use ID from Column B
                             rowNumber:      index + 2, // The actual row number in the sheet (A2 is row 2)
                             customer:       row[2] || 'N/A',         // Column C
                             address:        fullAddress || 'N/A',    // Columns E, F, G
@@ -1135,7 +1136,7 @@
         }
 
         async function saveOrderAndNotify(orderData) {
-            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyp67xLLvUSf0EZM04N5dqXyCecUDuI-RJeXwemxH9bfgpR7TXETZNu7zxwBRb8c-LA/exec';
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyQxFTsUt1OjT9NY7oj0Pva94yP-kXNKoVJiSCTIVRLguRlZeUZuPpsBb9g-abQlqO0JA/exec';
             console.log('Sending order to backend:', orderData);
 
             try {
@@ -1230,7 +1231,7 @@
             const card = document.createElement('div');
             const driverClass = order.driver.includes('עלי') ? 'ali' : 'hakmat';
             card.className = `schedule-order-card ${driverClass}`;
-            card.dataset.rowNumber = order.rowNumber; // Use row number as ID
+            card.dataset.orderId = order.id; // Use ID from sheet
 
             card.innerHTML = `
                 <p><strong><i class="fas fa-user"></i> ${order.customer}</strong></p>
@@ -1262,27 +1263,27 @@
                     animation: 150,
                     ghostClass: 'sortable-ghost',
                     onEnd: (evt) => {
-                        const rowNumber = evt.item.dataset.rowNumber;
+                        const orderId = evt.item.dataset.orderId;
                         const newTime = evt.to.dataset.time;
                         const newDriverName = evt.to.dataset.driver === 'ali' ? 'עלי' : 'חכמת';
                         
                         // Find the order and update its data locally
-                        const movedOrder = allOrders.find(o => o.rowNumber == rowNumber);
+                        const movedOrder = allOrders.find(o => o.id == orderId);
                         if(movedOrder) {
                            movedOrder.time = newTime;
                            movedOrder.driver = newDriverName;
                            showAppNotification(`מעדכן הזמנה ${movedOrder.customer}...`, 'info');
-                           updateOrderInBackend(rowNumber, newTime, newDriverName);
+                           updateOrderInBackend(orderId, newTime, newDriverName);
                         }
                     }
                 });
             });
         }
         
-        async function updateOrderInBackend(rowNumber, newTime, newDriver) {
+        async function updateOrderInBackend(orderId, newTime, newDriver) {
             const payload = {
                 action: 'updateOrder',
-                rowNumber: parseInt(rowNumber),
+                orderId: orderId,
                 newTime: newTime,
                 newDriver: newDriver
             };
