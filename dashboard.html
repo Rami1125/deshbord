@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול סידור עבודה</title>
+    <title>לוח זמנים - ח.סבן</title>
+    
+    <!-- Scripts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2C3E50">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2C3E50/FFFFFF?text=Work&font=sans">
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+    <script src="onesignal-init.js"></script>
 
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0f8ff">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png">
+    
+    <!-- Fonts & Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-blue: #0066cc;
@@ -19,220 +27,122 @@
             --accent-color: #E74C3C;
             --success-color: #27ae60;
             --warning-color: #f39c12;
+            --text-color: #34495e;
         }
         body {
             font-family: 'Assistant', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            background-color: var(--dark-color);
+            background-color: var(--light-blue);
+            color: var(--text-color);
         }
-        .task-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        .schedule-board {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr; /* Time | Driver 1 | Driver 2 */
+            gap: 8px;
+            padding: 16px;
         }
-        .task-card:hover {
-            transform: translateY(-4px);
-        }
-        .btn-primary {
+        .header-slot {
             background-color: var(--primary-blue);
+            color: var(--white);
+            padding: 12px;
+            text-align: center;
+            font-weight: 700;
+            border-radius: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        .btn-success {
-            background-color: var(--success-color);
+        .time-slot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: 0.9rem;
         }
-        .btn-accent {
-            background-color: var(--accent-color);
+        .order-column {
+            background-color: #e0f0ff;
+            border-radius: 8px;
+            min-height: 80px;
+            padding: 8px;
+            border: 2px dashed #bde0fe;
         }
-        #loading-overlay {
-            transition: opacity 0.3s ease-in-out;
+        .order-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            border-left: 5px solid;
+            cursor: move;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        /* Custom scrollbar for better look */
-        ::-webkit-scrollbar {
-            width: 8px;
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
+        .order-card .customer { font-weight: 700; }
+        .order-card .address { font-size: 0.9em; color: #555; }
+        .order-card.ali { border-left-color: #3b82f6; }
+        .order-card.חכמת { border-left-color: #10b981; }
+        .blinking {
+            animation: blink 1.5s infinite;
+            border-left-color: var(--warning-color);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 10px;
+        @keyframes blink {
+            50% { opacity: 0.7; }
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #c7d2fe;
         }
     </style>
 </head>
-<body class="text-white">
+<body class="bg-gray-50">
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 flex items-center justify-center hidden">
-        <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-    </div>
-
-    <!-- Screen 0: Login -->
-    <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="text-center w-full max-w-sm">
-            <svg class="w-24 h-24 mx-auto mb-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <h1 class="text-4xl font-bold mb-2">סידור עבודה</h1>
-            <p class="text-gray-400 mb-8">התחברות למערכת</p>
-            <div class="space-y-4">
-                <input id="username" type="text" placeholder="שם משתמש" class="w-full bg-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
-                <input id="password" type="password" placeholder="סיסמה" class="w-full bg-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
-                <button onclick="handleLogin()" class="w-full btn-primary text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">
-                    כניסה
-                </button>
-                <p id="login-error" class="text-red-400 h-4"></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Screen 1: Driver Selection (Dashboard) -->
-    <div id="driver-selection-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
-        <!-- Dashboard content here -->
-        <div class="text-center w-full max-w-md">
-             <h1 class="text-4xl font-bold mb-2">לוח בקרה</h1>
-            <p class="text-gray-400 mb-8">בחר נהג להצגת הסידור היומי</p>
-            <div class="space-y-4">
-                <button onclick="showSchedule('חכמת')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
-                    חכמת (מנוף)
-                </button>
-                <button onclick="showSchedule('עלי')" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
-                    עלי (פריקה ידנית)
-                </button>
-                 <button onclick="showSchedule('מנוף')" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-300">
-                    נהג מנוף נוסף
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Screen 2: Schedule View -->
-    <div id="schedule-screen" class="hidden min-h-screen flex flex-col">
-        <header class="bg-gray-800 p-4 shadow-md sticky top-0 z-10">
-             <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <button onclick="showScreen('driver-selection-screen')" class="p-2 rounded-md hover:bg-gray-700 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H3"></path></svg>
-                </button>
-                <div class="text-center">
-                    <h2 id="driver-name-header" class="text-xl font-bold"></h2>
-                    <p id="date-header" class="text-sm text-gray-400"></p>
-                </div>
-                <div class="w-10"></div>
-            </div>
-            <div class="max-w-4xl mx-auto flex items-center justify-between mt-4">
-                <button onclick="changeDate(1)" class="w-1/3 bg-gray-700 hover:bg-gray-600 font-semibold py-2 px-4 rounded-r-lg transition">הבא &larr;</button>
-                <button onclick="setCurrentDateToToday()" class="w-1/3 btn-primary hover:opacity-90 font-bold py-2 px-4 transition">היום</button>
-                <button onclick="changeDate(-1)" class="w-1/3 bg-gray-700 hover:bg-gray-600 font-semibold py-2 px-4 rounded-l-lg transition">&rarr; הקודם</button>
+    <main class="container mx-auto">
+        <header class="p-4 text-center">
+             <img src="https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png" alt="Company Logo" class="w-24 h-24 mx-auto mb-2">
+            <h1 class="text-3xl font-bold text-gray-800">לוח זמנים</h1>
+            <p id="date-header" class="text-gray-500"></p>
+             <div class="flex items-center justify-center mt-4 space-x-2 space-x-reverse">
+                <button onclick="changeDate(1)" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-4 rounded-lg transition">הבא &larr;</button>
+                <button onclick="setCurrentDateToToday()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">היום</button>
+                <button onclick="changeDate(-1)" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-4 rounded-lg transition">&rarr; הקודם</button>
             </div>
         </header>
-        <main id="task-list" class="flex-grow p-4 space-y-4 max-w-4xl mx-auto w-full"></main>
-    </div>
-    
-    <!-- Floating Action Button to Add Order -->
-    <button id="fab-add-order" onclick="openAddOrderModal()" class="hidden fixed bottom-6 left-6 btn-primary text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold z-20">
-        +
-    </button>
 
-    <!-- Modal for adding a new order -->
-    <div id="add-order-modal" class="fixed inset-0 bg-black bg-opacity-70 z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
-            <button onclick="closeAddOrderModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white">
-                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h2 class="text-2xl font-bold mb-4">הוספת הזמנה חדשה</h2>
-            <form id="add-order-form" class="space-y-3">
-                <select name="driver" class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600 focus:outline-none focus:border-blue-500">
-                    <option>חכמת</option>
-                    <option>עלי</option>
-                    <option>מנוף</option>
-                </select>
-                <input type="date" name="date" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
-                <input type="time" name="time" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
-                <input type="text" name="customer" placeholder="לקוח" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
-                <input type="text" name="address" placeholder="כתובת" required class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
-                 <select name="warehouse" class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border-2 border-gray-600">
-                    <option>מחסן 4 החרש</option>
-                    <option>מחסן 1 התלמיד</option>
-                </select>
-                <button type="submit" class="w-full btn-success text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">שמור ושדר</button>
-            </form>
+        <div id="scheduleBoard" class="schedule-board">
+            <!-- Headers will be generated by JS -->
+            <!-- Time slots and order columns will be generated by JS -->
         </div>
-    </div>
-
-
+    </main>
+    
     <script>
-        // --- CONFIGURATION ---
-        // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqdk48j2HOBuicBTjg_Hc58wGlx9GMJdCrhALyVCYRCowjAVmsVGJwObc2ILNslsdpAA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlFsolpyvvyQN90oa1MjJkJoNoxhoxV2Y5VuujNHXxcSRvsOjYLo6JnRhRBscE70OrEA/exec'; 
 
-        // --- STATE MANAGEMENT ---
         let appState = {
-            isLoggedIn: false,
-            currentScreen: 'login-screen',
-            currentDriver: null,
-            currentDate: new Date(),
             orders: [],
-            isLoading: false,
+            currentDate: new Date(),
+            timeSlots: [],
+            drivers: ['עלי', 'חכמת'] // Add more drivers here
         };
 
-        // --- DOM Elements ---
-        const screens = {
-            login: document.getElementById('login-screen'),
-            driverSelection: document.getElementById('driver-selection-screen'),
-            schedule: document.getElementById('schedule-screen'),
-        };
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const driverNameHeader = document.getElementById('driver-name-header');
         const dateHeader = document.getElementById('date-header');
-        const taskList = document.getElementById('task-list');
-        const fab = document.getElementById('fab-add-order');
-        const addOrderModal = document.getElementById('add-order-modal');
-        const addOrderForm = document.getElementById('add-order-form');
-
-        // --- MOCK API (SIMULATION) ---
-        // This function simulates calls to your Google Apps Script backend.
-        // It allows us to build the UI without a live backend.
-        // Once your backend is ready, we will replace `mockApiCall` with a real `fetch` call.
-        async function mockApiCall(body) {
-            console.log("Mock API Call:", body);
-            const { action } = body;
-
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            switch (action) {
-                case 'getOrders':
-                    return {
-                        status: 'success',
-                        data: [
-                            // Using the new data structure with Emojis as keys
-                            { id: 1, "🚛 נהג:": "חכמת", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "08:00", "📦 מחסן:": "החרש", "🧾 סטטוס:": "בטיפול⏳", "🙋‍♂️לקוח": "קובי פרופילים", "🎯כתובת אספקה": "מתן" },
-                            { id: 2, "🚛 נהג:": "עלי", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "09:30", "📦 מחסן:": "התלמיד", "🧾 סטטוס:": "מוכנה✔️", "🙋‍♂️לקוח": "קדם גלעד/הידיד", "🎯כתובת אספקה": "כפר סבא" },
-                            { id: 3, "🚛 נהג:": "עלי", "🗓️ תאריך:": "15/10/2025", "⏰ שעה:": "11:00", "📦 מחסן:": "התלמיד", "🧾 סטטוס:": "בטיפול⏳", "🙋‍♂️לקוח": "זבולון-עדירן/חדד", "🎯כתובת אספקה": "בני דרור" },
-                            { id: 4, "🚛 נהג:": "חכמת", "🗓️ תאריך:": "16/10/2025", "⏰ שעה:": "10:00", "📦 מחסן:": "החרש", "🧾 סטטוס:": "מוכנה✔️", "🙋‍♂️לקוח": "לקוח לדוגמה", "🎯כתובת אספקה": "תל אביב" },
-                        ]
-                    };
-                case 'broadcastOrder':
-                     console.log("Broadcasting order:", body.order);
-                     return {
-                        status: 'success',
-                        data: {
-                            message: 'Data broadcasted successfully (mock)',
-                            broadcastId: `BRC_${Date.now()}`
-                        }
-                     };
-                default:
-                    return { status: 'error', message: 'Unknown action' };
-            }
+        const scheduleBoard = document.getElementById('scheduleBoard');
+        
+        function formatToDDMMYYYY(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
         }
 
-        // --- API-FACING FUNCTIONS ---
         async function apiCall(body) {
-            setLoading(true);
+            // Add a loading indicator later
             try {
-                // When you have the real URL, uncomment the fetch and remove the mockApiCall
-                /*
+                // To use mock data, uncomment the line below and comment out the fetch block
+                // return mockApiCall(body).then(res => res.data);
+
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(body),
@@ -240,8 +150,6 @@
                 });
                 if (!response.ok) throw new Error('Network response was not ok.');
                 const result = await response.json();
-                */
-                const result = await mockApiCall(body); // Using the mock for now
                 
                 if (result.status === 'success') {
                     return result.data;
@@ -252,174 +160,139 @@
                 console.error("API Call failed:", error);
                 alert(`שגיאה בתקשורת עם השרת: ${error.message}`);
                 return null;
-            } finally {
-                setLoading(false);
             }
         }
 
-        // --- UI & LOGIC FUNCTIONS ---
-        function setLoading(isLoading) {
-            appState.isLoading = isLoading;
-            if (isLoading) {
-                loadingOverlay.classList.remove('hidden');
-            } else {
-                loadingOverlay.classList.add('hidden');
-            }
-        }
-        
-        function showScreen(screenId) {
-            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
-            if(screens[screenId]) {
-                 screens[screenId].classList.remove('hidden');
-            } else {
-                // Fallback for dynamically named screens
-                 document.getElementById(screenId).classList.remove('hidden');
-            }
-            appState.currentScreen = screenId;
-
-            // Show FAB only on schedule and dashboard screens
-            if (screenId === 'schedule-screen' || screenId === 'driver-selection-screen') {
-                fab.classList.remove('hidden');
-            } else {
-                fab.classList.add('hidden');
-            }
-        }
-
-        function handleLogin() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorEl = document.getElementById('login-error');
-            
-            // IMPORTANT: This is a simple, insecure, client-side login for demonstration only.
-            // In a real application, authentication should be handled on the server.
-            if (username === 'סידור' && password === 'סבן') {
-                appState.isLoggedIn = true;
-                errorEl.textContent = '';
-                showScreen('driverSelection');
-            } else {
-                errorEl.textContent = 'שם משתמש או סיסמה שגויים';
+        function createTimeSlots(startHour = 6, endHour = 18, interval = 30) {
+            appState.timeSlots = [];
+            for (let hour = startHour; hour < endHour; hour++) {
+                for (let min = 0; min < 60; min += interval) {
+                    const time = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                    appState.timeSlots.push(time);
+                }
             }
         }
         
-        function formatToDDMMYYYY(date) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        async function renderSchedule() {
-            if (!appState.currentDriver) return;
-
-            driverNameHeader.textContent = `סידור לנהג: ${appState.currentDriver}`;
+        function renderScheduleBoard() {
+            scheduleBoard.innerHTML = '';
             dateHeader.textContent = appState.currentDate.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
-            // In a real scenario, we would fetch data for the specific date.
-            // For this mock, we fetch all data and then filter it.
-            const allOrders = await apiCall({ action: 'getOrders' });
-            if (!allOrders) return;
-
-            const currentDateStr = formatToDDMMYYYY(appState.currentDate);
-            const filteredTasks = allOrders.filter(task => {
-                const driverKey = "🚛 נהג:";
-                const dateKey = "🗓️ תאריך:";
-                return task[driverKey] === appState.currentDriver && task[dateKey] === currentDateStr;
+            // 1. Create Headers
+            scheduleBoard.innerHTML += `<div class="header-slot flex items-center justify-center"><img src="https://i.postimg.cc/CLCZVnwS/2-20250623-212344-0001.png" class="w-8 h-8 rounded-full bg-white p-1"></div>`;
+            appState.drivers.forEach(driver => {
+                const avatar = driver === 'עלי' ? "https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" : "https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg";
+                scheduleBoard.innerHTML += `<div class="header-slot flex items-center justify-center gap-2"><img src="${avatar}" class="w-8 h-8 rounded-full">${driver}</div>`;
             });
-            
-            filteredTasks.sort((a, b) => a["⏰ שעה:"].localeCompare(b["⏰ שעה:"]));
 
-            taskList.innerHTML = '';
-            if (filteredTasks.length === 0) {
-                taskList.innerHTML = `<div class="text-center py-16 px-4 text-gray-400">אין משימות להצגה בתאריך זה.</div>`;
-            } else {
-                filteredTasks.forEach(task => {
-                    const status = task["🧾 סטטוס:"];
-                    const statusColor = status.includes('מוכנה') ? 'border-green-500' : 'border-yellow-500';
-                    const taskCard = document.createElement('div');
-                    taskCard.className = `task-card bg-gray-800 p-5 rounded-xl shadow-lg border-r-4 ${statusColor}`;
-                    taskCard.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <div class="text-2xl font-bold text-indigo-400">${task["⏰ שעה:"]}</div>
-                                <div>
-                                    <h3 class="text-lg font-semibold">${task["🙋‍♂️לקוח"]}</h3>
-                                    <p class="text-gray-400">${task["🎯כתובת אספקה"]}</p>
-                                </div>
-                            </div>
-                            <div class="text-sm font-medium">${status}</div>
-                        </div>
-                    `;
-                    taskList.appendChild(taskCard);
+            // 2. Create Time Slots and Columns
+            appState.timeSlots.forEach(time => {
+                // Time cell
+                scheduleBoard.innerHTML += `<div class="time-slot">${time}</div>`;
+                // Driver columns for this time slot
+                appState.drivers.forEach(driver => {
+                     scheduleBoard.innerHTML += `<div class="order-column" data-driver="${driver}" data-time="${time}"></div>`;
                 });
-            }
+            });
+
+            // 3. Populate with Orders
+            populateOrders();
+            // 4. Initialize Drag & Drop
+            initSortable();
         }
 
-        async function showSchedule(driverName) {
-            appState.currentDriver = driverName;
-            await setCurrentDateToToday();
-            showScreen('schedule');
+        function populateOrders() {
+            const currentDateStr = formatToDDMMYYYY(appState.currentDate);
+            const todaysOrders = appState.orders.filter(order => order['🗓️ תאריך:'] === currentDateStr);
+            
+            todaysOrders.forEach(order => {
+                const time = order['⏰ שעה:'];
+                const driver = order['🚛 נהג:'];
+                const column = scheduleBoard.querySelector(`.order-column[data-driver="${driver}"][data-time="${time}"]`);
+                if (column) {
+                    column.appendChild(createOrderCard(order));
+                }
+            });
+        }
+        
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = `order-card ${order['🚛 נהג:']}`;
+            card.dataset.orderId = order.id;
+            
+            if (order['🧾 סטטוס:'].includes('בטיפול')) {
+                card.classList.add('blinking');
+            }
+
+            card.innerHTML = `
+                <div class="customer">${order['🙋‍♂️לקוח']}</div>
+                <div class="address">${order['🎯כתובת אספקה']}</div>
+            `;
+            return card;
+        }
+
+        function initSortable() {
+            const orderColumns = document.querySelectorAll('.order-column');
+            orderColumns.forEach(column => {
+                new Sortable(column, {
+                    group: 'orders',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: async function(evt) {
+                        const orderId = evt.item.dataset.orderId;
+                        const newDriver = evt.to.dataset.driver;
+                        const newTime = evt.to.dataset.time;
+                        
+                        console.log(`Order ${orderId} moved to ${newDriver} at ${newTime}`);
+                        
+                        const result = await apiCall({
+                            action: 'updateOrder',
+                            updateData: { orderId, newDriver, newTime }
+                        });
+
+                        if (result) {
+                            // Update local state to match
+                            const orderIndex = appState.orders.findIndex(o => o.id == orderId);
+                            if (orderIndex !== -1) {
+                                appState.orders[orderIndex]['🚛 נהג:'] = newDriver;
+                                appState.orders[orderIndex]['⏰ שעה:'] = newTime;
+                            }
+                            console.log(result.message);
+                        } else {
+                            // Revert the drag-and-drop if API call fails
+                            console.error("Failed to update order. Reverting view.");
+                            evt.from.appendChild(evt.item);
+                        }
+                    }
+                });
+            });
+        }
+
+        async function fetchDataAndRender() {
+            const allOrders = await apiCall({ action: 'getOrders' });
+            if (allOrders) {
+                appState.orders = allOrders;
+                renderScheduleBoard();
+            }
+        }
+        
+        async function changeDate(days) {
+            appState.currentDate.setDate(appState.currentDate.getDate() + days);
+            // In a real app, you might refetch data for the new date.
+            // For now, we just re-render with existing data.
+            renderScheduleBoard();
         }
 
         async function setCurrentDateToToday() {
             appState.currentDate = new Date();
-            // For demo, set to a date with data
-            appState.currentDate = new Date('2025-10-15');
-            await renderSchedule();
+            renderScheduleBoard();
         }
-
-        async function changeDate(days) {
-            appState.currentDate.setDate(appState.currentDate.getDate() + days);
-            await renderSchedule();
-        }
-
-        function openAddOrderModal() {
-            const dateInput = addOrderForm.querySelector('input[name="date"]');
-            const timeInput = addOrderForm.querySelector('input[name="time"]');
-            
-            // Pre-fill with current date and time
-            const now = new Date();
-            dateInput.value = now.toISOString().split('T')[0];
-            timeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
-            
-            addOrderModal.classList.remove('hidden');
-        }
-        
-        function closeAddOrderModal() {
-            addOrderModal.classList.add('hidden');
-        }
-        
-        addOrderForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(addOrderForm);
-            const order = {
-                driver: formData.get('driver'),
-                date: formData.get('date').split('-').reverse().join('/'), // Format to DD/MM/YYYY
-                time: formData.get('time'),
-                warehouse: formData.get('warehouse'),
-                status: "בטיפול⏳", // Default status
-                customer: formData.get('customer'),
-                address: formData.get('address'),
-                broadcastTo: ['orders', 'morning', formData.get('driver').toLowerCase()]
-            };
-            
-            const result = await apiCall({ action: 'broadcastOrder', order: order });
-            
-            if (result) {
-                alert(`הזמנה שודרה בהצלחה! ID: ${result.broadcastId}`);
-                closeAddOrderModal();
-                // If the new order is for the currently viewed schedule, refresh it
-                if (order.driver === appState.currentDriver && order.date === formatToDDMMYYYY(appState.currentDate)) {
-                    await renderSchedule();
-                }
-            }
-        });
-
 
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            showScreen('login');
+            createTimeSlots();
+            setCurrentDateToToday(); // Sets date and renders
+            fetchDataAndRender();
         });
-
     </script>
 </body>
 </html>
