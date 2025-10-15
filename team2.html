@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>סידור עבודה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* * רקע האפליקציה. מומלץ להשתמש בתמונה עדינה ולא רועשת.
+         * מידות מומלצות: 1920x1080 פיקסלים.
+         * החלף את הלינק הבא בלינק לתמונה שלך.
+         */
+        body { 
+            font-family: 'Rubik', sans-serif; 
+            background-color: #e2e8f0;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+        }
+        .app-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .timeline-slot { min-height: 80px; border-left: 3px solid #cbd5e1; }
+        .order-item { cursor: grab; transition: all 0.2s ease-in-out; }
+        .order-item:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .drop-active { background-color: #93c5fd !important; }
+        .driver-avatar { object-fit: cover; object-position: center; }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: inherit;">
+        <div class="w-full max-w-sm text-center">
+            <img src="https://i.postimg.cc/Yq2N1crt/image.png" alt="לוגו החברה" class="w-32 h-32 rounded-full mx-auto mb-6 shadow-lg">
+            <div class="app-card rounded-xl p-6 shadow-xl">
+                <h1 class="text-2xl font-bold text-slate-800 mb-4">כניסה למערכת</h1>
+                <input type="password" id="password-input" placeholder="הקלד סיסמה" class="w-full text-center p-3 rounded-lg border-2 border-slate-300 focus:border-blue-500 focus:ring-0">
+                <button id="login-button" class="w-full bg-blue-600 text-white font-bold py-3 mt-4 rounded-lg hover:bg-blue-700 transition">כניסה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Content (hidden by default) -->
+    <div id="app-content" class="hidden container mx-auto p-2 md:p-4">
+        <header class="flex items-center justify-between mb-4 p-2">
+            <h1 class="text-3xl font-bold text-slate-900">סידור עבודה</h1>
+            <p id="current-date" class="text-sm font-medium text-slate-600"></p>
+        </header>
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="w-full md:w-1/2">
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">עלי</h2>
+                </div>
+                <div id="ali-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+            <div class="w-full md:w-1/2">
+                 <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">חכמת</h2>
+                </div>
+                <div id="hakmat-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGIR9P_vzrz2-94y7fJSGARN7MV5bBjtWqberpHi5McsrbHQdEopSYdjVjhWkQbGk_2w/exec'; // 👈 הדבק פה את כתובת הסקריפט
+
+        // --- AUTHENTICATION ---
+        document.getElementById('login-button').addEventListener('click', () => {
+            if (document.getElementById('password-input').value === 'סידור') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').classList.remove('hidden');
+                initializeApp();
+            } else {
+                alert('סיסמה שגויה');
+            }
+        });
+
+        // --- APPLICATION LOGIC ---
+        function initializeApp() {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            const aliTimeline = document.getElementById('ali-timeline');
+            const hakmatTimeline = document.getElementById('hakmat-timeline');
+            for (let hour = 6; hour < 20; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    aliTimeline.appendChild(createTimelineSlot(time));
+                    hakmatTimeline.appendChild(createTimelineSlot(time));
+                }
+            }
+            loadAndPlaceOrders();
+        }
+
+        function createTimelineSlot(time) {
+            const slot = document.createElement('div');
+            slot.className = 'timeline-slot p-2 flex';
+            slot.dataset.time = time;
+            slot.innerHTML = `<div class="w-12 text-xs text-slate-500 pt-1">${time}</div><div class="flex-1 min-h-[40px]"></div>`;
+            
+            slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drop-active'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drop-active'));
+            slot.addEventListener('drop', handleDrop);
+            
+            return slot;
+        }
+
+        async function loadAndPlaceOrders() {
+            try {
+                const data = await runGAS({action: 'getTeamData'});
+                placeOrders(data.aliOrders, 'ali-timeline');
+                placeOrders(data.hakmatOrders, 'hakmat-timeline');
+            } catch (error) { alert(`שגיאה בטעינת הזמנות: ${error.message}`); }
+        }
+        
+        function placeOrders(orders, timelineId) {
+            orders.forEach(order => {
+                if (!order.time) return;
+                const orderTime = String(order.time).substring(0, 5);
+                const targetSlot = document.querySelector(`#${timelineId} [data-time="${orderTime}"] > div:last-child`);
+                if (targetSlot) {
+                    targetSlot.appendChild(createOrderCard(order));
+                }
+            });
+        }
+        
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-item bg-white rounded-lg p-3 shadow-md border-l-4 border-blue-500';
+            card.draggable = true;
+            card.dataset.orderId = order.id;
+            card.innerHTML = `<h4 class="font-bold text-slate-800">${order.customer}</h4><p class="text-sm text-slate-600">${order.street} ${order.street_number || ''}, ${order.city}</p>`;
+            card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', order.id); });
+            return card;
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            const slot = e.currentTarget;
+            slot.classList.remove('drop-active');
+            
+            const enteredPassword = prompt("נא להזין סיסמה לביצוע השינוי:");
+            if (enteredPassword !== '1125') {
+                if(enteredPassword) alert('סיסמה שגויה. הפעולה בוטלה.');
+                return;
+            }
+            
+            const orderId = e.dataTransfer.getData('text/plain');
+            const newTime = slot.dataset.time;
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+
+            if (orderCard && newTime) {
+                slot.querySelector('div:last-child').appendChild(orderCard);
+                try {
+                    await runGAS({action: 'updateOrderTime', payload: { orderId, newTime }});
+                } catch (error) { alert(`שגיאה בעדכון השעה: ${error.message}`); }
+            }
+        }
+        
+        function runGAS(params) {
+             return new Promise((resolve, reject) => {
+                const options = { method: 'POST', body: JSON.stringify(params), headers: { 'Content-Type': 'application/json' } };
+                fetch(SCRIPT_URL, options)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === 'success') resolve(response.data);
+                        else reject(new Error(response.message));
+                    })
+                    .catch(error => reject(error));
+             });
+        }
+    </script>
+</body>
+</html>
+
