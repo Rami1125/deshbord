@@ -78,7 +78,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://i.postimg.cc/c4k035Yr/Designer-2.jpg');
+            background-image: url('https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -617,7 +617,7 @@
     
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="https://i.postimg.cc/2jQvCKxs/Screenshot-20250508-230911-Gallery.jpg" alt="Logo">
+        <img src="https://i.postimg.cc/Yq2N1crt/image.png" alt="Logo">
         <div class="spinner"></div>
     </div>
     
@@ -828,10 +828,14 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
-                let idCounter = 1;
+                
                 return (data.values || [])
-                    .filter(row => row.length > 10 && row[2] && row[10]) // Filter for valid rows (must have customer and time)
-                    .map(row => {
+                    .map((row, index) => {
+                        // Filter for valid rows (must have customer and time)
+                        if (row.length <= 10 || !row[2] || !row[10]) {
+                            return null;
+                        }
+
                         // Construct full address from parts, handling empty values
                         const street = row[4] || '';
                         const streetNumber = row[5] || '';
@@ -840,7 +844,7 @@
                         const fullAddress = addressParts.join(' ').replace(/ ,$/, '').trim();
 
                         return { 
-                            id:             idCounter++, // Assign a unique ID for drag-drop
+                            rowNumber:      index + 2, // The actual row number in the sheet (A2 is row 2)
                             customer:       row[2] || 'N/A',         // Column C
                             address:        fullAddress || 'N/A',    // Columns E, F, G
                             operationType:  row[7] || 'N/A',         // Column H
@@ -851,6 +855,7 @@
                             status:         row[15] || 'חדשה'      // Column P
                         };
                     })
+                    .filter(order => order !== null) // Remove invalid rows
                     .sort((a, b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -996,6 +1001,12 @@
                     document.querySelector('.nav-button.warehouse-button').classList.remove('active');
                 };
             });
+            
+            // Add listener for the new share button on the schedule page
+            const shareScheduleBtn = document.getElementById('shareScheduleBtn');
+            if(shareScheduleBtn) {
+                shareScheduleBtn.addEventListener('click', handleShareAndNotify);
+            }
         }
         
         function showOrderDetails(order) {
@@ -1078,6 +1089,7 @@
             const form = event.target;
             const button = document.getElementById('createOrderBtn');
             const orderData = {
+                action: 'createOrder', // Specify the action for the backend
                 date: form.orderDate.value,
                 time: form.orderTime.value,
                 customer: form.orderCustomer.value,
@@ -1215,7 +1227,7 @@
             const card = document.createElement('div');
             const driverClass = order.driver.includes('עלי') ? 'ali' : 'hakmat';
             card.className = `schedule-order-card ${driverClass}`;
-            card.dataset.orderId = order.id;
+            card.dataset.rowNumber = order.rowNumber; // Use row number as ID
 
             card.innerHTML = `
                 <p><strong><i class="fas fa-user"></i> ${order.customer}</strong></p>
@@ -1247,22 +1259,38 @@
                     animation: 150,
                     ghostClass: 'sortable-ghost',
                     onEnd: (evt) => {
-                        const orderId = evt.item.dataset.orderId;
+                        const rowNumber = evt.item.dataset.rowNumber;
                         const newTime = evt.to.dataset.time;
                         const newDriverName = evt.to.dataset.driver === 'ali' ? 'עלי' : 'חכמת';
                         
                         // Find the order and update its data locally
-                        const movedOrder = allOrders.find(o => o.id == orderId);
+                        const movedOrder = allOrders.find(o => o.rowNumber == rowNumber);
                         if(movedOrder) {
                            movedOrder.time = newTime;
                            movedOrder.driver = newDriverName;
-                           console.log(`Order ${orderId} moved to ${newDriverName} at ${newTime}`);
-                           showAppNotification(`הזמנה ${movedOrder.customer} הועברה ל${newDriverName} בשעה ${newTime}`, 'info');
-                           // Here you would typically call a function to save this change to the backend.
+                           showAppNotification(`מעדכן הזמנה ${movedOrder.customer}...`, 'info');
+                           updateOrderInBackend(rowNumber, newTime, newDriverName);
                         }
                     }
                 });
             });
+        }
+        
+        async function updateOrderInBackend(rowNumber, newTime, newDriver) {
+            const payload = {
+                action: 'updateOrder',
+                rowNumber: parseInt(rowNumber),
+                newTime: newTime,
+                newDriver: newDriver
+            };
+            const success = await saveOrderAndNotify(payload);
+            if(success) {
+                showAppNotification('הסידור עודכן בהצלחה!', 'success');
+            } else {
+                showAppNotification('שגיאה בעדכון הסידור.', 'error');
+                // Optional: revert the change in the UI if the backend fails
+                initializeApp(); 
+            }
         }
         
         function parseOrderTimeForSlot(timeStr) {
@@ -1279,10 +1307,59 @@
                 showAppNotification('לא קיימת כתובת עבור הזמנה זו.', 'error');
                 return;
             }
-            const mapUrl = `https://maps.google.com/?q=${encodeURIComponent(order.address)}`;
+            // Use the Google Maps embed URL to avoid X-Frame-Options issues
+            const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(order.address)}&output=embed`;
             document.getElementById('mapModalTitle').textContent = `מפה - ${order.customer}`;
             document.getElementById('orderMap').innerHTML = `<iframe src="${mapUrl}"></iframe>`;
             document.getElementById('mapModal').classList.add('visible');
+        }
+
+        async function handleShareAndNotify(event) {
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שולח...';
+
+            try {
+                // 1. Send Push Notification via Backend
+                showAppNotification('שולח התראה לכל המשתמשים...', 'info');
+                const notifySuccess = await saveOrderAndNotify({ action: 'sendNotification' });
+                if (notifySuccess) {
+                    showAppNotification('ההתראה נשלחה בהצלחה!', 'success');
+                } else {
+                    showAppNotification('שגיאה בשליחת ההתראה.', 'error');
+                }
+
+                // 2. Format and open WhatsApp
+                const appLink = "https://deshbord.pages.dev/";
+                let message = `*📋 סידור עבודה יומי עודכן*\n\n`;
+                message += `*נהג: עלי*\n`;
+                const aliScheduledOrders = allOrders.filter(o => o.driver.includes('עלי')).sort((a,b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                if (aliScheduledOrders.length > 0) {
+                    aliScheduledOrders.forEach(o => {
+                        message += `⏰ ${o.time} | 👤 ${o.customer} | 📍 ${o.address}\n`;
+                    });
+                } else {
+                    message += `אין הזמנות משויכות.\n`;
+                }
+                
+                message += `\n*נהג: חכמת*\n`;
+                const hakmatScheduledOrders = allOrders.filter(o => o.driver.includes('חכמת')).sort((a,b) => parseTimeForSorting(a.time) - parseTimeForSorting(b.time));
+                if (hakmatScheduledOrders.length > 0) {
+                    hakmatScheduledOrders.forEach(o => {
+                        message += `⏰ ${o.time} | 👤 ${o.customer} | 📍 ${o.address}\n`;
+                    });
+                } else {
+                    message += `אין הזמנות משויכות.\n`;
+                }
+
+                message += `\n\n*לצפייה בסידור המלא, לחץ כאן:*\n${appLink}`;
+
+                window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-paper-plane"></i> שלח דוח סופי';
+            }
         }
 
     </script>
