@@ -609,6 +609,47 @@
             border: 0;
             border-radius: 10px;
         }
+        
+        /* --- Install Page Styles --- */
+        #installPage h2 {
+            color: var(--dark-color);
+        }
+        .install-instructions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            text-align: right;
+        }
+        .install-card {
+            background: var(--glass-bg);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .install-card h3 {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .install-steps {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+        .install-steps li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1rem;
+        }
+        .step-icon {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+            width: 40px;
+            text-align: center;
+        }
 
 
     </style>
@@ -650,7 +691,7 @@
             <div id="aliPage" class="page-content"></div>
             <div id="warehousePage" class="page-content"></div>
             
-            <!-- NEW: Schedule Page -->
+            <!-- Schedule Page -->
             <div id="schedulePage" class="page-content">
                 <div class="summary-card" style="margin-bottom: 20px;">
                     <h3><i class="fas fa-calendar-alt"></i> סידור עבודה יומי</h3>
@@ -711,11 +752,55 @@
                      <button onclick="shareTomorrowReport()"><i class="fab fa-whatsapp"></i> שתף דוח למחר</button>
                 </div>
             </div>
+            
+            <!-- NEW: Install Page -->
+            <div id="installPage" class="page-content">
+                <h2><i class="fas fa-download"></i> התקנת האפליקציה</h2>
+                <div class="install-instructions">
+                    <!-- iOS Instructions -->
+                    <div class="install-card">
+                        <h3><i class="fab fa-apple"></i> אייפון (דפדפן ספארי)</h3>
+                        <ol class="install-steps">
+                            <li>
+                                <div class="step-icon"><i class="fas fa-share-square"></i></div>
+                                <span>לחץ על כפתור ה**שיתוף** בסרגל התחתון.</span>
+                            </li>
+                            <li>
+                                <div class="step-icon"><i class="fas fa-plus-square"></i></div>
+                                <span>גלול למטה ובחר באפשרות **"הוסף למסך הבית"**.</span>
+                            </li>
+                            <li>
+                                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                                <span>אשר את השם ולחץ **"הוסף"** בפינה השמאלית למעלה.</span>
+                            </li>
+                        </ol>
+                    </div>
+                    <!-- Android Instructions -->
+                    <div class="install-card">
+                        <h3><i class="fab fa-android"></i> אנדרואיד (דפדפן כרום)</h3>
+                         <ol class="install-steps">
+                            <li>
+                                <div class="step-icon"><i class="fas fa-ellipsis-v"></i></div>
+                                <span>לחץ על **תפריט שלוש הנקודות** בפינה השמאלית למעלה.</span>
+                            </li>
+                            <li>
+                                <div class="step-icon"><i class="fas fa-mobile-alt"></i></div>
+                                <span>בחר באפשרות **"התקנת אפליקציה"** (או "הוסף למסך הבית").</span>
+                            </li>
+                            <li>
+                                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                                <span>לחץ **"התקן"** כדי לסיים את הפעולה.</span>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
         </main>
         
         <!-- Bottom Navigation Bar -->
         <nav class="bottom-nav">
-             <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button"><i class="fas fa-home"></i><span>ראשי</span></button>
+            <button class="nav-button active" data-page-id="mainPage" data-nav-id="main-nav-button"><i class="fas fa-home"></i><span>ראשי</span></button>
             <button class="nav-button" data-page-id="schedulePage" data-nav-id="schedule-nav-button"><i class="fas fa-calendar-alt"></i><span>סידור</span></button>
             <button class="nav-button warehouse-button" data-nav-id="warehouse-nav-button">
                 <i class="fas fa-boxes"></i><span>מחסן</span>
@@ -725,6 +810,7 @@
                 </div>
             </button>
             <button class="nav-button" data-page-id="adminPage" data-nav-id="admin-nav-button"><i class="fas fa-user-shield"></i><span>ניהול</span></button>
+            <button class="nav-button" data-page-id="installPage" data-nav-id="install-nav-button"><i class="fas fa-download"></i><span>התקנה</span></button>
         </nav>
     </div>
 
@@ -957,7 +1043,8 @@
                 adminPage: '🛠️ דף ניהול',
                 warehousePage: '📦 מחסן',
                 aliPage: 'נהג: עלי',
-                hakmatPage: 'נהג: חכמת'
+                hakmatPage: 'נהג: חכמת',
+                installPage: '📲 התקנת אפליקציה'
             };
             document.getElementById('headerTitle').textContent = titles[pageId] || '🚛 דוח בוקר';
 
@@ -1369,4 +1456,3 @@
     </script>
 </body>
 </html>
-
