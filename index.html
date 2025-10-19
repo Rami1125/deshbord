@@ -277,21 +277,7 @@
 
     </style>
 </head>
-<!-- OneSignal SDK for Push Notifications -->				
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>				
-<script>				
-window.OneSignalDeferred = window.OneSignalDeferred || [];				
-OneSignalDeferred.push(async function(OneSignal) {				
-await OneSignal.init({				
-appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",				
-safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",				
-notifyButton: {				
-enable: true,				
-},				
-});				
-});				
-</script>			
-    <body>
+<body>
     <div class="app-container">
         <header class="app-header">
             <h1>📋 סידור עבודה</h1>
@@ -351,9 +337,19 @@ enable: true,
         const WHATSAPP_PASSWORD = "1234";
 
         const driverInfo = {
-            'עלי': { img: 'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg' },
-            'חכמת': { img: 'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg' }
+            'עלי': { img: 'https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg', avatar: '👨‍🚀' },
+            'חכמת': { img: 'https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg', avatar: '👨‍✈️' }
         };
+        
+        const deliveryTypeEmojis = {
+            "הובלת מנוף": "🏗️",
+            "הובלת משאית": "🚚",
+            "איסוף בלות פסולת": "♻️",
+            "משיכה עצמית": "🙋‍♂️",
+            "מוביל חיצוני": "🚛",
+            "default": "📦"
+        };
+
 
         const warehouseLocations = {
             'החרש': { lat: 32.0553, lng: 34.7852 }, // Approx. HaHarash, Tel Aviv
@@ -619,12 +615,12 @@ enable: true,
                             }
                         }, 100);
                     } else {
-                         mapContainer.innerHTML = `<div style="text-align: center; padding-top: 80px; color: #555;">קואורדינטות לא תקינות</div>`;
+                         mapContainer.innerHTML = `<div style="text-align: center; padding-top: 80px; color: #555;">קואורדינטות לא תקינות.</div>`;
                     }
                 } else {
                     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`;
                     mapContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: #555;">
-                        מיקום לא זמין במפה.<br>
+                        קואורדינטות לא סופקו. נסה לפתוח ב-Google Maps.<br><br>
                         <strong>${order.address || 'לא צוינה כתובת'}</strong><br><br>
                         <a href="${googleMapsLink}" target="_blank" style="color: var(--secondary-color); text-decoration: none; font-weight: 500;">פתח ב-Google Maps <i class="fas fa-external-link-alt"></i></a>
                     </div>`;
@@ -641,7 +637,6 @@ enable: true,
             btn.disabled = true;
 
             try {
-                // Fetch tomorrow's orders
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 const tomorrowStr = tomorrow.toISOString().split('T')[0];
@@ -653,7 +648,6 @@ enable: true,
                     return;
                 }
                 
-                // Group by driver
                 const ordersByDriver = tomorrowOrders.reduce((acc, order) => {
                     const driver = order.driverId || 'לא משויך';
                     if (!acc[driver]) acc[driver] = [];
@@ -661,17 +655,42 @@ enable: true,
                     return acc;
                 }, {});
 
-                // Build message
-                let message = `*דוח בוקר למחר* 📋\n\n`;
+                // --- Build Thematic Message ---
+                let message = `*דוח בוקר למחר* 📋\n`;
+                message += `*🗓️ ${tomorrow.toLocaleDateString('he-IL')}*\n`;
+                message += `═════════════════\n\n`;
                 
-                const sortedDrivers = Object.keys(ordersByDriver).sort();
-
-                for(const driver of sortedDrivers) {
+                // --- Summary Section ---
+                message += `*סיכום מנהלים:* 📊\n`;
+                const sortedDriversForSummary = Object.keys(ordersByDriver).sort();
+                
+                for(const driver of sortedDriversForSummary) {
                     const orders = ordersByDriver[driver];
+                    const avatar = driverInfo[driver]?.avatar || '👤';
+                    message += `${avatar} *${driver}:* ${orders.length} הזמנות\n`;
+
+                    const typesCount = orders.reduce((acc, order) => {
+                        const type = order.deliveryType || 'לא ידוע';
+                        acc[type] = (acc[type] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    for (const type in typesCount) {
+                        message += `  - ${type}: ${typesCount[type]}\n`;
+                    }
+                }
+                message += `\n═════════════════\n\n`;
+
+                // --- Detailed Orders Section ---
+                for(const driver of sortedDriversForSummary) {
+                    const orders = ordersByDriver[driver];
+                    const avatar = driverInfo[driver]?.avatar || '👤';
                     orders.sort((a, b) => (a.orderTime || "00:00").localeCompare(b.orderTime || "00:00"));
-                    message += `*נהג: ${driver}* (${orders.length} הזמנות)\n`;
+                    
+                    message += `*${avatar} נהג: ${driver}*\n`;
                     orders.forEach(o => {
-                        message += `⏰ ${o.orderTime || ''} | 👤 ${o.customerName || ''} | 📍 ${o.address || ''}\n`;
+                        const emoji = deliveryTypeEmojis[o.deliveryType] || deliveryTypeEmojis['default'];
+                        message += `${emoji} *${o.orderTime || ''}* | ${o.customerName || ''} | ${o.address || ''}\n`;
                     });
                     message += '\n';
                 }
@@ -680,7 +699,7 @@ enable: true,
                 message += `*לצפייה בסידור המלא ועדכונים בזמן אמת, היכנסו לאפליקציה:*\n`;
                 message += window.location.href;
 
-                // Create WhatsApp link and open it
+                // --- Open WhatsApp ---
                 const phoneNumber = '972508860896';
                 const encodedMessage = encodeURIComponent(message);
                 const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
