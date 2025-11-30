@@ -9,12 +9,12 @@
   "description": "אפליקציה לניהול דוחות בוקר וסידור עבודה.",
   "icons": [
     {
-      "src": "https://i.postimg.cc/Kj6sq5f9/RR.jpg",
+      "src": "https://i.postimg.cc/kMcQGN8g/icon.png",
       "sizes": "192x192",
       "type": "image/jpeg"
     },
     {
-      "src": "hhttps://i.postimg.cc/Kj6sq5f9/RR.jpg",
+      "src": "https://i.postimg.cc/kMcQGN8g/icon.png",
       "sizes": "512x512",
       "type": "image/jpeg"
     }
