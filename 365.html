@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אפיון מערכת תעודה חיה 2026 - M365 & Comax</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --m365-blue: #0078d4;
+            --teams-purple: #6264a7;
+            --comax-orange: #ff6600;
+            --success-green: #107c10;
+            --danger-red: #d83b01;
+            --warning-yellow: #ffb900;
+            --bg-light: #f3f2f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-light);
+            margin: 0;
+            padding: 0;
+            color: #323130;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logos img { height: 40px; margin-left: 20px; }
+
+        .container { padding: 25px; max-width: 1100px; margin: auto; }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            border: 1px solid #e1dfdd;
+        }
+
+        /* עץ הדרך - Visual Flow */
+        .flow-tree {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            margin: 40px 0;
+            padding: 20px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+            width: 18%;
+        }
+
+        .step-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid var(--m365-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: var(--m365-blue);
+            margin-bottom: 10px;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .flow-step.active .step-circle {
+            background: var(--m365-blue);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .flow-line {
+            position: absolute;
+            top: 30px;
+            left: 5%;
+            right: 5%;
+            height: 4px;
+            background: #edebe9;
+            z-index: 1;
+        }
+
+        .flow-line-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--success-green);
+            width: 75%; /* Simulation progress */
+        }
+
+        .arrow-indicator {
+            position: absolute;
+            right: -25px;
+            top: 15px;
+            color: #8a8886;
+            font-size: 1.2em;
+        }
+
+        /* Mobile Notification Simulation */
+        .mobile-frame {
+            background: #111;
+            width: 320px;
+            border-radius: 30px;
+            padding: 15px;
+            margin: 20px auto;
+            border: 8px solid #333;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .teams-alert {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-right: 5px solid var(--teams-purple);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Comparison Table */
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .comp-table th, .comp-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #edebe9;
+        }
+
+        .comp-table th { background: #faf9f8; color: #605e5c; }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .bg-success { background: #dff6dd; color: var(--success-green); }
+        .bg-warning { background: #fff4ce; color: #856404; }
+        .bg-danger { background: #fde7e9; color: var(--danger-red); }
+
+        .btn-live {
+            background: var(--m365-blue);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 4px 10px rgba(0, 120, 212, 0.3);
+        }
+
+        .client-simulation {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .client-card {
+            min-width: 200px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .status-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logos">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1024px-Microsoft_logo.svg.png" alt="M365">
+        <img src="https://via.placeholder.com/100x40?text=COMAX" alt="Comax">
+    </div>
+    <div style="text-align: left;">
+        <strong>סידור 24/7 - ינואר 2026</strong><br>
+        <span style="color: var(--m365-blue); font-size: 0.8em;">הראל & ורד - תעודה חיה</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- הצגת המטרה: מ-24 שעות לשעה אחת -->
+    <div class="card" style="background: linear-gradient(135deg, #0078d4, #005a9e); color: white;">
+        <h2 style="margin-top:0;"><i class="fas fa-history"></i> יעד ינואר: קיצור זמן תגובה</h2>
+        <div style="display: flex; justify-content: space-around; align-items: center; text-align: center;">
+            <div>
+                <div style="font-size: 0.9em; opacity: 0.8;">שיטה ישנה (נייר/PDF)</div>
+                <div style="font-size: 2.5em; font-weight: 900;">24 ש'</div>
+            </div>
+            <i class="fas fa-long-arrow-alt-left" style="font-size: 2em;"></i>
+            <div>
+                <div style="font-size: 0.9em; opacity: 0.8;">שיטת 365 (תעודה חיה)</div>
+                <div style="font-size: 2.5em; font-weight: 900; color: #dff6dd;">1 ש'</div>
+            </div>
+        </div>
+        <p style="margin-top: 15px; font-size: 0.95em; text-align: center;">
+            ברגע שגליה מעלה נתון - המערכת מתעוררת. אין צורך להדפיס, אין צורך לחפש.
+        </p>
+    </div>
+
+    <!-- עץ הדרך הויזואלי -->
+    <div class="card">
+        <h3><i class="fas fa-sitemap"></i> עץ הדרך: מסע התעודה של "חכמת לב"</h3>
+        <div class="flow-tree">
+            <div class="flow-line">
+                <div class="flow-line-progress"></div>
+            </div>
+            
+            <div class="flow-step active">
+                <div class="step-circle"><i class="fas fa-clock"></i></div>
+                <div><strong>חכמת לב</strong><br><small>הגעה: 07:30</small></div>
+            </div>
+
+            <div class="flow-step active">
+                <div class="step-circle"><i class="fas fa-mobile-alt"></i></div>
+                <div><strong>גליה</strong><br><small>סריקה: 07:45</small></div>
+            </div>
+
+            <div class="flow-step active">
+                <div class="step-circle" style="border-color: var(--teams-purple);"><i class="fas fa-user-edit"></i></div>
+                <div><strong>ראמי</strong><br><small>בדיקה: 08:00</small></div>
+            </div>
+
+            <div class="flow-step active">
+                <div class="step-circle" style="border-color: var(--warning-yellow);"><i class="fas fa-bell"></i></div>
+                <div><strong>התראה</strong><br><small>בנייד של הראל</small></div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-circle" style="border-color: var(--success-green);"><i class="fas fa-file-invoice"></i></div>
+                <div><strong>לינה</strong><br><small>חשבונית בקליק</small></div>
+            </div>
+        </div>
+
+        <!-- סימולציית הערה של ראמי -->
+        <div style="background: #fff4ce; padding: 15px; border-radius: 10px; border-right: 6px solid var(--warning-yellow); margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong><i class="fas fa-comment-dots"></i> עדכון חי מראמי לסידור:</strong>
+                <span class="badge bg-warning">שורות 2/3 תוקנו ידנית</span>
+            </div>
+            <p style="margin: 5px 0 0 0; font-size: 0.9em;">
+                "הראל, שים לב - בוצע תיקון שורות עקב חריגת משקל. שעות מנוף עודכנו ל-2.5 שעות."
+            </p>
+        </div>
+    </div>
+
+    <!-- סימולציית מובייל להראל -->
+    <div class="card">
+        <h3><i class="fas fa-phone-square-alt"></i> איך הראל רואה את זה ב-Teams</h3>
+        <p>אין יותר "לא קיבלתי" - ההתראה קופצת כל 15 דקות אם התעודה לא טופלה.</p>
+        <div class="mobile-frame">
+            <div style="height: 20px; text-align: center; color: white; font-size: 0.6em; margin-bottom: 10px;">08:02</div>
+            <div class="teams-alert">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75em; margin-bottom: 5px;">
+                    <strong>Teams</strong>
+                    <i class="fab fa-microsoft" style="color: var(--teams-purple);"></i>
+                </div>
+                <strong style="color: var(--teams-purple);">גליה שלחה תעודה: חכמת לב</strong><br>
+                <small>ראמי עדכן: "חריגת משקל בשורות 2/3 תוקנה"</small>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button style="background: var(--m365-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7em; font-weight: bold; cursor: pointer;">צפה בתעודה</button>
+                    <button style="background: #eee; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7em; font-weight: bold;">אשר לסריקה</button>
+                </div>
+            </div>
+            <div class="teams-alert" style="opacity: 0.7;">
+                <small>התראה קודמת (07:45): תעודה חדשה מחכה לבדיקה...</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- טופס גליה - ה-Entity הדיגיטלי -->
+    <div class="card">
+        <h3><i class="fas fa-keyboard"></i> תחילת הזרמת הנתונים - טופס גליה</h3>
+        <p>גליה מקלידה רק פעם אחת - והמידע זורם לכל הצוות.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: #f9f9f9; padding: 20px; border-radius: 10px;">
+            <div><label style="font-size: 0.8em; font-weight: bold;">מספר לקוח</label><div style="padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">10550</div></div>
+            <div><label style="font-size: 0.8em; font-weight: bold;">שם לקוח</label><div style="padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">חכמת לב</div></div>
+            <div><label style="font-size: 0.8em; font-weight: bold;">מספר תעודה</label><div style="padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">88290</div></div>
+            <div><label style="font-size: 0.8em; font-weight: bold;">נהג</label><div style="padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">אבי כהן</div></div>
+            <div style="grid-column: 1 / -1;">
+                <label style="font-size: 0.8em; font-weight: bold;">סטטוס לניהול (ראמי/הראל)</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <span class="badge bg-success">מאושר לסריקה</span>
+                    <span class="badge bg-danger">הוחזר לבירור</span>
+                    <span class="badge bg-warning">טעות בפריט</span>
+                    <span class="badge bg-warning">חריגת מנוף</span>
+                    <span class="badge" style="background: #e1dfdd;">הועבר לרכש</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- למה קומקס + 365 זה השילוב המנצח? -->
+    <div class="card">
+        <h3><i class="fas fa-layer-group"></i> השילוב המנצח: Comax & Microsoft 365</h3>
+        <table class="comp-table">
+            <thead>
+                <tr>
+                    <th>המערכת</th>
+                    <th>התפקיד שלה</th>
+                    <th>התועלת להראל וורד</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>COMAX</strong></td>
+                    <td>חשבונאות, מק"ט, חיובים</td>
+                    <td>דיוק מקסימלי בכסף ובמלאי</td>
+                </tr>
+                <tr>
+                    <td><strong>M365</strong></td>
+                    <td>ניהול התהליך, סריקות, אישורים</td>
+                    <td><strong>צמצום טיפול בתעודה ב-90%</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn-live" onclick="alert('מתחילים הזרמת נתונים חיה לשנה החדשה!')">
+        <i class="fas fa-rocket"></i> בוא נתחיל: הדרכת גליה להזרמת נתונים ב-365
+    </button>
+
+</div>
+
+</body>
+</html>
